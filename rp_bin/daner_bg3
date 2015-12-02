@@ -18,34 +18,17 @@ use warnings;
 ###################################################################################
 ###################################################################################
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    chomp($line);
-    my @cells = split /\s+/, $line;
-#    print "line: <$line>\n";
-    next if ($line eq "");
-    next if ($line =~ /^#/);
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 my $ploc = &trans("ploc");
 my $sloc = &trans("sloc");
@@ -100,7 +83,7 @@ version: $version
   --ploc STRING    location (absolute path) of plink, if other than in the path
   --help           print this message and exit
   --outdir STRING  outdir
-  --indir STRING   indir, where the data is 
+  --indir STRING   indir, where the data is
   --info_th FLOAT  threshold for infoscore, default = $info_th
   --freq_th FLOAT  threshold for frequence (cases and controls), default = $freq_th
   --bg_th FLOAT  threshold for frequence (cases and controls), default = $bg_th
@@ -109,18 +92,18 @@ version: $version
 
  batch_identifier: files matching this should all have no double id-entries
 
- expects a running plink and beagle version somewhere in the path, 
+ expects a running plink and beagle version somewhere in the path,
  otherwise specify a location with --ploc or --beoc (e.g. /home/user/plink/plink)
  beagle at least in version 3.1
 
  created by Stephan Ripke 2012 at MGH, Boston, MA
- 
+
 ";
 
 
 #### evaluate options
 use Getopt::Long;
-GetOptions( 
+GetOptions(
     "help"=> \my $help,
     "ploc=s"=> \$ploc,
     "outdir=s"=> \$outdir,
@@ -441,7 +424,7 @@ while ($line = <DI>){
     $gt_count [2] = 0;
     $gt_count [3] = 0;
 #    my $miss = 0; # missing
-#    my $gt1 = 0; # 
+#    my $gt1 = 0; #
 
 
     my $gt_loc = 0;
@@ -523,13 +506,13 @@ while ($line = <DI>){
 	}
 	elsif ($gt_loc == 1) {
 	    $tped_out .= " $a1 $a1";
-	} 
+	}
 	elsif ($gt_loc == 2) {
 	    $tped_out .= " $a1 $a2";
-	} 
+	}
 	elsif ($gt_loc == 3) {
 	    $tped_out .= " $a2 $a2";
-	} 
+	}
     }
 
     # write out lines (dosage and bg)
@@ -680,7 +663,7 @@ if ($ntp > 0) {
     &mysystem("cp $dosfile.qc1.bed $outdir/bg/");
     &mysystem("cp $dosfile.qc1.bim $outdir/bg/");
     &mysystem("cp $dosfile.qc1.fam $outdir/bg/");
-    
+
 }
 if ($ntps > 0){
     my $sys = "$ploc/plink --tped $dosfile_tped_strict --tfam $famfile --make-bed --out $dosfile.qc2";
@@ -740,7 +723,7 @@ exit;
 
 # CHR         SNP          BP  A1  A2   FRQ_A   FRQ_U    INFO      OR      SE       P
 #   6 6_171002458   171002458  I2   D  0.9975  0.9966  0.2803  3.1266  2.8358  0.6877
-    
+
 ###########################################
 ### here run for INFO and Freq
 ############################################
@@ -821,6 +804,3 @@ $sys = "$ploc/plink --dosage  $workname.out.dosage format=2 --fam $famfile --all
 
 
 #exit;
-
-
-

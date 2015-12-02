@@ -1,28 +1,17 @@
 #!/usr/bin/perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 my $rloc = &trans("rloc");
 #my $r3loc = &trans("r3loc");
@@ -57,14 +46,14 @@ Usage : $progname [options] mds_file
 
 version: $version
 
- performs analysis of result-files coming from danscoring 
+ performs analysis of result-files coming from danscoring
  created by Stephan Ripke 2010 at MGH, Boston, MA
 ";
 
 my $nref = 288;
 #### evaluate options
 use Getopt::Long;
-GetOptions(     
+GetOptions(
   "help" => \my $help,
   "mds=s" => \my $mdsfile,
   "trio" => \my $trio,
@@ -179,7 +168,7 @@ if ($mdsfile) {
     print "before\n";
     unless ($trio) {
 	die "$mdsfile: ".$! unless open MDI, "< $mdsfile";
-	
+
 	while (my $line = <MDI>) {
 	    chomp($line);
 	    my @cells = &split_line ($line);
@@ -230,7 +219,7 @@ foreach my $st (1..10) {
 	foreach my $profile_loc (@profiles_st) {
 #	    print "read $profile_loc\n";
 	    die "$profile_loc: ".$! unless open PRO, "< $profile_loc";
-	    
+
 	    my $line = <PRO>;
 	    my $cc=0;
 	    while ($line = <PRO>) {
@@ -239,7 +228,7 @@ foreach my $st (1..10) {
 		my @cells =  split /\s+/, $line;
 		unless ($quan) {
 		    unless ($cells[2] == 1 || $cells[2] == 2) {#
-			
+
 			if ($trio) {
 			    if ($cells[0] =~ /_pca$/ ) {
 				$cells[2] = 2;
@@ -260,8 +249,8 @@ foreach my $st (1..10) {
 		}
 		else {
 		    if ($cells[2] == -9) {#
-			print "2: invalid phenotype $cells[0]\t$cells[1]\n";			
-			next; 
+			print "2: invalid phenotype $cells[0]\t$cells[1]\n";
+			next;
 		    }
 		}
 #		print "pt: $cells[2]\n";
@@ -282,7 +271,7 @@ foreach my $st (1..10) {
 	    print FILE $amds{"FID\tIID"};
 	}
 	print FILE "\n";
-	
+
 	foreach my $id (keys %profiles){
 #	    my @cells_loc = &split_line($_);
 	    if ($mdsfile){
@@ -291,7 +280,7 @@ foreach my $st (1..10) {
 		    print FILE "\t$prof_count{$id}";
 
 		    $prof_count_collect{$prof_count{$id}} = 1;
-	    
+
 		    print FILE "\t$apt{$id}";
 		    print FILE "\t$profiles{$id}";
 		    print FILE $amds{$id};
@@ -348,21 +337,21 @@ foreach my $st (1..10) {
 	}
     }
     #	print "$cov_str\n";
-    
+
     $cov_str_a = $cov_str;
     $cov_str_a =~ s/^ + //;
-    
+
     if ($trio) {
 	$cov_str_a = "NSCORE";
 	$cov_str = "";
     }
-    
+
 #    print "$cov_str\n";
-    
-    
+
+
 #    print "debug\n";
 #    sleep(10);
-    
+
 
 }
 
@@ -786,12 +775,12 @@ my $cov_str_a;
 	    }
 	}
 
-	
+
 #	if ($trio) {
 #	    $cov_str_a = "NSCORE";
 #	    $cov_str = "";
 #	}
-	
+
 
 
         my $infile_cov_templ = "$out";
@@ -840,10 +829,10 @@ $trio_sw = 1 if ($trio);
 #print "$cov_str\n";
 #print "$cov_str_a\n";
 #exit;
-	
+
 	my $R_file = "R.$out.hl_nw.Rin";
 	&a2file_new($R_file, $R_rido);
-	
+
 #print "debug\n";
 #print "$cov_str\n";
 
@@ -879,5 +868,3 @@ print "end of danscore_result_3\n";
 
 
 exit;
-
-

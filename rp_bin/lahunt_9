@@ -1,6 +1,14 @@
 #!/usr/bin/perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
 my $version = "1.5.0";
 my $progname = $0;
 $progname =~ s!^.*/!!;
@@ -11,24 +19,6 @@ my $tfile = 1; ## switch between memory and disk
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 #my $ploc = &trans("ploc");
 my $sloc = &trans("sloc");
@@ -79,7 +69,7 @@ version: $version
 
 
  created by Stephan Ripke 2008 at MGH, Boston, MA
- 
+
 ";
 
 
@@ -87,7 +77,7 @@ version: $version
 my $outname = "lahunt";
 
 use Getopt::Long;
-GetOptions( 
+GetOptions(
     "pcol=i"=> \$pcol,
     "scol=i"=> \$scol,
     "minsize=i"=> \$minimum_size,
@@ -234,10 +224,10 @@ sub calc_lambda {
 	$la = $outp[2];
 	$la =~ s/\[1\]//;
 	$la =~ s/ //g;
-	
+
 #	print "halfway: $halfway\n";
 #	print "Lambda: $la\n";
-	
+
     }
     else {
 	$la = "NA";
@@ -263,11 +253,11 @@ sub find_element_at_rank {
     if ($l <= $h) {
 	while ($l < $h) {
 	    while ($arr->[$l] <= $arr->[$pivot]) {
-		$l++; 
+		$l++;
 #		print "lo:$l\n"
 	    }
 	    while ($arr->[$h] >  $arr->[$pivot]) {
-		$h--; 
+		$h--;
 #		print "hi:$h\n"
 	    }
 
@@ -305,9 +295,9 @@ sub calc_lambda_qs {
     my $la;
 
     my ($p_arr) = @_;
-    
+
     if (@{$p_arr} >= $minimum_size) {
-	
+
 	my $low = 0;
 	my $high = @{$p_arr} - 1;
 	my $halfway = int (($high+1) / 2);
@@ -365,7 +355,7 @@ sub calc_lambda_file {
 
     if ($pcount >= $minimum_size) {
 
-	&mysystem ("sort -k1,1g $pfile > $pfile.sorted");	
+	&mysystem ("sort -k1,1g $pfile > $pfile.sorted");
 	my $pcount_h = int($pcount / 2);
 #	print "$pcount, $pcount_h\n";
 
@@ -499,7 +489,7 @@ my $igz;
 
 sub lamco3_alt (){
     my ($col1, $inter1) = @_;
-    
+
     my $prefix = $outname."_";
     my $lafile = $prefix."lambda_file_tmp";
     my $lasifile_c1 = $prefix."lasi_c1_tmp";
@@ -511,22 +501,22 @@ sub lamco3_alt (){
     $pdfname1 = $prefix."lama-page1.pdf";
     $pdfname2 = $prefix."lama-page2.pdf";
 ###    $pdfname3 = $prefix."lapa.pdf";
-    
-    
-    
+
+
+
     my $size_str;  ## contains the second table
-    
+
     my $lambda_str;  ## contains the first table
-    
+
     my $lasi_str_c1;  ## contains only one variable, but both of size and lambda
-    
+
 #    my @p_bowl=();
 #    my @cc1_bowl=();
 #    my @cc2_bowl=();
-    
-    
-    
-    
+
+
+
+
     my $line;
     print  "read file, define min and max of C1 and C2\n";
     $igz->gzreadline($line);
@@ -569,14 +559,14 @@ sub lamco3_alt (){
 	    my @cells = &split_line($line);
 	    $cc1=$cells[$col1-1];
 
-#print "hier: $cc1\n";	    
+#print "hier: $cc1\n";
 	    unless ($cc1 =~ /^[0-9\-]/ ) {
 #	    print "excluding $cc1,$cc2\n";
 		next;
 	    }
 
 	    $cc1 = 1-$cc1 if ($f1 && $cc1 > .5 );
-	    
+
 
 	    if ($f1) {
 		if ($cc1 > .499){
@@ -584,26 +574,26 @@ sub lamco3_alt (){
 #		    print "$cc1\n";
 		}
 	    }
-#print "hier: $cc1\n";	    
+#print "hier: $cc1\n";
 	    if ($cc1 < $cc1_min){
 		$cc1_min = $cc1 ;
 #		print "$cc1_min\n";
 	    }
 	    $cc1_max = $cc1 if ($cc1 > $cc1_max);
-	    
+
 	    my $p_val = $cells[$pcol-1];
 	    my $snpname = "";
 	    if ($scol != 0){
 		$snpname = $cells[$scol-1];
 	    }
 
-	    next if ($p_val eq "NA");	
-	    next if ($p_val eq "");	
-	    next if ($p_val <= 0 || $p_val > 1);	
+	    next if ($p_val eq "NA");
+	    next if ($p_val eq "");
+	    next if ($p_val <= 0 || $p_val > 1);
 	    $p_val = 10**(-200) if ($p_val eq "0");
 
 
-	    
+
 	    printf FILE1 "%.4g\t%.4g\n",$cc1,$p_val;
 
 	    if ($p_val < $best) {
@@ -623,7 +613,7 @@ sub lamco3_alt (){
 	    }
 
 #	    print FILE2 "$cc2\t$p_val\n";
-	    
+
 	    $lc++;
 	    if ($lc % 100000 == 0){
 		print "$lc lines read\n" ;
@@ -657,7 +647,7 @@ sub lamco3_alt (){
 		}
 		exit;
 	    }
-	    $igz = gzopen($pfile, "rb")  or die "Cannot open $pfile: $gzerrno\n"; 
+	    $igz = gzopen($pfile, "rb")  or die "Cannot open $pfile: $gzerrno\n";
 	}
     }
 #    else {#
@@ -665,8 +655,8 @@ sub lamco3_alt (){
 #	    $lc ++;
 #	}
 #    }
-    
-    
+
+
     close FILE1;
 #    }
     close FILE2;
@@ -675,12 +665,12 @@ sub lamco3_alt (){
 
     $top_int++;
     &mysystem("sort -k1,1g $matrixfile.tmp | head -n $top_int > $matrixfile");
-    
+
 
     print  "finished....., $lc lines\n";
-    
+
 #    exit;
-    
+
     ######################################
     #### print  "round min/max\n";
     ######################################
@@ -693,7 +683,7 @@ sub lamco3_alt (){
 
     ## define stepsize
     my $step1= ($cc1_max-$cc1_min) / $inter1;
- 
+
     my $categ1=0;
 
 
@@ -757,7 +747,7 @@ sub lamco3_alt (){
 	if ($cc_loc >= $cc_loc_next) {
 #	    print "found!!!!!\n";
 	    close PLOC;
-	    
+
 	    my $lambda_loc ;
 	    my $p_n_loc;
 	    if ($tfile) {
@@ -800,13 +790,13 @@ sub lamco3_alt (){
 
 	print "$cc_val_loc\t$p_n_loc\n";
 	my $lambda_loc ;
-	
+
 	if ($tfile) {
 	    $lambda_loc =  &calc_lambda_file ($file_bin,$pcount);
 	}
 	else {
 	    $lambda_loc =  &calc_lambda_qs (\@p_bowl_loc);
-	}	    
+	}
 	if ($categ1 == 1){
 	    $cc_val_loc = $cc_loc_min ;
 	}
@@ -864,7 +854,7 @@ print (lasi1)
 
 barplot(lasi1[,3], ylab="n_observ./Lambda", main=paste ("Lambda of TITLE (PHEAD) stratified by",colnames(lasi1)[1]), cex.lab=.6, cex.axis=.6, cex.main=.6);
 #barplot(lasi1[,3], ylab="n_observ./Lambda", cex.lab=.6, cex.axis=.6);
-abline (h=THRESHHOLD); 
+abline (h=THRESHHOLD);
 par(new=T);
 
 xlim1 = min(lasi1[,1],na.rm=T)-.5*STEP1
@@ -877,13 +867,13 @@ mycol = c("blue","green")
 if (MINP < 1){
    plot(best[,2],-log10(best[,1]),pch=19,cex=.4,
         ylim = c(0,-log10(MINP)),xaxt="n",yaxt="n",ylab="", xlim = c(xlim1, xlim2),xlab="",
-        col="blue" ) 
+        col="blue" )
 
   for (cc in 1:dim(best[1])) {
-    text(best[cc,2],-log10(best[cc,1]),best[cc,3],col="blue",pos=3,cex=.6 ) 
+    text(best[cc,2],-log10(best[cc,1]),best[cc,3],col="blue",pos=3,cex=.6 )
    }
 
-  points(best[best[,4] == 2,2],-log10(best[best[,4] == 2,1]),pch=21,cex=1.0,col="darkgreen" ) 
+  points(best[best[,4] == 2,2],-log10(best[best[,4] == 2,1]),pch=21,cex=1.0,col="darkgreen" )
 
 
 #   axis(4, at = round (seq (0,-log10(MINP),length.out=4)), cex.axis=1, col.axis="blue")
@@ -908,11 +898,11 @@ print (lamaxax)
 lasi1_xow = lasi1[!is.na(lasi1[,2]),1]
 lasi1_yow = lasi1[!is.na(lasi1[,2]),2]
 
-plot(lasi1_xow,lasi1_yow,col=colors()[100], type="b",ylim=c(lamin,lamax),yaxt="n", xlab=colnames(lasi1)[1], ylab="", 
-#plot(lasi1[,1],lasi1[,2],col=colors()[100], type="l",yaxt="n", xlab=colnames(lasi1)[1], ylab="", 
+plot(lasi1_xow,lasi1_yow,col=colors()[100], type="b",ylim=c(lamin,lamax),yaxt="n", xlab=colnames(lasi1)[1], ylab="",
+#plot(lasi1[,1],lasi1[,2],col=colors()[100], type="l",yaxt="n", xlab=colnames(lasi1)[1], ylab="",
 #      main = paste ("PHEAD - 2D Lambda Plot - ",colnames(lasi1)[1] ,sep=""), xlim = c(xlim1, xlim2),
       xlim = c(xlim1, xlim2),
-      cex.sub=.6, cex.main=.8, cex.lab =.6, cex.axis=.6); 
+      cex.sub=.6, cex.main=.8, cex.lab =.6, cex.axis=.6);
     axis(4, cex.axis=.6,col=colors()[100], col.axis=colors()[100]
 )
 
@@ -920,7 +910,7 @@ abline(h=1.0, lty="dotted", lwd=1, col=colors()[100])
 
 
 
-      
+
 
 colp=1
 
@@ -1021,7 +1011,7 @@ print "after file-writing\n";
 
 #### process header
 
-$igz = gzopen($pfile, "rb")  or die "Cannot open $pfile: $gzerrno\n"; 
+$igz = gzopen($pfile, "rb")  or die "Cannot open $pfile: $gzerrno\n";
 
 unless ($nohead){
     my $header ;
@@ -1031,7 +1021,7 @@ unless ($nohead){
     $phead=$cells[$pcol-1];
     $cc1head=$cells[$c1-1];
 
-    
+
     if ($check){
 	print "$usage\n";
 	foreach (0..$#cells){
@@ -1061,4 +1051,3 @@ copy ($pdfname1,"$rootdir");
 
 
 exit 0;
-

@@ -4,26 +4,16 @@ use strict;
 use warnings;
 
 #############################
-# read config file
+# load utility functions
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
+#############################
+# read config file
+#############################
 
 my $i2loc = &trans("i2loc");
 
@@ -33,7 +23,7 @@ my $usage = "
 Usage : my.imp2 --out OUTNAME --in INNAME --ref REFFILE --gema GEMAFILE
 
  --out STRING      name of out file
- --in STRING       name of haps file 
+ --in STRING       name of haps file
  --gema STRING     gema-file
  --reffile STRING  name of ref file
  --refstart INT    Mb of start
@@ -50,7 +40,7 @@ my $refstart = "";
 my $refend = "";
 
 use Getopt::Long;
-GetOptions( 
+GetOptions(
 
     "out=s"=> \ $outname,
     "in=s"=> \ $inname,
@@ -106,8 +96,8 @@ my $end_loc =  $refend *1.0e06;
 
 #if ($phas == 15) {
 if (0) {
-    $start_loc = 25 *1.0e06; 
-    $end_loc = 35 *1.0e06; 
+    $start_loc = 25 *1.0e06;
+    $end_loc = 35 *1.0e06;
     $allow_str = "-allow_large_regions";
 }
 
@@ -135,11 +125,9 @@ close BC;
 
 my  $sc = system ($sys_loc) ;
 
-if ($sc == 0 ) { 
+if ($sc == 0 ) {
     system ("touch $outname.fini");
 }
 else {
     print "job finished with error\n";
 }
-
-

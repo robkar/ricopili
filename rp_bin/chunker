@@ -4,26 +4,16 @@ use strict;
 srand(0);
 
 #############################
-# read config file
+# load utility functions
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
+#############################
+# read config file
+#############################
 
 #my $ploc = &trans("ploc");
 my $qloc = &trans("queue");
@@ -50,7 +40,7 @@ my $cwindow = 10;
 
 
 use Getopt::Long;
-GetOptions( 
+GetOptions(
 	    "help"=> \my $help,
 #	    "pfile=s"=> \$pfile,
 	    "chunk_window=i"=> \$cwindow,
@@ -61,7 +51,7 @@ GetOptions(
 
 
 if ($help){
-    print "usage: $progname 
+    print "usage: $progname
 
 version: $version
 
@@ -69,7 +59,7 @@ version: $version
 
         --help              print this message then quit
         --chunk_window INT  in Mb
-        --workdir STRING    if directory to work in is different 
+        --workdir STRING    if directory to work in is different
         --Xchr              one chromosome
 
 
@@ -196,10 +186,10 @@ unless (-e $pfile_chr) {
 	my $file_loc = $filehandles[$chr];
 	print $file_loc "@cells\n";
     }
-    
+
     while (my $line = <PFI>){
 	my @cells = @{&split_line_ref(\$line)};
-	my $pchr = $cells[$chrcol-1];	
+	my $pchr = $cells[$chrcol-1];
 	my $ppos = $cells[$poscol-1];
 
 	my $ppos_int = $ppos *1 ;
@@ -216,7 +206,7 @@ unless (-e $pfile_chr) {
 #	print "$pchr\n";
 	$ccount{$pchr}++ ;
     }
-    
+
 #    print "haeh"."\n";
     foreach my $chr ($chr_start..$chr_end) {
 	my $file_loc = $filehandles[$chr];
@@ -262,17 +252,17 @@ unless (-e $pfile_chunked){
 #    my $old_mpos = 0;
 	my $lowpos = 0;
 	my $highpos = 0;
-	
+
 	die "$pfile.chr$chr.sorted".$! unless open PFI, "< $pfile.chr$chr.sorted";
 	my $header = <PFI>;
 	my $cc = 0;
 	my $out_file = "NOFILE";
 	my $refind = "NOIND";
 	while (my $line = <PFI>){
-	    
+
 	    my @cells = @{&split_line_ref(\$line)};
 	    my $pos = $cells[$poscol-1];
-	    
+
 
 	    my $mpos = sprintf "%d",($pos / 1000000) ;
 
@@ -304,7 +294,7 @@ unless (-e $pfile_chunked){
 
 		$highpos = $lowpos;
 		$lowpos -= $cwindow;
-		
+
 		my $low_str = sprintf "%03d",$lowpos;
 		my $high_str = sprintf "%03d",$highpos;
 		$refind = "chr$chr"."_".$low_str."_".$high_str;
@@ -341,5 +331,3 @@ unless (-e $pfile_chunked){
 
 
 &mysystem("touch chunker_done");
-
-

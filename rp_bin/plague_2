@@ -1,6 +1,14 @@
 #!/usr/bin/perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
 my $version = "1.0.0";
 my $progname = $0;
 $progname =~ s!^.*/!!;
@@ -9,24 +17,6 @@ $progname =~ s!^.*/!!;
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 my $hmloc = &trans("hmloc");
 
@@ -57,7 +47,7 @@ version: $version
 ";
 
 use Getopt::Long;
-GetOptions( 
+GetOptions(
     "not"=> \my $notrans_temp,
     "scf=s" =>\ $sc_file,
     "scol=i" =>\ $scol,
@@ -97,7 +87,7 @@ use Compress::Zlib ;
 
 ## read bim-file
 
-die "$!:$bim_file" unless open BIM, "< $bim_file";   
+die "$!:$bim_file" unless open BIM, "< $bim_file";
 while (<BIM>) {
     my @cells = &split_line($_);
     $bsnps{$cells[$scol-1]} = 1;
@@ -139,7 +129,7 @@ while ($sc->gzreadline(my $line) > 0) {
     }
     print "size of\t$cells[0] is\t".@snps.",\t$pos positives. ";
     printf "\t %.2f %% of this sample, these are \t%.2f %% of bim-file\n",$pos/@snps*100, $pos/$nbim*100;
-}	    
+}
 $sc->gzclose();
 
 if ($create) {

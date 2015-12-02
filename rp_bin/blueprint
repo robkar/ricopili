@@ -1,6 +1,14 @@
 #!/usr/bin/perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
 my $version = "3.1.0";
 my $progname = $0;
 $progname =~ s!^.*/!!;
@@ -15,29 +23,11 @@ my $command_line = "$progname @ARGV";
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
 my $qloc = &trans("queue");
 
 my $qsub =0;
 my $qsub_computerome =0;
-my $qsub_broad =0; 
+my $qsub_broad =0;
 if ($qloc eq "qsub"){
     $qsub = 1;
 }
@@ -101,7 +91,7 @@ version: $version
   --plink                  loads module plink in jobs
   --fortran                loads module fortran/intel in jobs
   --blueprint STRING       uses STRING containing prefix and launches commands
-  --prefix STRING          uses STRING instead of prefix 
+  --prefix STRING          uses STRING instead of prefix
   --px STRING,INT,INT      substitute STRING by a seq from INT to INT
   --linech FILE,INT,STRING make own seq with fam-file and chunksize into STRING
   --direct                 start job without reading prefixes
@@ -140,7 +130,7 @@ new: changes between 8 and 12 cores, instancies always one less
  writes output to a specific file $jl_file
 
  created by Stephan Ripke 2008 at MGH, Boston, MA
- 
+
 ";
 
 #print "cd $ENV{PWD}\n";
@@ -315,14 +305,14 @@ if ($wait_fi_file){
 	my $wc = &count_lines($wait_fi_file);
 	my $skip_lines = $wc-50;
 	$wait_str = "#PBS -W depend=afterany";
-	
+
 	while (my $line = <WF>) {
 	    $count_jobs ++;
 	    next if ($count_jobs < $skip_lines);
 	    chomp($line);
 	    $line =~ s/[^0-9]//g;
 	    $wait_str .= ":$line";
-	    
+
 #	    $wait_str .= ":$line.batch1.irc.sara.nl";
 	}
 	close WF;
@@ -379,7 +369,7 @@ else {
 		}
 	    }
 	    else {
-		
+
 		push @job_arr, $line;
 #		print "2: this is a a command: $line\n";
 	    }
@@ -402,18 +392,18 @@ $module .= "module load fortran/intel\n" if $fortran;
 
 
 if ($job){
-    
+
 #    print "entering job\n";
 
-    
+
     use File::Path;
     my @created = mkpath(   ## $created ?
 			    $errname,
 			    {verbose => 0, mode => 0750},
 	);
-    
-    
-    
+
+
+
 
 
     if ($NOJ eq "prefix") {
@@ -422,7 +412,7 @@ if ($job){
 	my @cols=  split /\s+/, $NOJ;
 	$cols[0] =~ s/[^a-zA-Z]//g;
 	$NOJ = $cols[0];
-    } 
+    }
 
 ########################################
 ### BROAD (bsub)
@@ -447,7 +437,7 @@ if ($job){
 	    $wallstr = "-app shortjobs";
 #	    $wallmin = 10 ;
 	}
-	
+
 
 
 	my $sla_deadline = "";
@@ -484,15 +474,15 @@ if ($job){
 
 	    my $sys = 'bsub -P unspecified--broadfolk '.$pretext.' -J "'.$NOJ.'[1-'.$job_bn_th.']" -o "errandout/'.$NOJ.'..%J.%I"  my.start_job --n n\$LSB_JOBINDEX  --jobfile '.$jobarray;
 
-	    if ($maxpar > 0) {	  
+	    if ($maxpar > 0) {
 
-## change maxpar of running job to 100 
-##  bmod -J "%100" 123 
+## change maxpar of running job to 100
+##  bmod -J "%100" 123
 		## see here
 		## http://www.ccs.miami.edu/hpc/lsf/7.0.6/admin/jobarrays.html
 
 
-		  
+
 		$sys = 'bsub -P unspecified--broadfolk '.$pretext.' -J "'.$NOJ.'[1-'.$job_bn_th.']%'.$maxpar.'" -o "errandout/'.$NOJ.'..%J.%I"  my.start_job --n n\$LSB_JOBINDEX  --jobfile '.$jobarray;
 		print "$sys\n";
 	    }
@@ -508,14 +498,14 @@ if ($job){
 	    print AC "$sys\n";
 	    close AC;
 #	    exit;
-	    &mysystem ($sys);  
+	    &mysystem ($sys);
 	    exit;
 	}
 
 	my $job_bn=0;
 	my $job_bn_name=0;
 	my $job_bn_str = sprintf "%09d", $job_bn_name;
-	
+
 #	$NOJ = substr($NOJ,0,8);
 	my $dirname = "";
 	$dirname = "$errname/" if ($errname ne "errandout");
@@ -534,7 +524,7 @@ if ($job){
 
 	my $zaehler = 2*$job_bn_th;
 	my $rand_th = $zaehler / @job_arr;
-	
+
 	foreach my $cmd (@job_arr){
 
 
@@ -635,7 +625,7 @@ if ($job){
 
 	    print JOB "$jcmd\n";
 
-	    
+
 
 	    if (1) {
 #		&mysystem ("$jcmd ");
@@ -653,9 +643,9 @@ if ($job){
 
 	}
 	close JOB;
-	exit;	
+	exit;
     }
-    
+
 ########################################
 ### MSSM (msub)
 ##########################################
@@ -678,7 +668,7 @@ if ($job){
 	    $wallstr = "-app shortjobs";
 #	    $wallmin = 10 ;
 	}
-	
+
 
 
 	my $sla_deadline = "";
@@ -709,7 +699,7 @@ if ($job){
 
 #	    my $pretext = "";
 	    my $pretext = "$sla_deadline $wallstr -q $time $Rusage";
-	    my $sys = 'bsub  '.$pretext.' -J "'.$NOJ.'[1-'.$job_bn_th.']" -o "errandout/'.$NOJ.'..%J.%I"  my.start_job --n n\$LSB_JOBINDEX  --jobfile '.$jobarray;  
+	    my $sys = 'bsub  '.$pretext.' -J "'.$NOJ.'[1-'.$job_bn_th.']" -o "errandout/'.$NOJ.'..%J.%I"  my.start_job --n n\$LSB_JOBINDEX  --jobfile '.$jobarray;
 
 
 #	    print "$sys\n";
@@ -723,14 +713,14 @@ if ($job){
 	    close AC;
 #	    exit;
 #	    print "$sys\n";
-	    &mysystem ($sys);  
+	    &mysystem ($sys);
 	    exit;
 	}
 
 	my $job_bn=0;
 	my $job_bn_name=0;
 	my $job_bn_str = sprintf "%09d", $job_bn_name;
-	
+
 #	$NOJ = substr($NOJ,0,8);
 	my $dirname = "";
 	$dirname = "$errname/" if ($errname ne "errandout");
@@ -749,7 +739,7 @@ if ($job){
 
 	my $zaehler = 2*$job_bn_th;
 	my $rand_th = $zaehler / @job_arr;
-	
+
 	foreach my $cmd (@job_arr){
 
 
@@ -852,7 +842,7 @@ if ($job){
 
 	    print JOB "$jcmd\n";
 
-	    
+
 
 	    if (1) {
 #		&mysystem ("$jcmd ");
@@ -871,21 +861,21 @@ if ($job){
 
 	}
 	close JOB;
-	exit;	
+	exit;
     }
-    
+
 
 
 
 ########################################
-### SLURM 
+### SLURM
 ##########################################
 
     if ($slurm) {
 
 #	my $job_n=0;
 	my $sum=0;
-	
+
 	my $jobname;
 
 #	print "cmds: @job_arr\n";
@@ -897,13 +887,13 @@ if ($job){
 	if ($walltime == 0) {
 	    $wallstr = "00:10:00";
 	}
-	
+
 #	    if ($start) {
 #		&mysystem($cmd);
 #		next;
 #	    }
-	
-	
+
+
 	if ($week > 0){
 #		my $walltime_loc = $walltime * 6;
 	    $wallstr = "48:00:00";
@@ -945,11 +935,11 @@ if ($job){
 	    print JOB "#SBATCH --mem-per-cpu $mem_str"."g\n";
 	    print JOB "#SBATCH --time $wallstr\n";
 	    print JOB "#SBATCH --dependency afterany:$idn\n";
-	    
+
 	    print JOB "$bp\n";
 	    close (JOB);
 
-	    
+
 	}
 	else {
 
@@ -983,9 +973,9 @@ if ($job){
 		$aend = 1000;
 	    }
 
-	    
+
 	    my $ast = "#SBATCH --array=1-$aend\n";
-	    if ($maxpar > 0) {	
+	    if ($maxpar > 0) {
 		$ast = "#SBATCH --array=1-$aend%maxpar\n";
 	    }
 	    print JOB $ast;
@@ -1001,7 +991,7 @@ if ($job){
 	    }
 	    print JOB "#SBATCH --mem-per-cpu $mem_str"."g\n";
 	    print JOB "#SBATCH --time $wallstr\n";
-	    
+
 #	    print JOB "dispatch -r $jobarray\n";
 	    print JOB "my.start_job --n \$SLURM_ARRAY_TASK_ID  --jobfile $jobarray\n";
 	    close (JOB);
@@ -1009,33 +999,33 @@ if ($job){
 #	print "debug: $jobfile\n";
 #	exit;
 
-	&mysystem ("sbatch $jobfile > $jobfile.id");	    
+	&mysystem ("sbatch $jobfile > $jobfile.id");
 #	print "send $jobfile to queue\n";
-#	exit;	    
+#	exit;
 
 
 #	&a2file ($jl_file."-".$NOJ, @blueprint_out);
 
 
-	exit;	
+	exit;
 
     }
 
-    
+
 ########################################
 ### BROAD UGER
 ##########################################
 
 
     if ($qsub_broad) {
-	
+
 	my $inst_n=0;
 	my $job_n=0;
 	my $sum=0;
-	
+
 	#    my $cores=$inst;
 	#    $cores=2 if ($cores < 2);
-	
+
 	my $jobname;
 
 	my $mem_str = ($jmem / 1000) * 1;
@@ -1053,7 +1043,7 @@ if ($job){
 		die "$! ($jobname.scripts)" unless open SCR, "> $jobname.scripts";
 		foreach (@job_arr) {
 
-		    print SCR "$_\n";   
+		    print SCR "$_\n";
 
 		}
 		close SCR;
@@ -1063,7 +1053,7 @@ if ($job){
 		print "Exit: no jobs to process\n";
 		exit;
 	    }
-	    
+
 	    print "wrote $jobname.scripts\n";
 	    $job_bn_th = @job_arr;
 #	    print "sleep\n";
@@ -1074,7 +1064,7 @@ if ($job){
 
 
 
-	
+
 	if ($jobarray ne "") {
 
 
@@ -1084,8 +1074,8 @@ if ($job){
 	    }
 
 #	    $cores = 28;
-	    
-	    
+
+
 	    print "starting job_array, $jobname\n";
 
 
@@ -1102,17 +1092,17 @@ if ($job){
 	    print JOB "cd $rootdir\n";
 	    print JOB "my.start_job -n ".'$SGE_TASK_ID'." --jobfile $jobarray\n";
 	    close JOB;
-	    
+
 	    my $qsub_cmd = "qsub -l m_mem_free=".$mem_str."g $qlong_str -v PATH,rp_perlpackages -t 1-$job_bn_th -e $rootdir/$errname/ -o $rootdir/$errname/ $name_of_job $hhmm $jobname";
 	    my $qsub_txt = "$qsub_cmd > $jobname.id";
 	    my $qsub_log = "echo $qsub_cmd > $jobname.log";
-	    
+
 	    &mysystem ($qsub_log);
 	    &mysystem ($qsub_txt);
 	    exit;
 	}
-	
-	
+
+
 
 
 	if ($wait_fi_file){
@@ -1126,9 +1116,9 @@ if ($job){
 	    close WF;
 
 	    my $wallstr = "$walltime:00:00";
-	    
+
 	    print "starting motherscript, depending on $id_str\n";
-	    
+
 	    $jobname="j.$NOJ";
 	    die "$! ($jobname)" unless open JOB, "> $jobname";
 	    print JOB "#PBS -lnodes=1\n";
@@ -1136,7 +1126,7 @@ if ($job){
 	    print JOB "cd $ENV{PWD}\n";
 	    print JOB "$bp\n";
 	    close JOB;
-	    
+
 	    my $qsub_cmd = "qsub -v PATH,rp_perlpackages -l m_mem_free=".$mem_str."g  -hold_jid $id_str -e $ENV{PWD}/$errname/ -o $ENV{PWD}/$errname/ $name_of_job $hhmm $jobname";
 	    my $qsub_txt = "$qsub_cmd > $jobname.id";
 	    my $qsub_log = "echo $qsub_cmd > $jobname.log";
@@ -1153,7 +1143,7 @@ if ($job){
 
 
 
-	
+
     }
 ########################################
 ### COMPUTEROME
@@ -1161,14 +1151,14 @@ if ($job){
 
 
     if ($qsub_computerome) {
-	
+
 	my $inst_n=0;
 	my $job_n=0;
 	my $sum=0;
-	
+
 	#    my $cores=$inst;
 	#    $cores=2 if ($cores < 2);
-	
+
 	my $jobname;
 
 	my $mem_str = ($jmem / 1000) * 1;
@@ -1184,12 +1174,12 @@ if ($job){
 	    }
 
 #	    $cores = 28;
-	    
-	    
+
+
 	    print "starting job_array, $jobname\n";
 	    $jobname="j.$NOJ";
 
-	    
+
 	    die "$! ($jobname)" unless open JOB, "> $jobname";
 
 
@@ -1199,17 +1189,17 @@ if ($job){
 	    print JOB "cd $rootdir\n";
 	    print JOB "my.start_job -n ".'$PBS_ARRAYID'." --jobfile $jobarray\n";
 	    close JOB;
-	    
+
 
 	    my $qsub_txt = "qsub -V -t 1-$job_bn_th -e $errname/ -o $errname/ $name_of_job $hhmm $jobname > $jobname.id";
 	    my $qsub_log = "echo qsub -V -t 1-$job_bn_th -e $errname/ -o $errname/ $name_of_job $hhmm $jobname > $jobname.log";
-	    
+
 	    &mysystem ($qsub_log);
 	    &mysystem ($qsub_txt);
 	    exit;
 	}
-	
-	
+
+
 
 
 	if ($wait_fi_file){
@@ -1219,9 +1209,9 @@ if ($job){
 	    close WF;
 
 	    my $wallstr = "$walltime:00:00";
-	    
+
 	    print "starting motherscript, depending on $id_str\n";
-	    
+
 	    $jobname="j.$NOJ";
 	    die "$! ($jobname)" unless open JOB, "> $jobname";
 	    print JOB "#PBS -lnodes=1:ppn=1\n";
@@ -1230,8 +1220,8 @@ if ($job){
 	    print JOB "cd $ENV{PWD}\n";
 	    print JOB "$bp\n";
 	    close JOB;
-	    
-	    
+
+
 	    my $qsub_txt = "qsub -V -W depend=afteranyarray:$id_str -e $errname/ -o $errname/ $name_of_job $hhmm $jobname > $jobname.id";
 	    my $qsub_log = "echo qsub -V -W depend=afteranyarray:$id_str -e $errname/ -o $errname/ $name_of_job $hhmm $jobname > $jobname.log";
 
@@ -1249,10 +1239,10 @@ if ($job){
     my $inst_n=0;
     my $job_n=0;
     my $sum=0;
-    
+
 #    my $cores=$inst;
 #    $cores=2 if ($cores < 2);
-    
+
     my $jobname;
 
 
@@ -1263,7 +1253,7 @@ if ($job){
     else {
 	$mem_str = 64;
 	$cores =6;
-	
+
     }
 
 
@@ -1283,8 +1273,8 @@ if ($job){
 	if ($numnode > 1000){
 	    $numnode = 1000;
 	}
-	
-	
+
+
 	print "starting job_array, $jobname\n";
 	$jobname="j.$NOJ";
 #	print "$ENV{PWD}"."\n";
@@ -1292,7 +1282,7 @@ if ($job){
 #	print "jpbname: $jobname"."\n";
 #	exit;
 
-	    
+
 	die "$! ($jobname)" unless open JOB, "> $jobname";
 
 
@@ -1311,12 +1301,12 @@ if ($job){
 	print JOB "cd $rootdir\n";
 	print JOB "my.start_job --parn $cores -n ".'$PBS_ARRAYID'." --jobfile $jobarray\n";
 	close JOB;
-	
+
 	#PBS -lnodes=1:cores16:ppn=16 -lwalltime=1:00:00
 	#cd /home/gwas/pgc-samples/scz_sing/data-upload-sgChinese/rerun_0115
 	#my.start_job -n $PBS_ARRAYID --jobfile array_test_2
 
-      
+
 #	my $qsub_txt = "qsub -t 1-$job_bn_th -e $errname/ -o $errname/ $name_of_job $hhmm $jobname > $jobname.id";
 	my $qsub_cmd = "qsub -t 1-$numnode -e $errname/ -o $errname/ $name_of_job $hhmm $jobname";
 	my $qsub_txt = "$qsub_cmd > $jobname.id";
@@ -1327,11 +1317,11 @@ if ($job){
 	#	exit;
 	&mysystem ($qsub_log);
 	&mysystem ($qsub_txt);
-#	sleep (3);	
+#	sleep (3);
 	exit;
     }
-    
-    
+
+
 
 
     if ($wait_fi_file){
@@ -1341,9 +1331,9 @@ if ($job){
 	close WF;
 
 	my $wallstr = "$walltime:00:00";
-	
+
 	print "starting motherscript, depending on $id_str\n";
-	
+
 	$jobname="j.$NOJ";
 	die "$! ($jobname)" unless open JOB, "> $jobname";
 	print JOB "#PBS -lnodes=1\n";
@@ -1352,12 +1342,12 @@ if ($job){
 	print JOB "cd $ENV{PWD}\n";
 	print JOB "$bp\n";
 	close JOB;
-	
+
 	#PBS -lnodes=1:cores16:ppn=16 -lwalltime=1:00:00
 	#cd /home/gwas/pgc-samples/scz_sing/data-upload-sgChinese/rerun_0115
 	#my.start_job -n $PBS_ARRAYID --jobfile array_test_2
 
-      
+
 	my $qsub_cmd = "qsub -W depend=afteranyarray:$id_str -e $errname/ -o $errname/ $name_of_job $hhmm $jobname";
 	my $qsub_txt = "$qsub_cmd > $jobname.id";
 	my $qsub_log = "echo $qsub_cmd > $jobname.log";
@@ -1379,17 +1369,17 @@ if ($job){
     #####
     ## here without jobarray
     #####
-    
+
     if (1) {
 
 	$jobname="j.$NOJ";
-	
+
 	die "$! ($jobname.jobarray)" unless open JOBA, "> $jobname.jobarray";
 	foreach my $cmd (@job_arr){
 	    print JOBA "$cmd\n";
 	}
 	close JOBA;
-	
+
 
 	my $wallstr = "$walltime:00:00";
 	if ($walltime ==0){
@@ -1406,8 +1396,8 @@ if ($job){
 	my $numnode = ($job_bn_th-0.000001)/$cores;
 	$numnode=sprintf "%d",$numnode;
 	$numnode++;
-	
-	
+
+
 	print "starting job_array, $jobname\n";
 	$jobname="j.$NOJ";
 #	print "$ENV{PWD}"."\n";
@@ -1416,21 +1406,21 @@ if ($job){
 #	exit;
 
 
- 
 
-	    
+
+
 	die "$! ($jobname)" unless open JOB, "> $jobname";
 	print JOB "#PBS -lnodes=1:cores$cores:ppn=$cores\n";
 	print JOB "#PBS -lwalltime=$wallstr\n";
 	print JOB "cd $rootdir\n";
 	print JOB "my.start_job --parn $cores -n ".'$PBS_ARRAYID'." --jobfile $jobname.jobarray\n";
 	close JOB;
-	
+
 	#PBS -lnodes=1:cores16:ppn=16 -lwalltime=1:00:00
 	#cd /home/gwas/pgc-samples/scz_sing/data-upload-sgChinese/rerun_0115
 	#my.start_job -n $PBS_ARRAYID --jobfile array_test_2
 
-      
+
 #	my $qsub_txt = "qsub -t 1-$job_bn_th -e $errname/ -o $errname/ $name_of_job $hhmm $jobname > $jobname.id";
 	my $qsub_txt = "qsub -t 1-$numnode -e $errname/ -o $errname/ $name_of_job $hhmm $jobname > $jobname.id";
 	my $qsub_log = "echo qsub -t 1-$numnode -e $errname/ -o $errname/ $name_of_job $hhmm $jobname > $jobname.log";
@@ -1440,18 +1430,18 @@ if ($job){
 #	exit;
 	&mysystem ($qsub_txt);
 	&mysystem ($qsub_log);
-#	sleep (3);	
+#	sleep (3);
 	exit;
     }
-    
-    
-
-    
-    
 
 
 
-    
+
+
+
+
+
+
     if (0) {
 	foreach my $cmd (@job_arr){
 
@@ -1517,7 +1507,7 @@ if ($job){
 	    }
 	}
 	if ($qsub){
-	    
+
 	    if ($wait_fi_file){
 		die $! unless open CMD, "> $NOJ.cmd";
 		print CMD "$bp\n";
@@ -1557,7 +1547,7 @@ if ($job){
 	    &mysystem ($cmd);
 	}
     }
-	
+
 	&a2file ($jl_file."-".$NOJ, @blueprint_out);
     }
 }

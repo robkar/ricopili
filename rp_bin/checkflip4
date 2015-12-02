@@ -29,24 +29,16 @@ use strict;
 # v4: with columns from reference file
 
 #############################
+# load utility functions
+#############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans $conf_file);
 
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
+#############################
+# read config file
+#############################
 
 my $sloc = &trans("sloc");
 my $hmloc = &trans("hmloc");
@@ -91,10 +83,10 @@ version: $version
   --fth INT           frequency difference threshold to exclude SNPs, default: $frq_th
   --help              print this message and exit
 
-  --dbcol INT,INT,INT,INT snp-col,a1-col,a2-col,Freq_a1_col in dbsnp-file: default: $dscol,$da1col,$da2col,$dfcol 
+  --dbcol INT,INT,INT,INT snp-col,a1-col,a2-col,Freq_a1_col in dbsnp-file: default: $dscol,$da1col,$da2col,$dfcol
 
 #chr10_100002841_I	758	I2	0.065	D	0.935	48	10	100002841
-#0                         1      2        3      4       
+#0                         1      2        3      4
 
 #0 2 4 3
 
@@ -124,7 +116,7 @@ here 1KG
 use Cwd;
 use File::Path;
 use Getopt::Long;
-GetOptions( 
+GetOptions(
     "refdir=s"=> \$refdir,
     "ploc=s"=> \$p2loc,
     "info=s"=> \$info_file,
@@ -140,7 +132,7 @@ GetOptions(
 die "$usage\n" if ($help);
 
 if ($info_file eq "HM3.info") {
-    
+
     unless (-e "$refdir/$info_file") {
 	if (-e "$lisadir/$info_file"){
 	    $refdir = $lisadir;
@@ -150,7 +142,7 @@ if ($info_file eq "HM3.info") {
 	    exit;
 	}
     }
-    
+
     $info_file = "$refdir/$info_file";
 }
 
@@ -599,8 +591,8 @@ while (my $line = <FJ>) {
 		$a1_bim = $a1_ref;
 	    }
 	}
-	
-	
+
+
 	push @snp_inde, "$snp\t$a1_bim_orig\t$a2_bim_orig\t$a1_bim\t$a2_bim\t$fr_bim\t$fr_ref\n";
     }
 
@@ -634,8 +626,8 @@ while (my $line = <FJ>) {
 		$a1_bim = $a1_ref;
 	    }
 	}
-	
-	
+
+
 	push @snp_inde, "$snp\t$a1_bim_orig\t$a2_bim_orig\t$a1_bim\t$a2_bim\t$fr_bim\t$fr_ref\n";
 #	print "$snp\t$a1_bim_orig\t$a2_bim_orig\t$a1_bim\t$a2_bim\t$fr_bim\t$fr_ref\n";
 
@@ -646,7 +638,7 @@ while (my $line = <FJ>) {
 
 
 
-    
+
 
     my $gt_ref = &al2gt ($a1_ref,$a2_ref);
     my $gt_ref_str = &al2gt_str ($a1_ref,$a2_ref);
@@ -727,7 +719,7 @@ while (my $line = <FJ>) {
 	    push @snp_fg, "$snp\t$a1_bim\t$a2_bim\t$a1_ref\t$a2_ref\t$fr_bim\t$fr_ref\n";
 #	    printf "$snp\t$a1_bim\t$a2_bim\t$gt_bim\t$gt_ref\t%.4f\t%.4f\n",$fr_bim,$fr_ref;
 	}
-	
+
 	## no match
 	else {
 #	    push @snp_xal, "$snp\t$gt_bim\t$gt_ref\n";
@@ -751,7 +743,7 @@ while (my $line = <FJ>) {
 
 
 
- 
+
 }
 close FJ;
 
@@ -854,6 +846,3 @@ exit;
 
 
 print "checkflip completed, please read this report: $bim_log\n\n";
-
-
-

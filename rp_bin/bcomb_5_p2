@@ -2,26 +2,16 @@
 use strict;
 
 #############################
-# read config file
+# load utility functions
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
+#############################
+# read config file
+#############################
 
 #my $ploc = &trans("ploc");
 my $p2loc = &trans("p2loc");
@@ -49,7 +39,7 @@ version: $version
   --out STRING        outname, mandatory
   --help              print help massage and exits
   --nsout INT         number of SNPs in merged file, default = $nsout
-                         if overlapping set is bigger, 
+                         if overlapping set is bigger,
                          then random cutting down.
   --nidout INT        number of IDs in merged file, if not named, take all
   --sfile STRING      SNPs to do the merge with, first column
@@ -73,7 +63,7 @@ version: $version
 
 
  created by Stephan Ripke 2008 at MGH, Boston, MA
- 
+
 ";
 
 
@@ -169,7 +159,7 @@ foreach (0..$#bfile_list){
 
 
 if ($reffile ne "NOFILE") {
-    
+
     foreach my $bele (@bfile_list) {
 	print "commands for $bele:\n";
 	print "checkpos5 --dbcol 1,8,9 --dbsnp $reffile $bele.bim\n";
@@ -177,7 +167,7 @@ if ($reffile ne "NOFILE") {
     }
     print "\n\ninvoke the above commands (copy first to README) and restart without --ref\n";
     exit;
-    
+
 }
 
 
@@ -250,7 +240,7 @@ foreach my $bele (@bfile_list) {
     if ($bele =~ /^\//) {
 	$inbele = "$bele";
     }
-    
+
     open INFILE, "< $inbele.bim" or die "($inbele.bim) $!";
     open FFILE, "> $inbele.bim.flip" or die "($inbele.bim.flip) $!";
     open FEFILE, "> $inbele.bim.fliperror" or die "($inbele.bim.fliperror) $!";
@@ -282,7 +272,7 @@ foreach my $bele (@bfile_list) {
 #	    if ($cells[1] eq "rs10000023") {
 #		print "$inbele.bim\trs10000023\t$gt\n";
 #	    }
-	    
+
 	    ### test if existing and nonidentical
 	    if (exists $gts{$cells[1]}) {
 		unless ( $gts{$cells[1]} eq $gt) {
@@ -400,7 +390,7 @@ else {
 
 #print "n_common_snps: ".@common_snps.", rand_th_snps: $rand_th_snps"."\n";
 #exit;
-#	print "lkdsjlk@bfile_list\n";		
+#	print "lkdsjlk@bfile_list\n";
 print "print Intersection-List\n";
 
 
@@ -509,7 +499,7 @@ if ($b1ref) {
     print "join to new reference\n";
 
     &mysystem("join $fbfile.frq.ref.sorted $fbfile.bp.sorted > $fbfile.ref.bp.sorted");
-    
+
 #    sleep(10);
 
     $reffile = "$workdir/$fbfile.ref.bp.sorted";
@@ -551,7 +541,7 @@ foreach my $bele (@bfile_list) {
 
 
     if ($flip_sw) {
-    
+
 	my $cmd = "$p2loc/plink --memory 2000 --bfile $inbele --out $b_short.tmp --make-bed $remove_str $keep_str --extract SNPs.intersec";
 	print "1: $cmd\n";
 	&mysystem ($cmd);
@@ -565,16 +555,16 @@ foreach my $bele (@bfile_list) {
 	&mysystem ("rm $b_short.tmp.fam");
 
 
-	
+
 
     }
     else {
 
 	my $cmd = "$p2loc/plink --memory 2000 --bfile $inbele --out $b_short --make-bed $remove_str $keep_str --extract SNPs.intersec";
 	&mysystem ($cmd);
-	
+
     }
-    
+
 #    my $testdir = &Cwd::cwd();
 #    print "$testdir\n";
 #    print "$cmd\n";
@@ -583,7 +573,7 @@ foreach my $bele (@bfile_list) {
 
 
 
-    
+
 
 
 #    exit;
@@ -650,7 +640,7 @@ if ($reffile ne "NOFILE") {
     my $fc = 1;
     foreach my $bele_s2 (@s2_bfiles) {
 	print "processing $bele_s2.bim\n";
-	
+
 	open INFILE, "$bele_s2.bim" or die "($bele_s2.bim) $!";
 	while (<INFILE>) {
 	    chomp;
@@ -661,10 +651,10 @@ if ($reffile ne "NOFILE") {
 	    $count_s2{$cells[1]}++;
 	}
 	close (INFILE);
-	
+
 	$fc++;
     }
-    
+
     my @common_snps_s2;
     my $n_bfiles_s2 = @s2_bfiles;
     foreach my $element (keys %count_s2) {
@@ -672,8 +662,8 @@ if ($reffile ne "NOFILE") {
 	    push @common_snps_s2, "$element";
 	}
     }
-    
-    
+
+
     open INTER, ">", "SNPs.intersec.s2" or die $!;
     foreach my $sname (@common_snps_s2) {
 	print INTER "$sname\n";
@@ -714,4 +704,3 @@ print "cleaning up\n";
 &mysystem ("rm -rf $workdir");
 
 exit 0;
-

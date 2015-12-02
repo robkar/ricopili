@@ -1,6 +1,14 @@
 #!/usr/bin/perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
 my $version = "1.0.0";
 my $progname = $0;
 $progname =~ s!^.*/!!;
@@ -9,24 +17,6 @@ $progname =~ s!^.*/!!;
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 my $liloc = &trans("liloc");
 
@@ -74,7 +64,7 @@ version: $version
 ";
 
 use Getopt::Long;
-GetOptions( 
+GetOptions(
     "help"=> \my $help,
     "lift19"=> \my $lift19,
     );
@@ -125,7 +115,7 @@ use Compress::Zlib ;
 
 ## read bim-file
 print "read bim-file positons\n";
-die "$!:$bim_file" unless open BIM, "< $bim_file";   
+die "$!:$bim_file" unless open BIM, "< $bim_file";
 while (<BIM>) {
     my @cells = @{&split_line_ref(\$_)};
     my $pos = $cells[0]." ".$cells[3];
@@ -163,7 +153,7 @@ foreach my $bufile (@bu_files) {
 #    print "$bush\n";
 #    exit;
     print "comparing with $bufile\n";
-    
+
     my $nmatch= 0;
     my $nnomatch= 0;
     my $ncomp= 0;
@@ -197,7 +187,7 @@ foreach my $bufile (@bu_files) {
 	    $nnocomp++;
 	}
 	last if ($ncomp == $max_comp);
-    }	    
+    }
     close NOMA;
     $sc->gzclose();
 

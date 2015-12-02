@@ -1,11 +1,11 @@
 #!/usr/bin/perl
 use strict;
-  
+
 
 ########################################
 #
-#  version 24: 
-#  
+#  version 24:
+#
 #  chunk results and then meta-chunk
 #  area_plot_speed
 #  new manhattan plot
@@ -18,7 +18,7 @@ use strict;
 #   checkflip with fth
 #
 #  version 46:
-#   total cleanup, --phase cleaned, 
+#   total cleanup, --phase cleaned,
 #
 #  version 47:
 #   reference lign up with per chromosome (readref) for improved efficacy, some improvement in variance translation
@@ -68,17 +68,21 @@ use strict;
 ## 38 with checkpos5 (PsychChip snp names)
 ## 39 with cleanup (not finished yet)
 ## 40 with buildguessing and liftover, also testing for binaries
-## 41 error message an success message, cleaning finished, 
-## 42 with my.imp2.2 (including best guess haplotypes) 
+## 41 error message an success message, cleaning finished,
+## 42 with my.imp2.2 (including best guess haplotypes)
 ##     change bcomb_3 into bcomp_3_p2
 ## 43 and 44: bug fixes
 ## 45 increase mem
 ## 46 cleanup, week jobs
 ## 47 read out reference per week.
 
+#############################
+# load utility functions
+#############################
 
-
-
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 my $version = "1.0.24";
 my $progname = $0;
@@ -136,24 +140,6 @@ my $host = hostname;
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 my $ploc = &trans("p2loc");
 my $shloc = &trans("shloc"); # shapeit
@@ -269,7 +255,7 @@ version: $version
 
  --help            print this text and exits
 
- --phase INT       impute with HM - Phase INT as ref., no default; 
+ --phase INT       impute with HM - Phase INT as ref., no default;
                        (mandatory if --refdir is not specified)
 
  --refdir STRING   full path of reference directory, overwrites --phase
@@ -289,11 +275,11 @@ version: $version
 
 ##### alignment to reference:
 
-  --popname STRING    important for freq-checks, either 
-                           eur (default), 
-                           asn (asian), 
-                           amr (america), 
-                           afr (africa), 
+  --popname STRING    important for freq-checks, either
+                           eur (default),
+                           asn (asian),
+                           amr (america),
+                           afr (africa),
                            asw (african american)
 
   --sfh FLOAT         secure frequency around 50% (default: $sec_freq)
@@ -304,7 +290,7 @@ version: $version
 
 
 
- 
+
 #### post - imputation cleaning
 
   --info_th FLOAT  threshold for infoscore, default = $info_th
@@ -329,10 +315,10 @@ version: $version
                        try using 5 seconds first.
 
   --serial            no sending jobs to queue all in one run
-                          -> usually only used for testing  
+                          -> usually only used for testing
 
 
-### remarks 
+### remarks
 
   --phase is mandatory!! use --phase 0 for list of options
 
@@ -350,15 +336,15 @@ my $phase_txt = "
 
    2 for phase 2
    3 for phase 3
-   99 for AA; 
-   999 for AA_CNV; 
+   99 for AA;
+   999 for AA_CNV;
    4 for 1KG (likelihoods)
    5 for 1KG (phased)
 
-   10 for fin; 
+   10 for fin;
    20 for uber
 
-   15 HLA   
+   15 HLA
 
    -1 test HM3
    -5 test phased 1KG
@@ -455,7 +441,7 @@ my $phase_txt = "
 
 
 use Getopt::Long;
-GetOptions( 
+GetOptions(
 
 
     "sjamem_incr=i"=> \$sjamem_incr,
@@ -571,7 +557,7 @@ my @miss_scripts;
 #my $err_scr = 0;
 foreach my $scr_name (@test_scripts) {
     my $scr_path = '';
-    
+
     for my $path ( split /:/, $ENV{PATH} ) {
 	if ( -f "$path/$scr_name" && -x _ ) {
 	    print "$scr_name\tfound in $path\n";
@@ -583,7 +569,7 @@ foreach my $scr_name (@test_scripts) {
 	push @miss_scripts, "cp /home/unix/sripke/bin/$scr_name ./\n";
 	print "!!Error!! : No $scr_name command available\n" ;
     }
- 
+
 }
 
 
@@ -614,7 +600,7 @@ print ".......testing email program....\n";
 my $err_scr = 0;
 {
     my $scr_path = '';
-    
+
     for my $path ( split /:/, $ENV{PATH} ) {
 	if ( -f "$path/$mutt_script" && -x _ ) {
 	    print "$mutt_script\tfound in $path\n";
@@ -639,7 +625,7 @@ my $err_scr = 0;
 	    print "!!Error!! : No $mutt_script command available\n" ;
 	}
     }
- 
+
 }
 die if $err_scr == 1;
 
@@ -934,12 +920,12 @@ sub send_jobarray {
 	$fini_message .= "##### $sjainfotxt\n";
 	$fini_message .= "##### now start with PCA (see README in subdir pcaer_sub/)\n";
 	$fini_message .= "##### or directly with postimputation analysis\n";
-	$fini_message .= "##### have a look at the wiki page\n"; 
+	$fini_message .= "##### have a look at the wiki page\n";
 	$fini_message .= "##### https://sites.google.com/a/broadinstitute.org/ricopili/\n";
 	$fini_message .= "##################################################################\n";
 	print "$fini_message\n";
 
-	
+
 	die $! unless open SUC, "> success_file";
 	print SUC $fini_message."\n";
 	close SUC;
@@ -965,7 +951,7 @@ sub send_jobarray {
     }
 
 
-    
+
     &a2filenew ($jobfile, @sjaarray);
 
 #    print "$jobfile\n";
@@ -974,13 +960,13 @@ sub send_jobarray {
     my $nsja = @sjaarray;
 
 
-    
+
     my $nsja_loc = $nsja;
     if ($nsja_loc > $sjamaxjobs) {
 	$nsja_loc = $sjamaxjobs;
     }
-    
-    
+
+
 
     my $multi_txt = "";
     if ($sjamulti > 0) {
@@ -999,7 +985,7 @@ sub send_jobarray {
 
 
 
-    
+
     if ($serial) {
 	print "starting step $sjaname with ".@sjaarray." jobs\n";
 	print "please be patient.\n";
@@ -1008,15 +994,15 @@ sub send_jobarray {
 	    print "running job $jc...\n";
 	    &mysystem($_);
 	    $jc++;
-	    
+
 	}
     }
-    else { 
+    else {
 	my $sys_loc = "$blue_script $sja_week_str --maxpar $sjamaxpar --noerr --njob $nsja_loc --array $jobfile --wa $sjatime --mem $sjamem --j --na $sjaname.$outname $multi_txt";
 #    print "$sys_loc\n";
 #    exit;
 
-	
+
 	&mysystem ($sys_loc);
     }
 #    exit;
@@ -1043,7 +1029,7 @@ sub send_jobarray {
 	    $err_message .= "##### imputation pipeline stopped: $command_line\n";
 	    $err_message .= "##### $sjainfotxt\n";
 	    $err_message .= "##### if reason does not appear obvious\n";
-	    $err_message .= "##### have a look at the wiki page\n"; 
+	    $err_message .= "##### have a look at the wiki page\n";
 	    $err_message .= "##### https://sites.google.com/a/broadinstitute.org/ricopili/\n";
 	    $err_message .= "##### or contact the developers\n";
 	    $err_message .= "##################################################################\n";
@@ -1087,7 +1073,7 @@ sub send_jobarray {
     if ($qloc eq "qsub_b") {
 	$wt_file = "$sjadir/j.$sjaname.$outname.id";
     }
-    
+
 
 
     if ($serial) {
@@ -1471,8 +1457,8 @@ foreach my $bifi (@bimfli_files) {
 ## set a single chromosome
 ######################################################
 
-#my $chr_start=1;	
-#my $chr_end=22;	
+#my $chr_start=1;
+#my $chr_end=22;
 #if ($chr !=0 ){
 #    $chr_start = $chr;
 #    $chr_end = $chr;
@@ -1542,16 +1528,16 @@ my $buigue_fini = 0;
 	}
 
 	if (@buigue_arr > 0) {
-	    
+
 	    $sjadir = $impute_dir;
 	    $sjaname = "buigue";
-	    
+
 	    $sjatime = 2;
 #	    $sjatime = 4 if ($buigue_fini > 0);
-	    
+
 	    $sjamem = 3000;
 	    @sjaarray = @buigue_arr;
-	    
+
 	    &send_jobarray;
 	}
 	else {
@@ -1579,7 +1565,7 @@ if ($readref_sw == 1) {
 	    $bfile =~ s/.bim$//;
 	    my $accfli ="$bfile".".hg19.bim";
 
-	    
+
 	    foreach my $chrloc(1..22) {
 		my $bimref ="$accfli".".ref.chr$chrloc";
 		my $reffi ="$refdir/$suminfo_s.$chrloc.gz";
@@ -1594,16 +1580,16 @@ if ($readref_sw == 1) {
 	}
 #    exit;
 	if (@readref_arr > 0) {
-	    
+
 	    $sjadir = $impute_dir;
 	    $sjaname = "readref";
 	    $sjatime = 2;
 #	    $sjatime = 4 if ($readref_fini > 0);
-	    
+
 	    $sjamem = 3000;
 	    $sjamaxpar = 100;
 	    @sjaarray = @readref_arr;
-	    
+
 
 
 	    &send_jobarray;
@@ -1623,7 +1609,7 @@ if ($readref_sw == 1) {
 
 	my @readrefsum_arr = ();
 	my $readrefsum_fini = 0;
-	
+
 	unless (-e "$rootdir/readrefsum_done") {
 	    foreach (@bim_files) {
 		my $bimfile = $_;
@@ -1639,12 +1625,12 @@ if ($readref_sw == 1) {
 		    $readrefsum_fini++;
 		}
 	    }
-	    
+
 	    if (@readrefsum_arr > 0) {
 
 #		print "stragne\n";
 #		exit;
-		
+
 		$sjadir = $impute_dir;
 		$sjaname = "reresum";
 		$sjatime = 2;
@@ -1652,7 +1638,7 @@ if ($readref_sw == 1) {
 
 		$sjamem = 1000;
 		@sjaarray = @readrefsum_arr;
-		
+
 		&send_jobarray;
 	    }
 	    else {
@@ -1712,16 +1698,16 @@ unless (-e "$rootdir/posing_done") {
     }
 #    exit;
 
-   
+
     if (@chepos_arr > 0) {
-	
+
 	$sjadir = $impute_dir;
 	$sjaname = "chepos";
 	$sjatime = 2;
 #	$sjatime = 4 if ($chepos_fini > 0);
 	$sjamem = 3000;
 	@sjaarray = @chepos_arr;
-	
+
 	&send_jobarray;
     }
     else {
@@ -1757,7 +1743,7 @@ my $chefli_fini = 0;
 #		    print "$systmp\n";
 #		    exit;
 #		    push @chepos_arr, "$checkpos_script --dbcol 1,2,3 --dbsnp $rootdir/$impute_dir/$locref $bfile.hg19.bim" ;#
-		    
+
 		}
 		else {
 		    $chefli_fini++;
@@ -1778,16 +1764,16 @@ my $chefli_fini = 0;
 #	exit;
 
 	if (@chefli_arr > 0) {
-	    
+
 	    $sjadir = $impute_dir;
 	    $sjaname = "chefli";
 	    $sjatime = 2;
 #	    $sjatime = 4 if ($chefli_fini > 0);
 	    $sjamem = 3000;
 	    @sjaarray = @chefli_arr;
-	    
+
 	    &send_jobarray;
-	    
+
 	}
 	else {
 	    &mysystem ("touch $rootdir/flipping_done");
@@ -1809,12 +1795,12 @@ unless (-e "$rootdir/puting_done"){
 
     print "read reference_info into memory\n";
     die $!." <$refdir/$suminfo_n>" unless open IN, "< $refdir/$suminfo_n";
-    
+
     while (my $line = <IN>){
 	my @cells = &split_line($line);
 	$info_n{$cells[1]} = $cells[0];
     }
-    
+
     close IN;
 }
 
@@ -1843,8 +1829,8 @@ unless (-e "$rootdir/puting_done") {
 		    my $sx = "$ploc/plink --memory 2000  --bfile $bprefix.hg19.ch.fl --check-sex --out $bprefix.hg19.ch.fl";
 		    &mysystem ($sx);
 		}
-		
-		
+
+
 		die $! unless open SI, "< $bprefix.hg19.ch.fl.sexcheck";
 		while (my $line = <SI>){
 		    my @cells = &split_line($line);
@@ -1858,8 +1844,8 @@ unless (-e "$rootdir/puting_done") {
 		close SI;
 	    }
 	}
-	
-	if (-e "$bprefix.hg19.ch.fl.fam"){ 
+
+	if (-e "$bprefix.hg19.ch.fl.fam"){
 	    unless (-e "$bprefix.hg19.ch.fl.fam.idnum") {
 		die $! unless open FI, "< $bprefix.fam";
 		die $! unless open FO, "> $bprefix.hg19.ch.fl.fam.idnum.tmp";
@@ -1867,26 +1853,26 @@ unless (-e "$rootdir/puting_done") {
 		my $cc = 1;
 		while (my $line = <FI>){
 		    my @cells = &split_line($line);
-		    print FO "$cc $cc"; 
+		    print FO "$cc $cc";
 
-		    print FO " 0"; 
-		    print FO " 0"; 
+		    print FO " 0";
+		    print FO " 0";
 
-#		    print FO " $cells[2]"; 
-#		    print FO " $cells[3]"; 
+#		    print FO " $cells[2]";
+#		    print FO " $cells[3]";
 		    if (exists $sex_hash{"$cells[0]\t$cells[1]"}){
-			print FO " ".$sex_hash{"$cells[0]\t$cells[1]"}; 
+			print FO " ".$sex_hash{"$cells[0]\t$cells[1]"};
 		    }
 		    else {
-			print FO " $cells[4]"; 
+			print FO " $cells[4]";
 			if ($phas == 923 || $phas == 9123 || $phas == 91231) {
 			    print "Error: no sex-check on X-chr?\n";
 			    die;
 			}
 		    }
-		    
+
 		    print FO " $cells[5]\n";
-		    print FT "$cc"; 
+		    print FT "$cc";
 		    print FT " $cells[0]";
 		    print FT " $cells[1]\n";
 		    $cc++;
@@ -1919,7 +1905,7 @@ my @gema_arr; ## safes the gema_files in same order
 my %gema_hash; ## contains the gema-files for each chromosome
 
 foreach my $rf (@reffiles) {
-    
+
     my $refind = $rf;
     if ($refind =~ /chr[0-9]*_[0-9]*_[0-9]*/){
 	$refind =~ s/.*(chr[0-9]*_[0-9]*_[0-9]*).*/\1/;
@@ -1955,7 +1941,7 @@ foreach my $rf (@reffiles) {
 	$gema_hash{$chrind} = 1;
 	die "$gema_file not existent" unless (-e $gema_file);
     }
-    
+
 }
 
 
@@ -2030,7 +2016,7 @@ if ($chucking_done == 0) {
 	}
 	closedir DIR;
 
-	
+
 	#### loop for reference chunks
 	foreach my $ccc (0..$#refind_arr) {
 
@@ -2052,11 +2038,11 @@ if ($chucking_done == 0) {
 	    else {
 		$chuck_fini++;
 	    }
-	    
+
 	}
     }
 
-    
+
 
 
 ###################################
@@ -2269,7 +2255,7 @@ if ($prephase_done == 0) {
 ###################################
 
     if (@preph_arr > 0) {
-	
+
 	$sjadir = $impute_dir;
 	$sjaname = "preph";
 	$sjatime = 2;
@@ -2383,7 +2369,7 @@ if ($pseudo_done == 0) {
 
 	my $nfam = `cat $bprefix.fam.n`;
 	chomp($nfam);
-	
+
 	my $splitn =  int ($nfam / $spliha_n);
 	$splitn++;
 
@@ -2422,7 +2408,7 @@ if ($pseudo_done == 0) {
 	    else {
 #		print "N:$splitn\n";
 		foreach my $spn (1..$splitn) {
-		    
+
 		    my $haps_file_loc = "$haps_ch_out.haps.spli$spn";
 		    my $haps_file_loc_sample = "$haps_ch_out.haps.spli$spn.sample";
 		    my $pseudo_ch_out = "$haps_ch_out.haps.spli$spn.trio";
@@ -2443,23 +2429,23 @@ if ($pseudo_done == 0) {
 	}
     }
 
-    
+
 
 
 ###################################
 ### send pseudo jobs
 ###################################
-    
+
     if (@pseudo_arr > 0) {
-	
+
 	$sjadir = $impute_dir;
 	$sjaname = "pseudo";
 	$sjatime = 1;
 	$sjamem = 1000;
 	@sjaarray = @pseudo_arr;
-	
+
 	&send_jobarray;
-	
+
     }
     else {
 	&mysystem ("touch $rootdir/pseudo_done");
@@ -2508,7 +2494,7 @@ if ($imp2_done == 0) {
 
 	my $nfam = `cat $bprefix.fam.n`;
 	chomp($nfam);
-	
+
 	my $splitn =  int ($nfam / $spliha_n);
 	$splitn++;
 
@@ -2551,7 +2537,7 @@ if ($imp2_done == 0) {
 	    else {
 #		print "N:$splitn\n";
 		foreach my $spn (1..$splitn) {
-		    
+
 		    my $haps_file_loc = "$haps_ch_out.haps.spli$spn";
 		    my $haps_file_loc_sample = "$haps_ch_out.haps.spli$spn.sample";
 
@@ -2568,7 +2554,7 @@ if ($imp2_done == 0) {
 		    if ($phas == 923 || $phas == 9123 || $phas == 91231) {
 			$xtxt = "--chrX $haps_file_loc_sample";
 		    }
-		   		    
+
 		    unless (exists $finifiles_hash{$pi_ch_out_fini} ) {
 			my $sys_loc = "$imp2_script $xtxt --out $pi_ch_out --in $haps_file_loc --refstart $refstart --refend $refend  --reffile $refchunk  --gema $gema_file";
 #			print "$sys_loc\n";
@@ -2584,15 +2570,15 @@ if ($imp2_done == 0) {
 	}
     }
 
-    
+
 
 
 ###################################
 ### send impute2 jobs
 ###################################
-    
+
     if (@imp2_arr > 0) {
-	
+
 	$sjadir = $impute_dir;
 	$sjaname = "imp2";
 	$sjatime = 2;
@@ -2602,12 +2588,12 @@ if ($imp2_done == 0) {
 #	    $sjatime = 4;
 	}
 	@sjaarray = @imp2_arr;
-	
+
 #	print "$sjaarray[0]\n";
 #	print "debug\n";
 #	exit;
 	&send_jobarray;
-	
+
     }
     else {
 	&mysystem ("touch $rootdir/imp2_done");
@@ -2672,7 +2658,7 @@ if ($dos_done == 0) {
 
 	my $nfam = `cat $bprefix.fam.n`;
 	chomp($nfam);
-	
+
 	my $splitn =  int ($nfam / $spliha_n);
 	$splitn++;
 
@@ -2731,7 +2717,7 @@ if ($dos_done == 0) {
 		    $puter_out_arr .= " $pi_ch_out";
 		}
 
-		   		    
+
 		unless (exists $finifiles_hash{$dos_ch_out_fini} ) {
 #		    print "really not existing: $dos_ch_out_fini\n ";
 #		    exit;
@@ -2750,15 +2736,15 @@ if ($dos_done == 0) {
 	}
     }
 
-    
+
 
 
 ###################################
 ### send dos jobs
 ###################################
-    
+
     if (@dos_arr > 0) {
-	
+
 	$sjadir = $impute_dir;
 	$sjaname = "dos";
 	$sjatime = 2;
@@ -2766,9 +2752,9 @@ if ($dos_done == 0) {
 	$sjamem = 2000;
 	$sjamaxpar = 100;
 	@sjaarray = @dos_arr;
-	
+
 	&send_jobarray;
-	
+
     }
     else {
 	&mysystem ("touch $rootdir/dos_done");
@@ -2830,7 +2816,7 @@ if ($dabg_done == 0) {
 
 	my %finifiles_hash = map { $_ => 1 } @finifiles;
 
-	
+
 	#### loop for reference chunks
 	foreach my $ccc (0..$#refind_arr) {
 
@@ -2850,7 +2836,7 @@ if ($dabg_done == 0) {
 		    my $options_tmp = "--info_th $info_th --freq_th $freq_th --bg_th $bg_th";
 		    my $sys_loc = "$dabg_script $options_tmp --indir $dasudir_loc --outdir $dasudir_loc_qc1 $dabgname";
 		    push @dabg_arr,$sys_loc;
-		    
+
 #		print "$sys_loc\n";
 #		exit;
 		}
@@ -2861,7 +2847,7 @@ if ($dabg_done == 0) {
 	}
     }
 
-    
+
 #    exit;
 
 ###################################
@@ -2917,7 +2903,7 @@ if (@bimfli_files == 0 ) {
 #####################################
 
 
-my $cobg_dir = "$rootdir/cobg_dir_$outname";    
+my $cobg_dir = "$rootdir/cobg_dir_$outname";
 if (0) {
 
 unless (-e $cobg_dir) {
@@ -2925,8 +2911,8 @@ unless (-e $cobg_dir) {
 }
 print "start cobg\n";
 my @cobg_arr;
-my @prune_arr;   
-my @merge_arr; 
+my @prune_arr;
+my @merge_arr;
 unless (-e "$rootdir/cobg_done"){
 
     foreach my $rf (@reffiles) {
@@ -2938,7 +2924,7 @@ unless (-e "$rootdir/cobg_done"){
 	    $refind =~ s/.*(chr[0-9]*_[0-9]*).*/\1/;
 	}
 #	print "$refind\n";
-	
+
 	my $cobg_fini = "$cobg_dir/cobg.$outname.$refind.fini";
 
 	my $arrs = @cobg_arr;
@@ -2946,22 +2932,22 @@ unless (-e "$rootdir/cobg_done"){
 
 	my $in = 1;
 	unless (-e $cobg_fini) {
-	    
+
 	    my $in_list = "";
 	    foreach (@bimfli_files) {
 		my $bprefix = $_;
 		$bprefix =~ s/.bim$//;
-#		print "PREFIX: $bprefix\n";		
-		
+#		print "PREFIX: $bprefix\n";
+
 		my $dasudir_loc_qc1 = "$dasudir"."qc1_$bprefix";
 		my $bfile_loc = "$dasudir_loc_qc1/bgs/dos_$bprefix.$refind.out.dosage.gz.qc2";
 		my $bfile_check = "$dasudir_loc_qc1/bgs/dos_$bprefix.$refind.out.dosage.gz.qc2.bim";
 #		my $bfile_check = "$dasudir_loc_qc1/qc1/dos_$bprefix.$refind.out.dosage.gz.empty";
 		if (-e $bfile_check) {
-		    $in_list .= " $bfile_loc";		
+		    $in_list .= " $bfile_loc";
 		}
 		else {
-		    print " $bfile_loc has no $bfile_check\n";		
+		    print " $bfile_loc has no $bfile_check\n";
 		    $in = 0;
 #		    exit;
 		}
@@ -2971,7 +2957,7 @@ unless (-e "$rootdir/cobg_done"){
 #	    print "inist: $sys_loc\n";
 #	    exit;
 
-	    
+
 	    if ($in_list ne "") {
 		if ($in == 1){
 		    push @cobg_arr,$sys_loc;
@@ -3035,15 +3021,15 @@ chdir ($impute_dir);
 ###################################
 
 if (@cobg_arr > 0) {
-    
+
     $sjadir = $cobg_dir;
     $sjaname = "cobg";
     $sjatime = 2;
     $sjamem = 1000;
     @sjaarray = @cobg_arr;
-    
+
     &send_jobarray;
-    
+
 }
 else {
     print "cobg done\n";
@@ -3057,15 +3043,15 @@ else {
 
 
 if (@prune_arr > 0) {
-    
+
     $sjadir = $cobg_dir;
     $sjaname = "prune";
     $sjatime = 2;
     $sjamem = 1000;
     @sjaarray = @prune_arr;
-    
+
     &send_jobarray;
-    
+
 }
 else {
     print "prune_bg done\n";
@@ -3091,15 +3077,15 @@ if (@merge_arr > 0) {
 
     my @merge_job;
     push @merge_job, "$merge_script prune.bfile.cobg.$outname $fbfile MERGE_list";
-    
+
     $sjadir = $cobg_dir;
     $sjaname = "merge";
     $sjatime = 2;
     $sjamem = 3000;
     @sjaarray = @merge_job;
-    
+
     &send_jobarray;
-    
+
 }
 else {
     &mysystem ("touch $rootdir/cobg_done");
@@ -3120,20 +3106,20 @@ else {
 ## combine best guess genotypes
 #####################################
 
-my $cobg_gw_dir = "$rootdir/cobg_dir_genome_wide";    
+my $cobg_gw_dir = "$rootdir/cobg_dir_genome_wide";
 unless (-e $cobg_gw_dir) {
     &mysystem ("mkdir -p $cobg_gw_dir");
 }
 print "start cobg genome wide\n";
 my @cobg_gw_arr;
-my $cobg_gw_fini= 0;    
+my $cobg_gw_fini= 0;
 
 unless (-e "$rootdir/cobg_gw_done"){
     foreach (@bimfli_files) {
 	my $bprefix = $_;
 	$bprefix =~ s/.bim$//;
 	my $cobg_bgn_fini = "$cobg_gw_dir/$bprefix.bgn.fini";
-	unless (-e $cobg_bgn_fini) {	    
+	unless (-e $cobg_bgn_fini) {
 	    my $dasudir_loc_bgn = "$dasudir"."qc1_$bprefix/bgn";
 	    my $sys_loc = "$cobg_gw_script --out $bprefix.bgn $dasudir_loc_bgn";
 #	    print "$sys_loc\n";
@@ -3142,10 +3128,10 @@ unless (-e "$rootdir/cobg_gw_done"){
 	else {
 	    $cobg_gw_fini++;
 	}
-	
+
 
 	my $cobg_bg_fini = "$cobg_gw_dir/$bprefix.bg.fini";
-	unless (-e $cobg_bg_fini) {	    
+	unless (-e $cobg_bg_fini) {
 	    my $dasudir_loc_bg = "$dasudir"."qc1_$bprefix/bg";
 	    my $sys_loc = "$cobg_gw_script --out $bprefix.bg $dasudir_loc_bg";
 #	    print "$sys_loc\n";
@@ -3156,12 +3142,12 @@ unless (-e "$rootdir/cobg_gw_done"){
 	}
 
 	my $cobg_bgs_fini = "$cobg_gw_dir/$bprefix.bgs.fini";
-	unless (-e $cobg_bgs_fini) {	    
+	unless (-e $cobg_bgs_fini) {
 	    my $dasudir_loc_bgs = "$dasudir"."qc1_$bprefix/bgs";
 	    my $sys_loc = "$cobg_gw_script --out $bprefix.bgs $dasudir_loc_bgs";
 #	    print "$sys_loc\n";
 	    push @cobg_gw_arr,$sys_loc;
-	    
+
 	}
 	else {
 	    $cobg_gw_fini++;
@@ -3178,20 +3164,20 @@ chdir ($impute_dir);
 ###################################
 
 if (@cobg_gw_arr > 0) {
-    
+
     $sjadir = $cobg_gw_dir;
     $sjaname = "cobg_gw";
     $sjatime = 2;
 #    $sjatime = 4 if ($cobg_gw_fini > 0);
     $sjamem = 12000;
     @sjaarray = @cobg_gw_arr;
-    
+
     &send_jobarray;
-    
+
 }
 else {
     &mysystem ("touch $rootdir/cobg_gw_done");
-	
+
     print "cobg done\n";
 }
 
@@ -3225,11 +3211,11 @@ unless (-e $cobg_out) {
 	&mysystem ("ln -fs  $cobg_gw_dir/$bprefix.bgs.fam");
 	$blist .= " $bprefix.bgs";
     }
-    
+
     my $pcaer_sys = "pcaer_[VERSION] --noproject --prefercase --preferfam --out cobg_gw.$outname $blist";
     &mysystem ("echo $pcaer_sys > README.pcaer");#
-    
-    
+
+
     chdir ($rootdir);
 
 }
@@ -3254,7 +3240,7 @@ chdir ($rootdir);
 
 
 print "start cleaning\n";
-my @clean_arr;    
+my @clean_arr;
 
 unless (-e "$rootdir/clean_done"){
 
@@ -3263,7 +3249,7 @@ unless (-e "$rootdir/clean_done"){
 	my $bprefix = $_;
 	$bprefix =~ s/.bim$//;
 
-	my $dasudir_loc = "$dasudir"."_$bprefix";	
+	my $dasudir_loc = "$dasudir"."_$bprefix";
 	my $dasudir_loc_qc1f = "$dasudir"."qc1_$bprefix/qc1f";
 	my $pi_loc = "$rootdir/$impute_dir"."/pi_$bprefix";
 	my $subf_loc = "$rootdir/$impute_dir"."/subbfile_$bprefix";
@@ -3301,16 +3287,16 @@ unless (-e "$rootdir/clean_done"){
 
     my $pi_eo_loc = "$rootdir/$impute_dir"."/errandout";
     if (-e "$pi_eo_loc") {
-	push @clean_arr,  "$cleanerrandout_script $pi_eo_loc" unless (-e "$pi_eo_loc/cleaned");    
+	push @clean_arr,  "$cleanerrandout_script $pi_eo_loc" unless (-e "$pi_eo_loc/cleaned");
     }
 
 
     if (-e "$cobg_dir") {
 	my $cobg_eo_loc = "$cobg_dir/errandout";
 	if (-e "$cobg_eo_loc") {
-	    push @clean_arr,  "$cleanerrandout_script $cobg_eo_loc" unless (-e "$cobg_eo_loc/cleaned");    
+	    push @clean_arr,  "$cleanerrandout_script $cobg_eo_loc" unless (-e "$cobg_eo_loc/cleaned");
 	}
-	push @clean_arr,  "$cleandir_script --cobg $cobg_dir" unless (-e "$cobg_dir/cleaned");    
+	push @clean_arr,  "$cleandir_script --cobg $cobg_dir" unless (-e "$cobg_dir/cleaned");
     }
 
 
@@ -3357,9 +3343,9 @@ chdir ($rootdir);
 
 
 print "start du\n";
-my @du_arr;    
+my @du_arr;
 
-push @du_arr,  "$du_script" unless (-e "du.fini");    
+push @du_arr,  "$du_script" unless (-e "du.fini");
 
 
 
@@ -3368,16 +3354,16 @@ push @du_arr,  "$du_script" unless (-e "du.fini");
 ###################################
 
 if (@du_arr > 0) {
-    
-    
+
+
     $sjadir = $rootdir;
     $sjaname = "du";
     $sjatime = 2;
     $sjamem = 1000;
     @sjaarray = @du_arr;
-    
+
     &send_jobarray;
-    
+
 }
 
 
@@ -3474,5 +3460,5 @@ push @sjaarray, "tmp";
 $sjatime = 2;
 $sjamem = 1000;
 
-    
+
 &send_jobarray;

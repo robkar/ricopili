@@ -1,6 +1,14 @@
 #!/usr/bin/perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans $conf_file);
+
 my $version = "1.0.0";
 my $progname = $0;
 $progname =~ s!^.*/!!;
@@ -24,24 +32,6 @@ my $job_bn_th = 1000;
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
 my $ploc = &trans("ploc");
 my $homedir = &trans("home");
 my $qloc = &trans("queue");
@@ -50,7 +40,7 @@ my $email = &trans("email");
 my $loloc = &trans("loloc");
 
 
-my $mind=0.02; # per ID	
+my $mind=0.02; # per ID
 my $geno=0.02; # per SNP
 my $maf_th=0.00; # per SNP
 my $midi_th=0.02; # per SNP
@@ -58,7 +48,7 @@ my $pre_geno=0.05; # per SNP
 my $mend_th=4; # per SNP
 my $imend_th=10000; # per ID
 my $Fhet_th=.2; # per ID
-my $hwe_th=0.000001; 
+my $hwe_th=0.000001;
 my $hwe_th_ca=0.0000000001;
 my $sexcheck_min = 10;
 
@@ -87,7 +77,7 @@ version: $version
   --outname STRING  identifier for pipiline run (obligatory!!)
 
   --serial          no sending jobs to queue all in one run
-                           -> usually only used for testing 
+                           -> usually only used for testing
 
   --sleep INT       sleep for INT seconds, try this if you think there is a race condition
                            (hints: stops a different steps, --serial works)
@@ -126,7 +116,7 @@ options to change these values:
 
 
  created by Stephan Ripke 2011 at MGH, Boston, MA
- 
+
 ";
 
 
@@ -137,7 +127,7 @@ options to change these values:
 my $prekno_file = "";
 
 use Getopt::Long;
-GetOptions( 
+GetOptions(
 
     "trio"=> \my $trio,
     "serial"=> \my $serial,
@@ -220,7 +210,7 @@ my @miss_scripts;
 #my $err_scr = 0;
 foreach my $scr_name (@test_scripts) {
     my $scr_path = '';
-    
+
     for my $path ( split /:/, $ENV{PATH} ) {
 	if ( -f "$path/$scr_name" && -x _ ) {
 	    print "$scr_name\tfound in $path\n";
@@ -232,7 +222,7 @@ foreach my $scr_name (@test_scripts) {
 	push @miss_scripts, "cp /home/unix/sripke/bin/$scr_name ./\n";
 	print "!!Error!! : No $scr_name command available\n" ;
     }
- 
+
 }
 
 
@@ -265,7 +255,7 @@ print ".......testing email program....\n";
 my $err_scr = 0;
 {
     my $scr_path = '';
-    
+
     for my $path ( split /:/, $ENV{PATH} ) {
 	if ( -f "$path/$mutt_script" && -x _ ) {
 	    print "$mutt_script\tfound in $path\n";
@@ -290,7 +280,7 @@ my $err_scr = 0;
 	    print "!!Error!! : No $mutt_script command available\n" ;
 	}
     }
- 
+
 }
 die if $err_scr == 1;
 
@@ -522,12 +512,12 @@ sub send_jobarray {
 	$fini_message .= "##### preimp_pipeline finished successfully:\n";
 	$fini_message .= "##### $sjainfotxt\n";
 	$fini_message .= "##### now start with imputation pipeline (see README in subdir qc/)\n";
-	$fini_message .= "##### have a look at the wiki page\n"; 
+	$fini_message .= "##### have a look at the wiki page\n";
 	$fini_message .= "##### https://sites.google.com/a/broadinstitute.org/ricopili/\n";
 	$fini_message .= "##################################################################\n";
 	print "$fini_message\n";
 
-	
+
 	die $! unless open SUC, "> success_file";
 	print SUC $fini_message."\n";
 	close SUC;
@@ -583,10 +573,10 @@ sub send_jobarray {
 	    print "running job $jc...\n";
 	    &mysystem($_);
 	    $jc++;
-	    
+
 	}
     }
-    else {    
+    else {
 	my $sys_loc = "$blue_script $sja_week_str --noerr --njob $nsja_loc --array $jobfile --wa $sjatime --mem $sjamem --j --na $sjaname.$outname $multi_txt";
 	print "$sys_loc\n";
 	#    sleep(3);
@@ -615,7 +605,7 @@ sub send_jobarray {
 
 	    $err_message .= "##### $sjainfotxt\n";
 	    $err_message .= "##### if reason does not appear obvious\n";
-	    $err_message .= "##### have a look at the wiki page\n"; 
+	    $err_message .= "##### have a look at the wiki page\n";
 	    $err_message .= "##### https://sites.google.com/a/broadinstitute.org/ricopili/\n";
 	    $err_message .= "##### or contact the developers\n";
 	    $err_message .= "##################################################################\n";
@@ -656,7 +646,7 @@ sub send_jobarray {
     if ($qloc eq "qsub_b") {
 	$wt_file = "$sjadir/j.$sjaname.$outname.id";
     }
-    
+
 
 
     if ($serial) {
@@ -669,7 +659,7 @@ sub send_jobarray {
 	print "$sys_re\n";
 	&mysystem ($sys_re);
     }
-    
+
 
 
 
@@ -751,7 +741,7 @@ unless (-e $namefile) {
     exit;
 }
 else {
-    die "$!:$namefile" unless open NF, "< $namefile";   
+    die "$!:$namefile" unless open NF, "< $namefile";
     while (<NF>) {
 	my @cells = &split_line($_);
 	$name_hash{$cells[1]} = $cells[0];
@@ -774,7 +764,7 @@ foreach my $bf (@bim_files) {
     my $bprefix = $bf;
     $bprefix =~ s/.bim$//;
     unless (exists $name_hash{$bprefix}){
-	print "$bprefix does not have a name and will not go on further\n"; 
+	print "$bprefix does not have a name and will not go on further\n";
     }
     else {
 	push @bim_files_clean, $bimprefix ;
@@ -789,7 +779,7 @@ my @created = mkpath(   ## $created ?
 			$qc_dir,
 			{verbose => 0, mode => 0750},
     );
-	
+
 
 
 #############################################
@@ -810,7 +800,7 @@ foreach my $bf (@bim_files) {
     my $dup_id=0;
     my @dedup_arr;
 
-    die "$!:$famfile" unless open FF, "< $famfile";   
+    die "$!:$famfile" unless open FF, "< $famfile";
     while (<FF>) {
 	my @cells = &split_line($_);
 	$count_pt{$cells[5]}++;
@@ -830,7 +820,7 @@ foreach my $bf (@bim_files) {
 
     if ($dup_id == 1) {
 
-	die "$!:$famfile.noov" unless open FO, "> $famfile.noov";   
+	die "$!:$famfile.noov" unless open FO, "> $famfile.noov";
 	foreach (@dedup_arr) {
 	    print FO $_."\n";
 	}
@@ -886,7 +876,7 @@ unless (-e "$disname.tag.done") {
 	else {
 	    my $platform = "";
 	    my $sumper_max = 0;
-	    die "$!:$bimprefix.plague" unless open PL, "< $bimprefix.plague";   
+	    die "$!:$bimprefix.plague" unless open PL, "< $bimprefix.plague";
 	    while (<PL>) {
 		my @cells = &split_line($_);
 		my $sumper = $cells[7] + $cells[14];
@@ -910,12 +900,12 @@ unless (-e "$disname.tag.done") {
 #	    exit;
 	}
     }
-    
 
 
 
 
-    
+
+
     if (@pla_arr > 0) {
 
 
@@ -924,7 +914,7 @@ unless (-e "$disname.tag.done") {
 	$sjatime = 1;
 	$sjamem = 2000;
 	@sjaarray = @pla_arr;
-	
+
 	&send_jobarray;
 
 
@@ -933,19 +923,19 @@ unless (-e "$disname.tag.done") {
 #	&mysystem ("cat plague_job_list | $blue_script -b \"prefix\" --wa 1 -j --na plague_$disname");
 #	&reinvo_b ("plague_$nda","blueprint_joblist_file-plague_$disname");
     }
-    
-    
-    
-    
+
+
+
+
 #############################################
 #### id_tager
 #############################################
-    
+
 #id_tager --create --nn ihac_us2_eur_A60 --cn ihac_us2_eur IHAC.Affy.Amer.C2.v3.MERGED.KEEPERS.QC.fam
-    
+
 #print "bim: @bim_files\n";
 #exit;
-    
+
     my @it_arr;
     foreach (@bim_files) {
 #    print "bim: $_\n";
@@ -967,8 +957,8 @@ unless (-e "$disname.tag.done") {
 	    &mysystem ("touch $cname.nocaco");
 	}
     }
-    
-    
+
+
     if (@it_arr > 0) {
 	&a2filenew ("it_job_list", @it_arr);
 #    exit;
@@ -1065,7 +1055,7 @@ if (@qc_arr > 0) {
     $sjatime = 4 if ($qc_fini > 0);
     $sjamem = 2000;
     @sjaarray = @qc_arr;
-    
+
     &send_jobarray;
 
 
@@ -1080,7 +1070,7 @@ if (@qc_arr > 0) {
 ##############################################
 #### prepare imputation
 ##############################
-my $imp_dir= "imputation";	
+my $imp_dir= "imputation";
 
 
 my @created = mkpath(   ## $created ?
@@ -1117,7 +1107,7 @@ push @sjaarray, "tmp";
 $sjatime = 1;
 $sjamem = 1000;
 
-    
+
 &send_jobarray;
 
 
@@ -1176,18 +1166,18 @@ close OUT;
 my $qc_txt = '
 
 i. Cohorts and samples
-Four wave collections with genome-wide SNP genotype data were used in this analysis (Supplementary Table 1, tab 1), containing a total of 5342 cases and 6509 controls. Three different chips were used: two produced by Affymetrix (the GeneChip Human Mapping 500K Array and the Genome-Wide Human SNP Array 6.0) and one produced by Illumina (Omni-Express). 
+Four wave collections with genome-wide SNP genotype data were used in this analysis (Supplementary Table 1, tab 1), containing a total of 5342 cases and 6509 controls. Three different chips were used: two produced by Affymetrix (the GeneChip Human Mapping 500K Array and the Genome-Wide Human SNP Array 6.0) and one produced by Illumina (Omni-Express).
 
 ii. QC and imputation
 Technical quality control was performed on genotypes gen¬erated by various GWAS platforms, with quality control conducted on each dataset separately using a common approach. The following quality control parameters were applied: (i) missing rate per SNP < 0.05 (before sample removal below), (ii) missing rate per individual < 0.02, (iii) heterozygosity per individual (Fhet) +/- 0.2, (iv) missing rate per SNP < 0.02 (after sample removal above), (iv) missing rate per SNP difference in cases and controls < 0.02, (vi) Hardy-Weinberg equilibrium (controls) P < 10−6, (vii) Hardy-Weinberg equilibrium (cases) P < 10−10. Study sample sizes after quality control varied between 435 and 4,418 individuals (Supplementary Table 1, tab 1). The number of SNPs per study after quality control varied between 390,000 and 750,000. On average, the quality control processes excluded 67 individuals per study (with a range of 29–163 individuals) and 116,000 SNPs per study (with a range of 91,000–159,000 SNPs). These numbers are slightly higher than usually observed in meta-analysis, since we decided to start with completely uncleaned genotype-datasets.
 
 After quality control, the GWAS datasets together comprised 11,584 individuals and, for the next steps of the ‘genetic quality control’ analysis, a set of 77,986 SNPs common to all platforms and successfully genotyped in each GWAS sample was extracted. These SNPs were then further pruned to remove LD (leaving no pairs with r2 > 0.05) and lower frequency SNPs (minor allele frequency < 0.05), leaving 39,239 SNPs suitable for robust relatedness testing and population structure analysis (see below).
 
-Imputation of untyped SNPs was performed within each study with prephasing/imputation stepwise approach. We used Impute2/Shapeit (http://mathgen.stats.ox.ac.uk/impute/impute_v2.html, http://www.shapeit.fr/). Imputation was performed with the complete world-wid HapMap phase 3 data (http://mathgen.stats.ox.ac.uk/impute/data_download_hapmap3_r2.html), containing 2,022 haplotypes, using a chunk size of 5Mb using default parameters. λ was carefully monitored before and after imputation. 
+Imputation of untyped SNPs was performed within each study with prephasing/imputation stepwise approach. We used Impute2/Shapeit (http://mathgen.stats.ox.ac.uk/impute/impute_v2.html, http://www.shapeit.fr/). Imputation was performed with the complete world-wid HapMap phase 3 data (http://mathgen.stats.ox.ac.uk/impute/data_download_hapmap3_r2.html), containing 2,022 haplotypes, using a chunk size of 5Mb using default parameters. λ was carefully monitored before and after imputation.
 
-Genetic quality control included relatedness test¬ing and principal components analyses based on 39,239 LD independent SNPs, present on all platforms in this study. Relatedness testing was done with PLINK [PMID: 17701901], reporting pairs with genome identity (pi-hat) > 0.9 as ‘identical samples’ and with pi-hat > 0.2 as being closely related. After random shuffling, one individual from each related pair was excluded from downstream analysis. From groups with multiple related pairs (for example, a family), only one individual was kept. 
+Genetic quality control included relatedness test¬ing and principal components analyses based on 39,239 LD independent SNPs, present on all platforms in this study. Relatedness testing was done with PLINK [PMID: 17701901], reporting pairs with genome identity (pi-hat) > 0.9 as ‘identical samples’ and with pi-hat > 0.2 as being closely related. After random shuffling, one individual from each related pair was excluded from downstream analysis. From groups with multiple related pairs (for example, a family), only one individual was kept.
 
-Principal component estimation was done with the same collection of SNPs on the non-related subset of individuals. We estimated the first 20 principal components and tested each of them for phenotype association (using logistic regression with study indicator variables included as covariates) and evalu¬ated their impact on the genome-wide test statistics using λ (the genomic control inflation factor based on the median χ2) after genome-wide association of the specified principal component. Based on this we decided which principal components to include PCA 1,2,3,4,5,6,8,10,15,19 and 20 for downstream analysis as associated covariates. 
+Principal component estimation was done with the same collection of SNPs on the non-related subset of individuals. We estimated the first 20 principal components and tested each of them for phenotype association (using logistic regression with study indicator variables included as covariates) and evalu¬ated their impact on the genome-wide test statistics using λ (the genomic control inflation factor based on the median χ2) after genome-wide association of the specified principal component. Based on this we decided which principal components to include PCA 1,2,3,4,5,6,8,10,15,19 and 20 for downstream analysis as associated covariates.
 
 iv. Association analysis
 
@@ -1200,8 +1190,3 @@ Association testing was carried out in PLINK, using the dosage data from the imp
 
 
 exit;
-
-
-
-
-

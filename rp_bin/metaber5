@@ -1,6 +1,14 @@
 #!/usr/bin/perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
 use lib $ENV{rp_perlpackages};
 use Compress::Zlib ;
 
@@ -12,24 +20,6 @@ my $info_th = "0.1";
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 #my $ploc = &trans("ploc");
 my $sloc = &trans("sloc");
@@ -44,7 +34,7 @@ if ($rloc eq "broadinstitute") {
 
 
 use Getopt::Long;
-GetOptions( 
+GetOptions(
    "out=s"=> \$out_name,
    "info_th=s"=> \$info_th,
 #   "beta"=> \my $beta,
@@ -241,7 +231,7 @@ foreach my $file (@ARGV) {
 	$die = 1;
 
     }
-    
+
     $df -> gzclose();
 
     my $filtertxt = "ADDFILTER INFO > 0$info_th";
@@ -307,7 +297,7 @@ my %det_str ;
 # CHR         SNP          BP  A1  A2   FRQ_A_218   FRQ_U_323    INFO      OR      SE       P   ngt
 
 #####################################
-### read all single files 
+### read all single files
 #####################################
 
 my $fcount = 0;
@@ -393,7 +383,7 @@ foreach my $dfile (@ARGV) {
 	    print "found FRQ\n" ;
 	    $col{"FRQA"} = $col{"FRQ"};
 	}
-	elsif (exists $col{"FRQU"}) {	    
+	elsif (exists $col{"FRQU"}) {
 	    print "found FRQU\n" ;
 	    $col{"FRQA"} = $col{"FRQU"};
 	}
@@ -534,9 +524,9 @@ my %pxdf;
 ###############################################
 
 if ($xdf) {
-    die "$out_name.detout: $!" unless open PSTR, "> $out_name.detout"; 
+    die "$out_name.detout: $!" unless open PSTR, "> $out_name.detout";
     foreach (keys %p_str) {
-	
+
 #    print PSTR $_.$p_str{$_};
 	print PSTR $p_str{$_};
 	if ($nmet{$_} != $fcount) {
@@ -546,12 +536,12 @@ if ($xdf) {
 	}
 	print PSTR "\n";
     }
-    
+
     close PSTR;
-    
+
     my $nxdf = keys %p_str;
 }
-    
+
 ################################################
 #############################################
 ### XDF
@@ -565,9 +555,9 @@ my %pxdf;
 ###############################################
 
 if ($xdf) {
-    die "$out_name.p_str: $!" unless open PSTR, "> $out_name.p_str"; 
+    die "$out_name.p_str: $!" unless open PSTR, "> $out_name.p_str";
     foreach (keys %p_str) {
-	
+
 #    print PSTR $_.$p_str{$_};
 	print PSTR $p_str{$_};
 	if ($nmet{$_} != $fcount) {
@@ -577,56 +567,56 @@ if ($xdf) {
 	}
 	print PSTR "\n";
     }
-    
+
     close PSTR;
-    
+
     my $nxdf = keys %p_str;
-    
-    
+
+
 ################################################
 ### perform xdf test in R
 ###############################################
-    
+
     my $R_templ = '
 
 matrix(scan("INNAME"),NSNPS,NSTUDIES,byrow=T)-> p5m
 
-xdf <- function(x){ 
-       1-pchisq (sum(qchisq(1-x,1),na.rm=T),length(na.omit(x))) 
+xdf <- function(x){
+       1-pchisq (sum(qchisq(1-x,1),na.rm=T),length(na.omit(x)))
    }
 
 apply(p5m, 1, xdf)-> xdf_result
 write.table(xdf_result,"OUTNAME",col.names=F,row.names=F)
 ';
-    
-    
+
+
     $R_templ =~ s/INNAME/$out_name.p_str/g ;
     $R_templ =~ s/OUTNAME/$out_name.xdf/g ;
     $R_templ =~ s/NSTUDIES/$fcount/g ;
     $R_templ =~ s/NSNPS/$nxdf/g ;
-    
-    
+
+
     &a2file ( "R_$out_name.xdf" , $R_templ);
     &mysystem("$r_sys < R_$out_name.xdf --vanilla ");
-    
-    
-    
-    
-    
+
+
+
+
+
 ################################################
 ### XDF out
 ###############################################
-    
-    
-    die "$out_name.xdf: $!" unless open XDF, "< $out_name.xdf"; 
-    
+
+
+    die "$out_name.xdf: $!" unless open XDF, "< $out_name.xdf";
+
     foreach (keys %p_str) {
 	my $line = <XDF>;
 	chomp($line);
-	$pxdf{$_} = $line; 
+	$pxdf{$_} = $line;
     }
     close XDF;
-    
+
 }
 
 #exit;
@@ -637,8 +627,8 @@ write.table(xdf_result,"OUTNAME",col.names=F,row.names=F)
 
 #MarkerName  Allele1  Allele2  Effect   StdErr   P-value  Direction  HetISq  HetChiSq  HetDf  HetPVal
 
-die "$out_name.meta: $!" unless open META, "< $out_name.meta1.tbl"; 
-die "$out_name.metadaner.tmp: $!" unless open DANER, "> $out_name.metadaner.tmp"; 
+die "$out_name.meta: $!" unless open META, "< $out_name.meta1.tbl";
+die "$out_name.metadaner.tmp: $!" unless open DANER, "> $out_name.metadaner.tmp";
 my $header = <META>;
 print DANER "CHR\tSNP\tBP\tA1\tA2\tFRQ_A_$nca\tFRQ_U_$nco\tINFO\tOR\tSE\tP\tngt\tDirection\tHetISqt\tHetChiSq\tHetDf\tHetPVa";
 
@@ -661,7 +651,7 @@ while (<META>){
     my $effect = $cells[3];
 
 
-    unless ($a1_name =~ m/\+[0-9]+a/ || $a1_name =~ m/\+[0-9]+b/) {    
+    unless ($a1_name =~ m/\+[0-9]+a/ || $a1_name =~ m/\+[0-9]+b/) {
 	$a1_name = uc($a1_name);
     }
     else {
@@ -669,7 +659,7 @@ while (<META>){
 	$st[0] = uc($st[0]);
 	$a1_name = $st[0]."+".$st[1];
     }
-    unless ($a2_name =~ m/\+[0-9]+a/ || $a2_name =~ m/\+[0-9]+b/) {    
+    unless ($a2_name =~ m/\+[0-9]+a/ || $a2_name =~ m/\+[0-9]+b/) {
 	$a2_name = uc($a2_name);
     }
     else {
@@ -763,4 +753,3 @@ close META;
 close DANER;
 &mysystem ("gzip -f $out_name.metadaner.tmp");
 &mysystem ("mv $out_name.metadaner.tmp.gz $out_name.metadaner.gz");
-

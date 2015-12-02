@@ -1,6 +1,14 @@
 #!/usr/bin/perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
 my $version = "8.0.0";
 my $progname = $0;
 $progname =~ s!^.*/!!;
@@ -57,24 +65,6 @@ close FILE;
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
 #my $p1loc = &trans("ploc");
 my $ploc = &trans("p2loc");
 my $rloc = &trans("rloc");
@@ -92,8 +82,8 @@ if ($qloc eq "msub") {
 
 
 
-#my $noassoc=0; # restricted QC without association test	
-my $mind=0.02; # per ID	
+#my $noassoc=0; # restricted QC without association test
+my $mind=0.02; # per ID
 my $geno=0.02; # per SNP
 my $maf_th=0.00; # per SNP
 my $midi_th=0.02; # per SNP
@@ -105,8 +95,8 @@ my $imend_th=10000; # per ID
 my $Fhet_th=.2; # per ID
 my $faf_th=0.15; # per SNP
 
-my $hwe_th=0.000001; 
-my $hwe_th_ca=0.0000000001; 
+my $hwe_th=0.000001;
+my $hwe_th_ca=0.0000000001;
 my $me_th1=0.05;
 my $me_th2=0.1;
 my $withpna=0;
@@ -169,7 +159,7 @@ options:
 
    ################################
 
-    if prekno post-QC, then 
+    if prekno post-QC, then
        rm GWA-P*
        rm prekno*
 
@@ -241,7 +231,7 @@ my $tdt = 0;
 #### evaluate options
 
 use Getopt::Long;
-GetOptions( 
+GetOptions(
     "noc"=> \$noc,   # no calculation, for a second faster run
     "hardy2"=> \my $hardy2,   # use asymptotic HWE (huge datasetsget error with exact)
     "help"=> \my $help, # prints help message
@@ -377,7 +367,7 @@ $cc_num{2} = 0;
 $cc_num{-9} = 0;
 my %sex_num = ();
 my $nids_nofi ;
-    
+
 die $! unless open FAMI , "< $prefix.fam";
 while (<FAMI>){
     chomp;
@@ -922,8 +912,8 @@ if ($calc){
     unless (-e "$nofiprefix.imiss") {
 	my $sys = "$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt --missing";
 #	print "$sys\n";
-#	exit;  
-	&mysystem ("$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt --missing --freq");  
+#	exit;
+	&mysystem ("$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt --missing --freq");
 
 
 	&asso2tdt_frq("$nofiprefix.tmp") if ($tdt == 1);
@@ -951,7 +941,7 @@ die "switch --noc?" unless (-e "$nofiprefix.lmiss");
 
 
 ###### pre-snp
-push  @detex_files, "$nofiprefix.snpex.detex.txt"; 
+push  @detex_files, "$nofiprefix.snpex.detex.txt";
 unless (-e "$nofiprefix.snpex.detex.txt") {
     die $!."($nofiprefix.lmiss)" unless open IN, "< $nofiprefix.lmiss";
     die $!."($nofiprefix.snpex.detex.txt.tmp)" unless open DX, "> $nofiprefix.snpex.detex.txt.tmp";
@@ -1030,17 +1020,17 @@ if ($calc){
     $mend_txt = "--mendel" if ($tdt);
 
     unless (-e "$idfiprefix.imiss") {
-	&mysystem ("$ploc/plink $allow --bfile $prefix $mend_txt --out $idfiprefix.tmp1 --geno 1 --mind 1 --exclude $nofiprefix.snpex.detex.txt --noweb --missing ") ;  
+	&mysystem ("$ploc/plink $allow --bfile $prefix $mend_txt --out $idfiprefix.tmp1 --geno 1 --mind 1 --exclude $nofiprefix.snpex.detex.txt --noweb --missing ") ;
 	if ($tdt) {
 	    &mysystem ("mv $idfiprefix.tmp1.imendel $idfiprefix.imendel");
 	}
-	
+
 	&mysystem ("mv $idfiprefix.tmp1.imiss $idfiprefix.imiss");
     }
-    
+
     unless (-e "$idfiprefix.het") {
-	&mysystem ("$ploc/plink $allow --bfile $prefix --out $idfiprefix.tmp2 --het --geno 1 --mind 1 --exclude $nofiprefix.snpex.detex.txt --noweb ");  
-	
+	&mysystem ("$ploc/plink $allow --bfile $prefix --out $idfiprefix.tmp2 --het --geno 1 --mind 1 --exclude $nofiprefix.snpex.detex.txt --noweb ");
+
 	&mysystem ("mv $idfiprefix.tmp2.het $idfiprefix.het");
     }
 
@@ -1051,7 +1041,7 @@ if ($calc){
 
 
 ### iddmiss (fist filter filter)
-push  @detex_files, "$fifiprefix.idmiss.detex.txt"; 
+push  @detex_files, "$fifiprefix.idmiss.detex.txt";
 unless (-e "$fifiprefix.idmiss.detex.txt") {
     die $!."($idfiprefix.imiss)" unless open IN, "< $idfiprefix.imiss";
     die $!."($fifiprefix.idmiss.detex.txt.tmp)" unless open DX, "> $fifiprefix.idmiss.detex.txt.tmp";
@@ -1121,17 +1111,17 @@ unless ($chrx) {
  #   die $!."($idfiprefix.heto)" unless open OUT, "> $idfiprefix.heto";
  #   while (<IN>){
 #	chomp;
-#	my @cells = @{&split_line_ref(\$_)};	
+#	my @cells = @{&split_line_ref(\$_)};
 
 #	print OUT "@cells ".abs($cells[5])."\n";
 #    }
 #    close IN;
 #    close OUT;
-    
+
 
 
 ### idhet (fist filter filter)
-    push  @detex_files, "$idfiprefix.idhet.detex.txt"; 
+    push  @detex_files, "$idfiprefix.idhet.detex.txt";
 
 #    print "continue filling detex_files\n";
 #    exit;
@@ -1139,10 +1129,10 @@ unless ($chrx) {
     unless (-e "$idfiprefix.idhet.detex.txt") {
 	die $!."($idfiprefix.het)" unless open IN, "< $idfiprefix.het";
 	die $!."($idfiprefix.idhet.detex.txt.tmp)" unless open DX, "> $idfiprefix.idhet.detex.txt.tmp";
-	
+
 	print DX "FID\tIID\tID_het_$Fhet_th($idfiprefix.het)\n";
 	<IN>;
-	
+
 	my $mc = 0;
 	my $mc_ca = 0;
 	my $mc_co = 0;
@@ -1164,14 +1154,14 @@ unless ($chrx) {
 	}
 	close IN;
 	close DX;
-	
+
 	die $!."($idfiprefix.idhet.detex.txt.n)" unless open DXN, "> $idfiprefix.idhet.detex.txt.n";
 	print DXN "$mc\n";
 	close DXN;
 
 	die $!."($idfiprefix.idhet.ca.detex.txt.n)" unless open DXN, "> $idfiprefix.idhet.ca.detex.txt.n";
 	print DXN "$mc_ca\n";
-	close DXN;	
+	close DXN;
 
 	die $!."($idfiprefix.idhet.co.detex.txt.n)" unless open DXN, "> $idfiprefix.idhet.co.detex.txt.n";
 	print DXN "$mc_co\n";
@@ -1188,7 +1178,7 @@ unless ($chrx) {
 #	exit;
 #	    &mysystem ("plothist2 --out $idfiprefix.imendel.hisplot --thresh $imend_th,$imend_th --xlim 0,20000 $idfiprefix.imendel");
 #	}
-    
+
 
 	&mysystem ("sort -k3,3n $idfiprefix.idhet.detex.txt.tmp > $idfiprefix.idhet.detex.txt.tmp.sorted");
 	&mysystem ("mv  $idfiprefix.idhet.detex.txt.tmp.sorted $idfiprefix.idhet.detex.txt");
@@ -1197,7 +1187,7 @@ unless ($chrx) {
 
     }
 
-    
+
 #    $idex_fifi_fhet = &count_lines_high($Fhet_th,7,$idfiprefix.".heto",">> $fifiprefix.idex", "> /dev/null",0);
 
 }
@@ -1216,7 +1206,7 @@ die $!."($idfiprefix.idhet.co.detex.txt.n)" unless open DXN, "< $idfiprefix.idhe
 $idex_fifi_fhet_co = <DXN>;
 chomp($idex_fifi_fhet_co);
 close DXN;
-	
+
 
 
 
@@ -1231,17 +1221,17 @@ if ($tdt) {
 
 
 
-### idmend 
+### idmend
 
-  push  @detex_files, "$idfiprefix.idmend.detex.txt"; 
+  push  @detex_files, "$idfiprefix.idmend.detex.txt";
 
     unless (-e "$idfiprefix.idmend.detex.txt") {
 	die $!."($idfiprefix.imendel)" unless open IN, "< $idfiprefix.imendel";
 	die $!."($idfiprefix.idmend.detex.txt.tmp)" unless open DX, "> $idfiprefix.idmend.detex.txt.tmp";
 
-	print DX "FID\tIID\tID_mend_$imend_th($idfiprefix.imendel)\n";	
+	print DX "FID\tIID\tID_mend_$imend_th($idfiprefix.imendel)\n";
 	<IN>;
-	
+
 	my $mc = 0;
 	while (<IN>){
 	    my @cells = @{&split_line_ref(\$_)};
@@ -1253,14 +1243,14 @@ if ($tdt) {
 	}
 	close IN;
 	close DX;
-	
+
 	die $!."($idfiprefix.idmend.detex.txt.n)" unless open DXN, "> $idfiprefix.idmend.detex.txt.n";
 	print DXN "$mc\n";
 	close DXN;
-	
 
 
-	
+
+
 	my $imend_th_2 = $imend_th *2;
 #	unless (-e "$idfiprefix.imendel.hisplot.pdf") {
 	    &mysystem ("plothist2 --pcol 3 --out $idfiprefix-imendel-hisplot-all --thresh $imend_th,$imend_th $idfiprefix.imendel");
@@ -1277,14 +1267,14 @@ if ($tdt) {
     $idex_fifi_fhet = <DXN>;
     chomp($idex_fifi_fhet);
     close DXN;
-        
-    
+
+
 }
 
 
 print  "-> perform sex-check\n";
 unless (-e "$idfiprefix.sex.sexcheck") {
-    
+
     die $!."$prefix.bim" unless open BIM, "< $prefix.bim";
     my $n23 = 0;
     while (my $line = <BIM>){
@@ -1305,15 +1295,15 @@ unless (-e "$idfiprefix.sex.sexcheck") {
 #	print "N23: $n23\n";
 #	exit;
     if ($n23 >= $sexcheck_min) {
-	&mysystem ("$ploc/plink $allow --bfile $prefix --out $idfiprefix.sextmp --mind 1 --geno 1 --check-sex $extract --exclude $nofiprefix.snpex.detex.txt --noweb ");  
+	&mysystem ("$ploc/plink $allow --bfile $prefix --out $idfiprefix.sextmp --mind 1 --geno 1 --check-sex $extract --exclude $nofiprefix.snpex.detex.txt --noweb ");
     }
     else {
 	print "no X chromosome\n";
-	
+
 	die $!."" unless open SC, "> $idfiprefix.sextmp.sexcheck";
 	print SC "                            FID       IID       PEDSEX       SNPSEX       STATUS            F\n";
 	print SC "                            FAKE      FAKE      PEDSEX       SNPSEX       NOTOK            F\n";
-	
+
 	close SC;
     }
     &mysystem ("mv $idfiprefix.sextmp.sexcheck $idfiprefix.sex.sexcheck");
@@ -1325,8 +1315,8 @@ unless (-e "$idfiprefix.sex.sexcheck") {
 
 ### sexcheck-id (only report no filter)
 
-push  @detex_files, "$idfiprefix.idsexcheck.detex.txt"; 
-push  @detex_files, "$idfiprefix.idsexcheck.warni.txt"; 
+push  @detex_files, "$idfiprefix.idsexcheck.detex.txt";
+push  @detex_files, "$idfiprefix.idsexcheck.warni.txt";
 unless (-e "$idfiprefix.idsexcheck.detex.txt") {
     die $!."($idfiprefix.sex.sexcheck)" unless open IN, "< $idfiprefix.sex.sexcheck";
     die $!."($idfiprefix.idsexcheck.detex.txt.tmp)" unless open DX, "> $idfiprefix.idsexcheck.detex.txt.tmp";
@@ -1405,7 +1395,7 @@ unless (-e "$idfiprefix.idsexcheck.detex.txt") {
     close IN;
     close DX;
     close DXP;
-    
+
     die $!."($idfiprefix.idsexcheck.detex.txt.n)" unless open DXN, "> $idfiprefix.idsexcheck.detex.txt.n";
     print DXN "$mc\n";
     close DXN;
@@ -1464,14 +1454,14 @@ if ($calc){
     unless (-e "$idfiprefix.lmiss") {
 
 	if (-e "$idfiprefix.idmend.detex.txt"){
-	    &mysystem ("cat $fifiprefix.idmiss.detex.txt $idfiprefix.idhet.detex.txt $idfiprefix.idmend.detex.txt $idfiprefix.idsexcheck.detex.txt > $fifiprefix.idfi.combex");  
+	    &mysystem ("cat $fifiprefix.idmiss.detex.txt $idfiprefix.idhet.detex.txt $idfiprefix.idmend.detex.txt $idfiprefix.idsexcheck.detex.txt > $fifiprefix.idfi.combex");
 	}
 	else {
-	    &mysystem ("cat $fifiprefix.idmiss.detex.txt $idfiprefix.idhet.detex.txt $idfiprefix.idsexcheck.detex.txt > $fifiprefix.idfi.combex");  
+	    &mysystem ("cat $fifiprefix.idmiss.detex.txt $idfiprefix.idhet.detex.txt $idfiprefix.idsexcheck.detex.txt > $fifiprefix.idfi.combex");
 	}
 
-	&mysystem ("$ploc/plink $allow --bfile $prefix --out $idfiprefix --geno 1 --remove $fifiprefix.idfi.combex --noweb --make-bed ");  
-	&mysystem ("$ploc/plink $allow --bfile $idfiprefix --out $idfiprefix.misstmp --geno 1 --exclude $nofiprefix.snpex.detex.txt --noweb --missing ");  
+	&mysystem ("$ploc/plink $allow --bfile $prefix --out $idfiprefix --geno 1 --remove $fifiprefix.idfi.combex --noweb --make-bed ");
+	&mysystem ("$ploc/plink $allow --bfile $idfiprefix --out $idfiprefix.misstmp --geno 1 --exclude $nofiprefix.snpex.detex.txt --noweb --missing ");
 	&mysystem ("mv $idfiprefix.misstmp.lmiss $idfiprefix.lmiss");
     }
 }
@@ -1542,7 +1532,7 @@ if ($calc) {
     unless (-e "$fifiprefix.fam") {
 
 
-#	&mysystem ("$ploc/plink $allow --bfile $prefix --out $fifiprefix.tmp1  --remove $fifiprefix.idex --exclude $hafiprefix.snpex.ow2 --noweb --make-bed $extract ");	
+#	&mysystem ("$ploc/plink $allow --bfile $prefix --out $fifiprefix.tmp1  --remove $fifiprefix.idex --exclude $hafiprefix.snpex.ow2 --noweb --make-bed $extract ");
 
 
 
@@ -1559,23 +1549,23 @@ if ($calc) {
 #    my $fifi_base_p1 = "$ploc/plink $allow --bfile $fifiprefix --noweb";
 
     unless (-e "$fifiprefix.frq") {
-	&mysystem ("$fifi_base --out $fifiprefix.freqtmp --freq ");  
+	&mysystem ("$fifi_base --out $fifiprefix.freqtmp --freq ");
 	&mysystem ("mv $fifiprefix.freqtmp.frq $fifiprefix.frq");
     }
 
 
     unless ($noassoc) {
 	unless (-e "$fifiprefix.assoc") {
-	    &mysystem ("$fifi_base --out $fifiprefix.assotmp $assotdt --ci 0.95 --freq");  
-	    
+	    &mysystem ("$fifi_base --out $fifiprefix.assotmp $assotdt --ci 0.95 --freq");
+
 #	print "assoc debug for se\n";
 #	exit;
 	    if ($tdt == 1) {
 		&asso2tdt_se_frq("$fifiprefix.assotmp") ;
 	    }
-	    
-	    
-	    
+
+
+
 	    &mysystem ("mv $fifiprefix.assotmp.assoc $fifiprefix.assoc");
 	}
     }
@@ -1585,7 +1575,7 @@ if ($calc) {
     unless ($tdt) {
 	unless (-e "$fifiprefix.missing") {
 	    unless ($noassoc) {
-		&mysystem ("$fifi_base --out $fifiprefix.temisstmp --test-missing ");  
+		&mysystem ("$fifi_base --out $fifiprefix.temisstmp --test-missing ");
 		&mysystem ("mv $fifiprefix.temisstmp.missing $fifiprefix.missing");
 	    }
 	}
@@ -1603,7 +1593,7 @@ if ($calc) {
     }
 
     unless (-e "$fifiprefix.imiss") {
-	&mysystem ("$fifi_base --out $fifiprefix.misstmp --missing ");  
+	&mysystem ("$fifi_base --out $fifiprefix.misstmp --missing ");
 	&mysystem ("mv $fifiprefix.misstmp.lmiss $fifiprefix.lmiss");
 	&mysystem ("mv $fifiprefix.misstmp.imiss $fifiprefix.imiss");
     }
@@ -1612,7 +1602,7 @@ if ($calc) {
 	print  "-> checking for medelian errors\n";
 
 	unless (-e "$fifiprefix.lmendel") {
-	    &mysystem ("$fifi_base --out $fifiprefix.mendtmp --mendel ");  
+	    &mysystem ("$fifi_base --out $fifiprefix.mendtmp --mendel ");
 	    &mysystem ("mv $fifiprefix.mendtmp.imendel $fifiprefix.imendel");
 	    &mysystem ("mv $fifiprefix.mendtmp.lmendel $fifiprefix.lmendel");
 	}
@@ -1628,7 +1618,7 @@ if ($calc) {
 #  check sex
 #####
 
-    
+
 
 
 #exit;
@@ -1667,10 +1657,10 @@ if ($calc) {
     push  @detex_files, "$fifiprefix.snpex.hwe.cas.detex.txt";
 
     unless (-e "$fifiprefix.snpex.hwe.con.detex.txt") {
-	
+
 #	print "$fifiprefix.snpex.hwe.con.detex.txt not existing....\n";
-	
-	die "$!" unless open FILE, "< $fifiprefix.hwe";    
+
+	die "$!" unless open FILE, "< $fifiprefix.hwe";
 	die "$!" unless open OUT, "> $fifiprefix.hwe_unaff";
 	die "$!" unless open AFF, "> $fifiprefix.hwe_aff";
 	die "$!" unless open ALL, "> $fifiprefix.hwe_all";
@@ -1768,13 +1758,13 @@ if ($calc) {
 
 
 
-	die "$!" unless open LMISS, "< $fifiprefix.lmiss";    
+	die "$!" unless open LMISS, "< $fifiprefix.lmiss";
 	my $head = <LMISS>;
 	while (<LMISS>){
 	    chomp;
 	    my @cells = @{&split_line_ref(\$_)};
 	    next if exists ($hwe_snps{$cells[1]}) ;
-	    
+
 	    if ($cells[0] > 0 && $cells[0] < 24 ) {
 		print "warning: $cells[1] is autosomal or xchr, but without hwe\n";
 	    }
@@ -1811,10 +1801,10 @@ if ($calc) {
 
 	die $!."($fifiprefix.hwe_aff)" unless open IN, "< $fifiprefix.hwe_aff";
 	die $!."($fifiprefix.snpex.detex.txt.hwe.cas.tmp)" unless open DX, "> $fifiprefix.snpex.detex.txt.hwe.cas.tmp";
-	
+
 	print DX "SNP\tSNP_hwe_cases_log10_$hwe_th_ca($fifiprefix.hwe)\n";
 	<IN>;
-	
+
 	my $mc = 0;
 	while (<IN>){
 	    my @cells = @{&split_line_ref(\$_)};
@@ -1823,7 +1813,7 @@ if ($calc) {
 	    $mc++;
 	}
 	close IN;
-	
+
 
 
 
@@ -1844,9 +1834,9 @@ if ($calc) {
 	    die $!."($fifiprefix.hwe_unaff)" unless open IN, "< $fifiprefix.hwe_aff";
 	}
 	else {
-	    die $!."($fifiprefix.hwe_unaff)" unless open IN, "< $fifiprefix.hwe_unaff";	    
+	    die $!."($fifiprefix.hwe_unaff)" unless open IN, "< $fifiprefix.hwe_unaff";
 	}
-	
+
     die $!."($fifiprefix.snpex.detex.txt.hwe.con.tmp)" unless open DX, "> $fifiprefix.snpex.detex.txt.hwe.con.tmp";
 
     print DX "SNP\tSNP_hwe_controls_log10_$hwe_th($fifiprefix.hwe)\n";
@@ -1904,7 +1894,7 @@ if ($calc){
 
 	    my %midi_snps;
 
-	    die "$!" unless open FILE, "< $fifiprefix.missing";    
+	    die "$!" unless open FILE, "< $fifiprefix.missing";
 	    die "$!" unless open OUT, "> $fifiprefix.missing_diff";
 	    while (<FILE>){
 		chomp;
@@ -1916,7 +1906,7 @@ if ($calc){
 #	    close OUT;
 	    close FILE;
 
-	    die "$!" unless open FILE, "< $fifiprefix.lmiss";    
+	    die "$!" unless open FILE, "< $fifiprefix.lmiss";
 #	    die "$!" unless open OUT, ">> $fifiprefix.missing_diff";
 	    my $head = <FILE>;
 	    while (<FILE>){
@@ -1938,7 +1928,7 @@ if ($calc){
 
 	}
 	else {
-	    die "$!" unless open FILE, "< $fifiprefix.lmiss";    
+	    die "$!" unless open FILE, "< $fifiprefix.lmiss";
 	    die "$!" unless open OUT, "> $fifiprefix.missing_diff";
 	    while (<FILE>){
 		chomp;
@@ -2134,7 +2124,7 @@ my %faf_hm = ();
 
 
 if ($calc){
-    
+
 #die "$! ($prefix.bim.hg18hapmap)" unless open FILE, "< $prefix.bim.hg18hapmap";
 #while (<FILE>){
 #    my @cells = &split_line($_);
@@ -2142,7 +2132,7 @@ if ($calc){
 #    $faf_hm{$cells[0]}=$cells[5] unless ($cells[2] lt $cells[4]);
 #}
 #close FILE;
-    
+
 ## only faf
 ############
     die "$! ($fifiprefix.missmatch_faf.txt)" unless open OUT, "> $fifiprefix.missmatch_faf.txt";
@@ -2166,7 +2156,7 @@ if ($calc){
 	    $frq_diff=0;
 	    printf OUT "%s\t%.4f\t%.4f\t%.4f\n",$cells[1],$frq_diff,$faf_data,$faf_hm{$cells[1]};
 	}
-	
+
     }
     close FILE;
     close OUT;
@@ -2264,7 +2254,7 @@ if (0) {
     if ($calc){
 	die "$! ($fifiprefix.missmatch_faf_caco.txt)" unless open OUT, "> $fifiprefix.missmatch_faf_caco.txt";
 	die "$! ($fifiprefix.assoc_wo_na_tmp)" unless open FILE, "< $fifiprefix.assoc_wo_na_tmp";
-	
+
 	print OUT "SNP\tFAF-diff-case\tFAF-diff-contr\tFAF-hapmap\tCHR\tPOS\n";
 	my $lc=0;
 	my ($faf_data_ca, $faf_data_co, $frq_diff_ca, $frq_diff_co) = (0,0,0,0);
@@ -2274,16 +2264,16 @@ if (0) {
 		@cells = @{&split_line_ref(\$_)};
 #	    @cells = &split_line($_);
 
-		
+
 		my $chr = $cells[0];
 		my $pos = $cells[2];
-		
+
 		$faf_data_ca=$cells[4] if ($cells[3] lt $cells[6]);
 		$faf_data_ca=1-$cells[4] unless ($cells[3] lt $cells[6]);
 		$faf_data_co=$cells[5] if ($cells[3] lt $cells[6]);
 		$faf_data_co=1-$cells[5] unless ($cells[3] lt $cells[6]);
-		
-		
+
+
 #if (0) {	#
 #	if (exists $faf_hm{$cells[1]}){
 #	    if ($tdt ==0){
@@ -2298,21 +2288,21 @@ if (0) {
 #	    }
 #	}
 #	else {
-#	    print STDERR "big hapmap error at SNP $cells[1], (maybe not a QC1B-Set?)\n";		
+#	    print STDERR "big hapmap error at SNP $cells[1], (maybe not a QC1B-Set?)\n";
 #	}
 #}
-		
-		
+
+
 		$frq_diff_ca= 0;
 		$frq_diff_co= 0;
 #	printf OUT "%s\t%.4f\t%.4f\t%.4f\t%s\t%s\n",$cells[1],$frq_diff_ca,$frq_diff_co,$faf_hm{$cells[1]},$chr,$pos;
 		printf OUT "%s\t%.4f\t%.4f\t%.4f\t%s\t%s\n",$cells[1],$frq_diff_ca,$frq_diff_co,0,$chr,$pos;
 	    }
-	    
+
 	}
 	close FILE;
 	close OUT;
-	
+
     }
 
 }
@@ -2408,12 +2398,12 @@ if ($calc) {
 	}
 
 	############# null mendel errors in family files
-	
+
 	unless (-e "$tdtprefix.mendel") {
 	    &mysystem ("$ploc/plink $allow --bfile $tdtprefix --out $tdtprefix.tmp2  --noweb --mendel ");
 	    &mysystem ("mv $tdtprefix.tmp2.mendel $tdtprefix.mendel");
 	}
-	
+
 	my %zero;
 	my %clst;
 	die $! unless open MEN , "< $tdtprefix.mendel";
@@ -2442,13 +2432,13 @@ if ($calc) {
 	    &mysystem ("mv $tdtnomeprefix.tmp.bim $tdtnomeprefix.bim");
 	    &mysystem ("mv $tdtnomeprefix.tmp.fam $tdtnomeprefix.fam");
 	}
-	
-	
+
+
 	copy( "$tdtnomeprefix.bim","../") or die "Copy failed: $!";
 	copy( "$tdtnomeprefix.fam","../") or die "Copy failed: $!";
 	copy( "$tdtnomeprefix.bed","../") or die "Copy failed: $!";
-	
-	
+
+
 	die $! unless open FAMI , "< $tdtnomeprefix.fam";
 	while (<FAMI>){
 	    chomp;
@@ -2577,9 +2567,9 @@ if ($combine_sm){
     else {
 	&add_info_bim("$fifiprefix.bim",1,0,3,4,3,3,5,2,2,2);
     }
-    
+
 ###################### STOP, look for SE!
-    
+
     &add_info("$fifiprefix.frq",1,4);
     &add_info("$pofiprefix.lmiss",1,4);
 
@@ -2706,7 +2696,7 @@ unless ($noassoc) {
     print  "-> make QQ-Plots (external script)\n";
 if ($qq_sm) {
 
-#                fifi_dummy_cd_wtc_eur-qq.pdf 
+#                fifi_dummy_cd_wtc_eur-qq.pdf
     my $outy = $pofiprefix;
 #    my $system = "qqplot_5 --ceiling 10 --out $outy --pcol 4 --lafa1000 $pofiprefix.fam combined_set_alt.txt";
     my $system = "qqplot_5 --maf 0.02 --ceiling 10 --out $outy --frcol 6 --pcol 8 --lafa1000 $pofiprefix.fam combined_set_alt.txt";
@@ -2837,7 +2827,7 @@ close INFO;
 #unless (-e "$preknoprefix.fam") {
 #    if (@snpex_prekno_arr > 0){
 #	print "$preknoprefix\n";
-	
+
 #	&mysystem ("$ploc/plink $allow --bfile $pofiprefix --out $preknoprefix.tmp --noweb --exclude $prekno_ex_file --make-bed");
 #	&mysystem ("mv $preknoprefix.tmp.bed $preknoprefix.bed");
 #	&mysystem ("mv $preknoprefix.tmp.bim $preknoprefix.bim");
@@ -2885,7 +2875,7 @@ if ($prop_ana){
 	chomp;
 	my @cells = @{&split_line_ref(\$_)};
 #	my @cells = &split_line($_);
-	
+
 	$cc_num_pofi {$cells[5]} ++;
 	$sex_num_pofi {$cells[4]} ++;
 	$nids_pofi ++;
@@ -3367,7 +3357,7 @@ abline (v=PREGENO, col="green")
 
 dev.off()
 ' ;
-  
+
     ## rework template
     my $R_hist_in = $R_hist_templ;
     my $pdf_name="$outprefix"."_lmiss_nofi.pdf";
@@ -3531,10 +3521,10 @@ if ($tdt){
 \subsection{Fhet - zoomed}
 \includegraphics[width=.9\textwidth]{IDFIPREFIX-idmendel-hisplot.pdf}
 ';
-    
-    
+
+
     $imend_hist_txt =~ s/IDFIPREFIX/$idfiprefix/g;
-    
+
 
 
 }
@@ -3588,8 +3578,8 @@ if ($top_plot){
 PARCOL
 for (x in c(COLS2EXCL)) {
 ## this is only to bring the bars of the histpgramm in the middle
- if (min(top[,x]) <0 && max(top[,x]) >0) {  
-    if (abs(min(top[,x])) < abs(max(top[,x]))) y = ((-10:11)*2-1)/(2*10/(abs(max(top[,x])))) 
+ if (min(top[,x]) <0 && max(top[,x]) >0) {
+    if (abs(min(top[,x])) < abs(max(top[,x]))) y = ((-10:11)*2-1)/(2*10/(abs(max(top[,x]))))
     else  y = ((-10:11)*2-1)/(2*10/(abs(min(top[,x]))))
     if (abs(min(top[,x])) ==0 && abs(max(top[,x])) ==0) y=10;
  }
@@ -3649,7 +3639,7 @@ if (is.na(min(all[,x])) || is.na(max(all[,x]))) {
 
 plot (0,0,main = "plot values not valid")
 
-} else { 
+} else {
 
 
 #for (x in c(COLS2EXCL)) {
@@ -3657,8 +3647,8 @@ plot (0,0,main = "plot values not valid")
 
 top<-top100
 
- if (min(top[,x]) <0 && max(top[,x]) >0) {  
-    if (abs(min(top[,x])) < abs(max(top[,x]))) y = ((-10:11)*2-1)/(2*10/(abs(max(top[,x])))) 
+ if (min(top[,x]) <0 && max(top[,x]) >0) {
+    if (abs(min(top[,x])) < abs(max(top[,x]))) y = ((-10:11)*2-1)/(2*10/(abs(max(top[,x]))))
     else  y = ((-10:11)*2-1)/(2*10/(abs(min(top[,x]))))
     if (abs(min(top[,x])) ==0 && abs(max(top[,x])) ==0) y=10
 
@@ -3668,8 +3658,8 @@ r<-hist(top[,x], y, ylab ="counts", main=paste ("Histo of ", colnames(top)[x]," 
 
 top<-top1000
 
- if (min(top[,x]) <0 && max(top[,x]) >0) {  
-    if (abs(min(top[,x])) < abs(max(top[,x]))) y = ((-10:11)*2-1)/(2*10/(abs(max(top[,x])))) 
+ if (min(top[,x]) <0 && max(top[,x]) >0) {
+    if (abs(min(top[,x])) < abs(max(top[,x]))) y = ((-10:11)*2-1)/(2*10/(abs(max(top[,x]))))
     else  y = ((-10:11)*2-1)/(2*10/(abs(min(top[,x]))))
     if (abs(min(top[,x])) ==0 && abs(max(top[,x])) ==0) y=10
 
@@ -3690,10 +3680,10 @@ print (colnames(top))
 print (min(top[,x]))
 print (max(top[,x]))
 
-# is.na (min(top[,x]) <0 && max(top[,x]) >0) {  
+# is.na (min(top[,x]) <0 && max(top[,x]) >0) {
 
- if (min(top[,x]) <0 && max(top[,x]) >0) {  
-    if (abs(min(top[,x])) < abs(max(top[,x]))) y = ((-10:11)*2-1)/(2*10/(abs(max(top[,x])))) 
+ if (min(top[,x]) <0 && max(top[,x]) >0) {
+    if (abs(min(top[,x])) < abs(max(top[,x]))) y = ((-10:11)*2-1)/(2*10/(abs(max(top[,x]))))
     else  y = ((-10:11)*2-1)/(2*10/(abs(min(top[,x]))))
     if (abs(min(top[,x])) ==0 && abs(max(top[,x])) ==0) y=10
 }  else {y=20}
@@ -3751,7 +3741,7 @@ mtext(paste("p_ (Kol-Smi) to TOP1000 = ", ptou ," and to TOP100 = ", phu, sep=""
     my @hundr=();
     $hundr[0]=100;
     $hundr[1]=1000;
-   
+
 
     foreach my $t (0,1){
 	my $real = $hundr[$t];
@@ -3806,7 +3796,7 @@ mtext(paste("p_ (Kol-Smi) to TOP1000 = ", ptou ," and to TOP100 = ", phu, sep=""
 ## sumgroup-table
 ##################################################
 
-#cut -f1 -d* SCZ6.fam  | cut -f2,4,6 -d "_" | sed 's/_/\t/' > test_file 
+#cut -f1 -d* SCZ6.fam  | cut -f2,4,6 -d "_" | sed 's/_/\t/' > test_file
 #R: read.delim("test_file", header=F)->test
 #R: barplot(table (test),beside =T, legend=T)
 
@@ -3855,9 +3845,9 @@ if ($tex_sum){
 
     ## For a detailed description of the whole pipeline of this Mega-analysis see the wikipage: https://sites.google.com/a/broadinstitute.org/ricopili/
 
-    
 
-    
+
+
     my $latex_templ='
 
 
@@ -3881,7 +3871,7 @@ if ($tex_sum){
 \begin{abstract}
 {\small This is an automatic output of the QC-Step of the ricopili-pipeline, created at MGH, April/Mai 2008. It is now in version VERSION.
  It is supposed to check and clean a GWAS dataset
- for technical problems and/or uncontrollable population stratification. 
+ for technical problems and/or uncontrollable population stratification.
 \\\\ This script is still
 under construction, so please be patient with formatting problems. If you have some ideas, questions, requests, feel free to write me. \\\\
 \\\\Stephan Ripke, MGH, Boston; sripke (at) broadinstitute org
@@ -3920,7 +3910,7 @@ GENERALINFO
 
 %\hline
 \end{tabular}
-%\footnote{ MR=minimal requirements} 
+%\footnote{ MR=minimal requirements}
 \end{center}
 
 
@@ -3928,7 +3918,7 @@ GENERALINFO
 
 \subsection{Exclusion overview}
 \begin{itemize}
-%\item Missing-Rate per ID \verb+>+ MIND 
+%\item Missing-Rate per ID \verb+>+ MIND
 %\item Missing-Rate per SNP \verb+>+ GENO
 \item would have excluded NHAFI individuals without pre-filter (SNP-Missing 0.05)
 \end{itemize}
@@ -3974,7 +3964,7 @@ MENDINFO
 
 
 %\newpage
-%\subsection{Size of Subgroups - 
+%\subsection{Size of Subgroups -
 %SUBGROUPHEADER
 
 %\includegraphics[width=1\textwidth]{OUTPREFIX_subgr.pdf}
@@ -4093,63 +4083,63 @@ NOASSOC\includegraphics[width=1\textwidth]{LA4OUTPREFIX_lama-page1.pdf}
 
 NOASSOC\section {Top-Plots for SNPs}
 NOASSOC\subsection {Minor Allele Frequency}
-NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page1.pdf} 
+NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page1.pdf}
 
 NOASSOC\newpage
 NOASSOC\subsection {Missing Rate}
-NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page2.pdf} 
+NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page2.pdf}
 
 NOASSOC\newpage
 NOASSOC\subsection {Missing - Difference (case-control)}
-NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page3.pdf} 
+NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page3.pdf}
 
 NOASSOC\newpage
 NOASSOC\subsection {Significance of Missing - Difference (case-control)}
-NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page4.pdf} 
+NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page4.pdf}
 
 NOASSOC\newpage
 NOASSOC\subsection {Missing Rate - affected}
-NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page5.pdf} 
+NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page5.pdf}
 
 NOASSOC\newpage
 NOASSOC\subsection {Missing Rate - unaffected}
-NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page6.pdf} 
+NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page6.pdf}
 
 NOASSOC\newpage
 NOASSOC\subsection {Hardy Weinberg Equilibrium - unaffected (exact test)}
-NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page7.pdf} 
+NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page7.pdf}
 
 NOASSOC\newpage
 NOASSOC\subsection {"Minor" Allele Frequency - affected}
-NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page8.pdf} 
+NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page8.pdf}
 
 NOASSOC\newpage
 NOASSOC\subsection {"Minor" Allele Frequency - unaffected}
-NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page9.pdf} 
+NOASSOC\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page9.pdf}
 
 %\newpage
 %\subsection {Frequency Difference to HapMap}
-%\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page10.pdf} 
+%\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page10.pdf}
 
 %\newpage
 %\subsection {Frequency Difference to HapMap - affected}
-%\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page11.pdf} 
+%\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page11.pdf}
 
 %\newpage
 %\subsection {Frequency Difference to HapMap - unaffected}
-%\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page12.pdf} 
+%\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page12.pdf}
 
 MENTOPTEXT
 
 
 %\subsection{Top100-MAF/HWE/CR}
-%\includegraphics[width=1\textwidth]{OUTPREFIX_top100_page1.pdf} 
+%\includegraphics[width=1\textwidth]{OUTPREFIX_top100_page1.pdf}
 %\newpage
-%\includegraphics[width=1\textwidth]{OUTPREFIX_top100_page2.pdf} 
+%\includegraphics[width=1\textwidth]{OUTPREFIX_top100_page2.pdf}
 %\newpage
-%\includegraphics[width=1\textwidth]{OUTPREFIX_top100_page3.pdf} 
+%\includegraphics[width=1\textwidth]{OUTPREFIX_top100_page3.pdf}
 %\newpage
-%\includegraphics[width=1\textwidth]{OUTPREFIX_top100_page4.pdf} 
+%\includegraphics[width=1\textwidth]{OUTPREFIX_top100_page4.pdf}
 
 %\subsection{Top1000-MAF/HWE/CR}
 %\includegraphics[width=1\textwidth]{OUTPREFIX_top1000_page1.pdf}
@@ -4185,7 +4175,7 @@ my $mentoptxt = "";
 #$mentoptxt = '
 #\newpage
 #\subsection {Frequency Difference to HapMap - unaffected}
-#\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page13.pdf} 
+#\includegraphics[width=.9\textwidth]{OUTPREFIX_top_page13.pdf}
 #';
 #}
 
@@ -4291,7 +4281,7 @@ if ($tdt) {
 
 &repwifile("FAMCOUNT",$prefix.".famcount",1) if ($tdt);
 #&repwifile("MEINSKUOSTR",$outprefix."_asso_info.txt",0);
-&repwifile("GENERALINFO",$outprefix."_nofi_info.txt",1); 
+&repwifile("GENERALINFO",$outprefix."_nofi_info.txt",1);
 &repwifile("FIFINFO",$outprefix."_fifi_info.txt",1);
 #&repwifile("SEFINFO",$outprefix."_sefi_info.txt",1);
 #&repwifile("CHINFO",$prefix.".bim.chinfo",2);
@@ -4302,7 +4292,7 @@ if ($sub_filter){
     $substr = '*** filtering on subgroups has been done ****}
 NSUBIDINCL IDs left (NSUBIDEXCL excluded) --- NSUBSNPINCL SNPs left (NSUBSNPEXCL excluded) \\
 '
-} 
+}
 else {
     $substr = '*** filtering on subgroups has \textcolor{red}{not} been done ****}'
 }
@@ -4421,7 +4411,7 @@ push @meta_str, "nsnpin_prekno\tnan\n";
 
 
 if (1) {
-    
+
     unless ($noassoc) {
 	die unless open LA , "< combined_set_alt.txt.qq.la";
 #die "$!: $pofiprefix".".qq.la" unless open LA , "< $pofiprefix".".qq.la";
@@ -4633,6 +4623,3 @@ close DXN;
 
 print "QC success\n";
 #close ;
-
-
-

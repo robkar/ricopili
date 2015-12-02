@@ -2,28 +2,17 @@
 use strict;
 my $out ="";
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 my $ploc = &trans("p2loc");
 my $eloc = &trans("eloc");
@@ -244,10 +233,10 @@ sub shorten_fam (){
     my ($bfile,$ref_sw) = @_;
 
     move ("$bfile.fam","$bfile.fam.long") or die $!;
-    
+
     my $refpre = "ref";
     $refpre = "dat" if ($ref_sw == 0);
-    
+
 ## shorten ID-names and remember their prefix
     print "processing ",$bfile,".fam.long\n";
 
@@ -272,7 +261,7 @@ sub shorten_fam (){
     close (SHORT);
 
 
-if (0){    
+if (0){
     open INFILE, "< $bfile.fam.long" or die $!;
     open SHORT, "> $bfile.fam" or die $!;
     my $lc = 0;
@@ -289,7 +278,7 @@ if (0){
 	    @cells2 = &split_line($cells[2]);
 	    $prefix = $cells[0]."*".$cells[1]."*";
 	}
-	
+
 	print SHORT "ref" if ($ref_sw == 1);
 	print SHORT "$cells2[0]\t";
 	print SHORT "$cells2[1]\t";
