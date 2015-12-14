@@ -48,7 +48,7 @@ version: $version
                           this is mandatory, phenotype needs to be in third column
 
  created by Jackie Goldstein 2014 at MGH, Boston, MA
-
+ 
 ";
 
 
@@ -137,7 +137,7 @@ sub cprint {
     print $text;
     open my $fh, ">>", "$file" or die "can't open file: $file\n";
     print $fh $text;
-    close $fh;
+    close $fh;    
 }
 
 #####################################
@@ -166,7 +166,7 @@ sub imiss_summary(){
             chomp($id);
             $id_info{$id} = ();
         }
-        close $fh;
+        close $fh;        
     }
 
     ### For each .imiss file, add missing rate value to the hash table if the sample was dropped by any algorithm
@@ -181,7 +181,7 @@ sub imiss_summary(){
                 push @{$id_info{$id}}, @values[5];
             }
         }
-        close $fh;
+        close $fh;                
     }
 
     #### Make separate arrays with the ids that failed either gencall, birdseed, or both
@@ -194,10 +194,10 @@ sub imiss_summary(){
             push @genfail, $_ . " " . join(' ',@x);
         }
         elsif ($x[0] < $mind & $x[1] > $mind) {
-            push @bsdfail, $_ . " " . join(' ',@x);
+            push @bsdfail, $_ . " " . join(' ',@x);            
         }
         elsif ($x[0] > $mind & $x[1] > $mind) {
-            push @bothfail, $_ . " " . join(' ',@x);
+            push @bothfail, $_ . " " . join(' ',@x);                        
         }
     }
 
@@ -210,10 +210,10 @@ sub imiss_summary(){
         $_ .= " gencall"
     }
     foreach (@bsdfail) {
-        $_ .= " birdseed"
+        $_ .= " birdseed"        
     }
     foreach (@bothfail) {
-        $_ .= " both"
+        $_ .= " both"        
     }
 
     ### Print the data from the array to the output file
@@ -224,36 +224,36 @@ sub imiss_summary(){
 
     ### Output the information of the samples that failed gencall to both stdout and the log file
     my $nfail_gencall = @genfail;
-    &cprint("-------------------------------\n",$log);
+    &cprint("-------------------------------\n",$log);    
     &cprint("Samples that failed GenCall missing rate, but not Birdseed missing rate (n=$nfail_gencall)\n",$log);
     unless ($nfail_gencall == 0) {
-        &cprint("-------------------------------\n",$log);
-        &cprint("FID IID GENCALL_MISS BSD_MISS\n",$log);
+        &cprint("-------------------------------\n",$log);    
+        &cprint("FID IID GENCALL_MISS BSD_MISS\n",$log);        
         &cprint(join("\n",@genfail) . "\n",$log);
-        &cprint("-------------------------------\n",$log);
+        &cprint("-------------------------------\n",$log);        
     }
 
-    ### Output the information of the samples that failed birdseed to both stdout and the log file
+    ### Output the information of the samples that failed birdseed to both stdout and the log file    
     my $nfail_bsdcall = @bsdfail;
-    &cprint("-------------------------------\n",$log);
+    &cprint("-------------------------------\n",$log);    
     &cprint("Samples that failed Birdseed missing rate, but not GenCall missing rate (n=$nfail_bsdcall)\n",$log);
     unless ($nfail_bsdcall == 0) {
-        &cprint("-------------------------------\n",$log);
-        &cprint("FID IID GENCALL_MISS BSD_MISS\n",$log);
+        &cprint("-------------------------------\n",$log);    
+        &cprint("FID IID GENCALL_MISS BSD_MISS\n",$log);    
         &cprint(join("\n",@bsdfail) . "\n",$log);
-        &cprint("-------------------------------\n",$log);
+        &cprint("-------------------------------\n",$log);        
     }
 
-    ### Output the information of the samples that failed both algorithms to both stdout and the log file
+    ### Output the information of the samples that failed both algorithms to both stdout and the log file    
     my $nfail_both = @bothfail;
-    &cprint("-------------------------------\n",$log);
+    &cprint("-------------------------------\n",$log);    
     &cprint("Samples that failed both GenCall and Birdseed missing rates (n=$nfail_both)\n",$log);
     unless ($nfail_both == 0) {
-        &cprint("-------------------------------\n",$log);
-        &cprint("FID IID GENCALL_MISS BSD_MISS\n",$log);
+        &cprint("-------------------------------\n",$log);    
+        &cprint("FID IID GENCALL_MISS BSD_MISS\n",$log);        
         &cprint(join("\n",@bothfail) . "\n",$log);
     }
-    &cprint("-------------------------------\n",$log);
+    &cprint("-------------------------------\n",$log);    
 }
 
 #####################################
@@ -287,7 +287,7 @@ sub lmiss_summary(){
             chomp($snp);
             $snp_info{$snp} = ();
         }
-        close $fh;
+        close $fh;        
     }
 
     #### Append missing rate information to snps that were removed
@@ -302,7 +302,7 @@ sub lmiss_summary(){
                 push @{$snp_info{$snp}}, @values[4];
             }
         }
-        close $fh;
+        close $fh;                
     }
 
     #### Append hwe information to snps that were removed
@@ -317,7 +317,7 @@ sub lmiss_summary(){
                 push @{$snp_info{$snp}}, @values[8];
             }
         }
-        close $fh;
+        close $fh;                
     }
 
     #### Append 4 numbers to call rate and HWE info for each failed snp corresponding to whether they failed thresholds in any algorithm for call rate and HWE
@@ -330,8 +330,8 @@ sub lmiss_summary(){
         if ($x[1] > $geno){push @x, "1"} else {push @x, "0"}
         if ($x[2] < $hwe){push @x, "1"} else {push @x, "0"}
         if ($x[3] < $hwe){push @x, "1"} else {push @x, "0"}
-
-        push @failinfo, $_ . " " . join(' ',@x);
+        
+        push @failinfo, $_ . " " . join(' ',@x);        
     }
 
     ### Create an output text file with why snps failed (snp.exclude.summary) and print the data to this file
@@ -355,7 +355,7 @@ my $message = "command:\t\"$command_line\"\tdir:\t$cd\tmerge_callers\t$now";
 
 #### Parse command line options
 use Getopt::Long;
-GetOptions(
+GetOptions( 
     "help"=> \my $help,
     "maf=f"=> \my $maf,
     "geno=f"=> \my $geno,
@@ -450,7 +450,7 @@ foreach my $fn (@ARGV) {
     unless ($fn =~ /.bed$/) {next;} ## s.ripke
 
     my $fn_prefix = $fn;
-    $fn_prefix =~ s/.bed$//; ## s.ripke
+    $fn_prefix =~ s/.bed$//; ## s.ripke   
 
     &cprint("Checking data of $fn_prefix\n",$log);
 
@@ -461,7 +461,7 @@ foreach my $fn (@ARGV) {
     }
     &cprint("- found $fn_prefix.bim\n",$log);
 
-    # Check if corresponding fam file exists
+    # Check if corresponding fam file exists    
     unless (-e "$indir/$fn_prefix.fam") {
         my $fn2_prefix = $fn_prefix;
         $fn2_prefix =~ s/.FHG19$//;
@@ -494,9 +494,9 @@ foreach my $fn (@ARGV) {
                 my $id = $values[0] . " " . $values[1];
                 if ($values[2]==1 || $values[2]==2 || $values[2]==-9 || $values[2]==0) {
                     $phenos{$id} = $values[2];
-                }
+                }		
             }
-            close $ph;
+            close $ph;    
         }
 
         my %id_names;
@@ -511,21 +511,21 @@ foreach my $fn (@ARGV) {
             my $p_orig = "NA";
             while (exists $id_names{$id}) {
                 if (exists $phenos{$id}) {
-                    $p_orig = $phenos{$id};
+                    $p_orig = $phenos{$id};                    
                 }
                 $values[1] .= "d";
                 $id = $values[0] . " " . $values[1];
                 if ($p_orig ne "NA") {
-                    $phenos{$id} = $p_orig;
+                    $phenos{$id} = $p_orig;                    
                 }
-
+                
                 unless (exists $id_names{$id}) {
                     &cprint("- renaming duplicate $id\n",$log);
                     $dup += 1;
                 }
             }
             $id_names{$id} = 1;
-
+            
             if (exists $phenos{$id}) {
                 $values[5] = $phenos{$id};
             }
@@ -547,7 +547,7 @@ foreach my $fn (@ARGV) {
                 push(@dropHM,"$values[0] $values[1]");
             }
         }
-
+        
         close FHO;
         close $fh;
 
@@ -562,7 +562,7 @@ foreach my $fn (@ARGV) {
         if ($numHM != 0) {
             &cprint("Dropping $numHM HapMap samples. See hapmap.drop for more info.\n",$log);
         }
-
+        
         unless ($dup == 0) {
             &cprint("Warning! Duplicates exist in .fam file. Renamed duplicates by appending 'd' to sample ID.\n",$log);
         }
@@ -576,7 +576,7 @@ foreach my $fn (@ARGV) {
         chomp $_;
         $_ =~ s/^\s+//;
         my @values = split(/\s+/,$_);
-        $n_pheno{$values[5]} += 1;
+        $n_pheno{$values[5]} += 1;        
     }
     &cprint("# of Cases: $n_pheno{'2'}\n",$log);
     &cprint("# of Controls: $n_pheno{'1'}\n",$log);
@@ -589,14 +589,14 @@ foreach my $fn (@ARGV) {
     elsif ( $fn_prefix =~ /bird/i || $fn_prefix =~ /BScall/i ) {$caller = "birdseed"}
     elsif ( $fn_prefix =~ /combo/i ) {next}
     else {$caller = "other"}
-
+    
     ### Add file name to hash listing calling algorithms
     $callers{$caller} = $indir . "/" . $fn_prefix;
     &cprint("\n",$log);
 
     ### Count number of samples
     my $total = $n_pheno{'2'} + $n_pheno{'1'} + $n_pheno{'-9'};
-
+    
     ## Add parameters to meta file
     push (@META,"${caller}_fn $fn_prefix");
     push (@META,"${caller}_dup $dup");
@@ -604,7 +604,7 @@ foreach my $fn (@ARGV) {
     push (@META, "${caller}_case $n_pheno{'2'}");
     push (@META, "${caller}_control $n_pheno{'1'}");
     push (@META, "${caller}_unkno $n_pheno{'-9'}");
-    push (@META, "${caller}_tot $total");
+    push (@META, "${caller}_tot $total");    
 }
 &cprint("\n",$log);
 
@@ -648,12 +648,12 @@ if ($callers{'birdseed'} ne '') {
 if ($callers{'gencall'} ne '') {
     &wc_l("GenCall:","$callers{'gencall'}.bim",$log);
     my $b_snp = &wc_l2("$callers{'gencall'}.bim");
-    push(@META,"gencall_snps_orig $b_snp");
+    push(@META,"gencall_snps_orig $b_snp");    
 }
 if ($callers{'zcall'} ne '') {
     &wc_l("zCall:","$callers{'zcall'}.bim",$log);
     my $b_snp = &wc_l2("$callers{'zcall'}.bim");
-    push(@META,"zcall_snps_orig $b_snp");
+    push(@META,"zcall_snps_orig $b_snp");        
 }
 if ($callers{'other'} ne '') {
     &wc_l("Other:","$callers{'other'}.bim",$log);
@@ -672,28 +672,28 @@ my $out = $out_prefix;
 if ($callers{'zcall'} eq '' && $callers{'gencall'} eq '' && $callers{'birdseed'} ne '') {
     if ($callers{'other'} ne '') { &cprint("Ignoring $callers{'other'}. If not the desired behavior, remove $callers{'birdseed'} from this directory.\n",$log);}
 
-    ### Copy birdseed file to $out.[bed,bim,fam]
-    &cprint("Using calls from $callers{'birdseed'} for all SNPs.\n",$log);
+    ### Copy birdseed file to $out.[bed,bim,fam]    
+    &cprint("Using calls from $callers{'birdseed'} for all SNPs.\n",$log);    
     &mysystem("cp $callers{'birdseed'}.bed $out.bed",$log2);
     &mysystem("cp $callers{'birdseed'}.bim $out.bim",$log2);
     &mysystem("cp $callers{'birdseed'}.fam $out.fam",$log2);
 
-    ### Touch file so script knows all steps completed successfully
-    &mysystem("touch $out.success",$log2);
+    ### Touch file so script knows all steps completed successfully    
+    &mysystem("touch $out.success",$log2);    
 }
 
 #2. Gencall [+ Other]
 elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdseed'} eq '') {
     if ($callers{'other'} ne '') { &cprint("Ignoring $callers{'other'}. If not the desired behavior, remove $callers{'gencall'} from this directory.\n",$log);}
 
-    ### Copy gencall file to $out.[bed,bim,fam]
-    &cprint("Using calls from $callers{'gencall'} for all SNPs.\n",$log);
+    ### Copy gencall file to $out.[bed,bim,fam]    
+    &cprint("Using calls from $callers{'gencall'} for all SNPs.\n",$log);    
     &mysystem("cp $callers{'gencall'}.bed $out.bed",$log2);
     &mysystem("cp $callers{'gencall'}.bim $out.bim",$log2);
     &mysystem("cp $callers{'gencall'}.fam $out.fam",$log2);
 
-    ### Touch file so script knows all steps completed successfully
-    &mysystem("touch $out.success",$log2);
+    ### Touch file so script knows all steps completed successfully    
+    &mysystem("touch $out.success",$log2);    
 }
 
 
@@ -712,9 +712,9 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} eq '' && $callers{'birdsee
     &mysystem("cp $callers{'other'}.bed $out.bed",$log2);
     &mysystem("cp $callers{'other'}.bim $out.bim",$log2);
     &mysystem("cp $callers{'other'}.fam $out.fam",$log2);
-
-    ### Touch file so script knows all steps completed successfully
-    &mysystem("touch $out.success",$log2);
+    
+    ### Touch file so script knows all steps completed successfully    
+    &mysystem("touch $out.success",$log2);    
 }
 
 
@@ -728,8 +728,8 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
     #################################
     &cprint( "###########################\n",$log);
     &cprint( "## Sample Intersection\n",$log);
-    &cprint( "###########################\n",$log);
-
+    &cprint( "###########################\n",$log);        
+    
     my @fam = ("$callers{'gencall'}.fam","$callers{'birdseed'}.fam");
     my %ids = ();
     foreach (@fam) {
@@ -754,46 +754,46 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &wc_l("# of individuals in intersection of Birdseed & GenCall:","id.intersection.txt",$log);
     &wc_l("# of individuals removed because not in both Birdseed & GenCall:","id.notinallfiles.txt",$log);
     &cprint( "\n",$log);
-
+    
     #################################
-    ### Remove samples that aren't in both algorithms
+    ### Remove samples that aren't in both algorithms 
     ### s.ripke added the removal of samples without phenotypes (also removing dubplicates) --prune
-    #################################
+    #################################    
     &mysystem("${p2loc}plink --remove hapmap.drop --bfile $callers{'gencall'} --keep id.intersection.txt --make-bed --out gencall.intersect --noweb --allow-no-sex --silent ",$log2);
     &mysystem("${p2loc}plink --remove hapmap.drop --bfile $callers{'birdseed'} --keep id.intersection.txt --make-bed --out birdseed.intersect --noweb --allow-no-sex --silent ",$log2);
-
+    
     if (&wc_l2("birdseed.intersect.fam") != &wc_l2("gencall.intersect.fam")) {&cprint("Problem!! Number of samples between birdseed and autocall does not match",$log);exit;}
 
-
+    
     #################################
     ### Determine failing samples in each algorithm
     #################################
     &cprint( "###########################\n",$log);
     &cprint( "## Sample QC\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);        
 
     # Find snps with missing rate greater than 20%
     &mysystem("${p2loc}plink --bfile gencall.intersect --geno 0.1 --noweb --allow-no-sex --make-bed --out gencall.geno10 --silent",$log2);
     &mysystem("${p2loc}plink --bfile birdseed.intersect --geno 0.1 --noweb --allow-no-sex --make-bed --out birdseed.geno10 --silent",$log2);
 
-
+    
     ### Calculate sample missing rate
     &mysystem("${p2loc}plink --bfile gencall.geno10 --missing --noweb --allow-no-sex --out gencall.geno10.miss --silent",$log2);
     &mysystem("${p2loc}plink --bfile birdseed.geno10 --missing --noweb --allow-no-sex --out birdseed.geno10.miss --silent",$log2);
 
-    #### Determine which samples failed missing rate threshold of $mind
+    #### Determine which samples failed missing rate threshold of $mind    
     &mysystem("awk '{ if ( NR != 1 && \$6 > $mind ) print \$1,\$2 }' gencall.geno10.miss.imiss > gencall.remove.mind_$mind.txt",$log2);
     &wc_l("# of individuals failed missing rate of $mind in GenCall:","gencall.remove.mind_$mind.txt",$log);
 
     &mysystem("awk '{ if ( NR != 1 && \$6 > $mind ) print \$1,\$2 }' birdseed.geno10.miss.imiss > birdseed.remove.mind_$mind.txt",$log2);
     &wc_l("# of individuals failed missing rate of $mind in Birdseed:","birdseed.remove.mind_$mind.txt",$log);
-
+    
 
     ############################################################
     #### Compare the samples dropped between birdseed and gencall
     ############################################################
     my @drop_ids = ("gencall.remove.mind_$mind.txt","birdseed.remove.mind_$mind.txt");
-    my @missing = ("gencall.geno10.miss.imiss","birdseed.geno10.miss.imiss");
+    my @missing = ("gencall.geno10.miss.imiss","birdseed.geno10.miss.imiss");    
     &imiss_summary(@drop_ids,@missing,$log,$mind); ### Function that compares the samples that got removed by any algorithm. Output is in file .....
     &mysystem("cat gencall.remove.mind_$mind.txt birdseed.remove.mind_$mind.txt | sort | uniq -c | awk '{print \$2,\$3}' > samples.drop.failbsdgen.txt",$log2);
     &wc_l("Total # of Samples removed:","samples.drop.failbsdgen.txt",$log);
@@ -810,7 +810,7 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &mysystem("${p2loc}plink --bfile gencall.intersect --remove samples.drop.failbsdgen.txt --make-bed --out gencall.mind_$mind --noweb --allow-no-sex --silent",$log2);
 
     ### Count number of samples in the new PLINK file
-    &wc_l("# of individuals remaining after filtering out for missing rate > $mind in both gencall and birdseed:","gencall.mind_$mind.fam",$log);
+    &wc_l("# of individuals remaining after filtering out for missing rate > $mind in both gencall and birdseed:","gencall.mind_$mind.fam",$log);        
     &cprint( "-----------------------------\n",$log);
 
     ### Calculate HWE from new PLINK file
@@ -818,17 +818,17 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &mysystem("${p2loc}plink --bfile gencall.mind_$mind --hardy --extract autosomal_snplist --filter-founders --noweb --allow-no-sex --out gencall.mind_$mind.hwe.auto --silent",$log2);
     &mysystem("${p2loc}plink --bfile gencall.mind_$mind --hardy --chr 23 --filter-females --filter-founders --noweb --allow-no-sex --out gencall.mind_$mind.hwe.x --silent",$log2);
     exit;
-
+    
     ### Calculate and print the number of SNPs that failed HWE
     &mysystem("awk '{ if ( NR != 1 && match(\$3,\"ALL\") && \$9 < $hwe ) print \$2 }' gencall.mind_$mind.hwe.hwe > gencall.exclude.mind_$mind.hwe_$hwe.txt",$log2);
-    &wc_l("# of SNPs removed for HWE p-value < $hwe:","gencall.exclude.mind_$mind.hwe_$hwe.txt",$log);
+    &wc_l("# of SNPs removed for HWE p-value < $hwe:","gencall.exclude.mind_$mind.hwe_$hwe.txt",$log);                
 
-    ### Calculate Call rate per snp from new PLINK file
+    ### Calculate Call rate per snp from new PLINK file    
     &mysystem("${p2loc}plink --bfile gencall.mind_$mind --missing --noweb --allow-no-sex --out gencall.mind_$mind.missing --silent",$log2);
 
     ### Calculate and print the number of SNPs that failed call rate
     &mysystem("awk '{ if ( NR != 1 && \$5 > $geno ) print \$2 }' gencall.mind_$mind.missing.lmiss > gencall.exclude.mind_$mind.geno_$geno.txt",$log2);
-    &wc_l("# of SNPs removed for missing rate > $geno:","gencall.exclude.mind_$mind.geno_$geno.txt",$log);
+    &wc_l("# of SNPs removed for missing rate > $geno:","gencall.exclude.mind_$mind.geno_$geno.txt",$log);            
 
     ### Determine the total number of SNPs that failed
     &mysystem("cat gencall.exclude.mind_$mind.geno_$geno.txt gencall.exclude.mind_$mind.hwe_$hwe.txt | sort -gk 1 | uniq -c | awk '{ print \$2 }' > gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt",$log2);
@@ -843,30 +843,30 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
 
     #######################
     ##### QC birdseed data
-    ######################
+    ######################    
     &cprint( "\n",$log);
     &cprint( "###########################\n",$log);
     &cprint( "## QC of Birdseed data\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);    
 
     #### Create new plink file with failed samples removed
     &mysystem("${p2loc}plink --bfile birdseed.intersect --remove samples.drop.failbsdgen.txt --make-bed --out birdseed.mind_$mind --noweb --allow-no-sex --silent",$log2);
     &wc_l("# of individuals remaining after filtering out for missing rate > $mind:","birdseed.mind_$mind.fam",$log);
     &cprint( "-----------------------------\n",$log);
 
-    #### Calculate HWE
+    #### Calculate HWE 
     &mysystem("${p2loc}plink --bfile birdseed.mind_$mind --filter-founders  --hardy --noweb --allow-no-sex --out birdseed.mind_$mind.hwe --silent",$log2);
 
     ### Determine which snps failed HWE
     &mysystem("awk '{ if ( NR != 1 && match(\$3,\"ALL\") && \$9 < $hwe ) print \$2 }' birdseed.mind_$mind.hwe.hwe > birdseed.exclude.mind_$mind.hwe_$hwe.txt",$log2);
-    &wc_l("# of SNPs removed for HWE p-value < $hwe:","birdseed.exclude.mind_$mind.hwe_$hwe.txt",$log);
+    &wc_l("# of SNPs removed for HWE p-value < $hwe:","birdseed.exclude.mind_$mind.hwe_$hwe.txt",$log);                
 
     ### Calculate SNP call rate
     &mysystem("${p2loc}plink --bfile birdseed.mind_$mind --missing --noweb --allow-no-sex --out birdseed.mind_$mind.missing --silent",$log2);
 
     ### Determine which snps failed missing rate threshold ($geno)
     &mysystem("awk '{ if ( NR != 1 && \$5 > $geno ) print \$2 }' birdseed.mind_$mind.missing.lmiss > birdseed.exclude.mind_$mind.geno_$geno.txt",$log2);
-    &wc_l("# of SNPs removed for missing rate > $geno:","birdseed.exclude.mind_$mind.geno_$geno.txt",$log);
+    &wc_l("# of SNPs removed for missing rate > $geno:","birdseed.exclude.mind_$mind.geno_$geno.txt",$log);            
 
     ### Calculate the total number of snps that failed
     &mysystem("cat birdseed.exclude.mind_$mind.geno_$geno.txt birdseed.exclude.mind_$mind.hwe_$hwe.txt | sort -gk 1 | uniq -c | awk '{ print \$2 }' > birdseed.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt",$log2);
@@ -878,13 +878,13 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &wc_l("# of individuals after QC in Birdseed:","birdseed.qc.fam",$log);
     &wc_l("# of SNPs after QC in Birdseed:","birdseed.qc.bim",$log);
     &cprint( "\n",$log);
-
+    
     ############################################################
     #### Compare the snps dropped between birdseed and gencall
-    ############################################################
+    ############################################################    
     &cprint( "\n###########################\n",$log);
     &cprint( "## SNP Summary\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);            
     my @drop_snps = ("gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt","birdseed.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt");
     my @missing = ("gencall.mind_$mind.missing.lmiss","birdseed.mind_$mind.missing.lmiss");
     my @hardy = ("gencall.mind_$mind.hwe.hwe","birdseed.mind_$mind.hwe.hwe");
@@ -892,30 +892,30 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
 
     ### Count number of snps that failed each combination of gencall call rate, birdseed call rate, gencall hwe, birdseed hwe
     &mysystem("awk '{ if (NF == 9) print \$6,\$7,\$8,\$9 }' snp.exclude.summary | sort -gk 1 | uniq -c | sort -nk 1 >> $log",$log2);
-    &mysystem("awk '{ if (NF == 9) print \$6,\$7,\$8,\$9 }' snp.exclude.summary | sort -gk 1 | uniq -c | sort -nk 1",$log2);
+    &mysystem("awk '{ if (NF == 9) print \$6,\$7,\$8,\$9 }' snp.exclude.summary | sort -gk 1 | uniq -c | sort -nk 1",$log2);    
 
-    ### Count number of SNPs birdseed recovers
-    &mysystem("awk '{if (NF == 9 && (\$6 == 1 || \$8 == 1) && \$7 == 0 && \$9 == 0) print \$0 }' snp.exclude.summary > birdseed.recover",$log2);
+    ### Count number of SNPs birdseed recovers    
+    &mysystem("awk '{if (NF == 9 && (\$6 == 1 || \$8 == 1) && \$7 == 0 && \$9 == 0) print \$0 }' snp.exclude.summary > birdseed.recover",$log2); 
     &mysystem("head -n 100 birdseed.recover | awk '{ print \$1}' > birdseed.recover.snps",$log2); ### for plotting
 
     ### Count number of SNPs autocall recovers
-    &mysystem("awk '{if (NF == 9 && (\$7 == 1 || \$9 == 1) && \$6 == 0 && \$8 == 0) print \$0 }' snp.exclude.summary > autocall.recover",$log2);
+    &mysystem("awk '{if (NF == 9 && (\$7 == 1 || \$9 == 1) && \$6 == 0 && \$8 == 0) print \$0 }' snp.exclude.summary > autocall.recover",$log2);    
     &mysystem("head -n 100 autocall.recover | awk '{ print \$1}' > autocall.recover.snps",$log2); ### for plotting
 
     ### Count number of SNPs not recovered
-    &mysystem("awk '{if (NF == 9 && (\$7 == 1 || \$9 == 1) && (\$6 == 1 || \$8 == 1)) print \$0 }' snp.exclude.summary > notrecovered",$log2);
+    &mysystem("awk '{if (NF == 9 && (\$7 == 1 || \$9 == 1) && (\$6 == 1 || \$8 == 1)) print \$0 }' snp.exclude.summary > notrecovered",$log2);    
     &mysystem("head -n 100 notrecovered | awk '{ print \$1}' > notrecovered.snps",$log2); ### for plotting
 
     ### Print summary to log file
-    &cprint( "-----------------------------\n",$log);
+    &cprint( "-----------------------------\n",$log);        
     &wc_l("# of SNPs recovered by Birdseed","birdseed.recover",$log);
     &wc_l("# of SNPs recovered by AutoCall","autocall.recover",$log);
-    &wc_l("# of SNPs not passing in either algorithm","notrecovered",$log);
-    &cprint( "-----------------------------\n\n",$log);
+    &wc_l("# of SNPs not passing in either algorithm","notrecovered",$log);    
+    &cprint( "-----------------------------\n\n",$log);    
 
     #################################################################################
     #### Compare the number of discordant genotype calls between birdseed and gencall
-    #################################################################################
+    #################################################################################    
     &cprint( "###########################\n",$log);
     &cprint( "## Genotype Comparison Between Calling Algorithms\n",$log);
     &cprint( "###########################\n",$log);
@@ -925,7 +925,7 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
 
     ### Remove discordances caused by No Calls
     &mysystem("grep -v \"0/0\" bsd_gen_merge_diff.diff > bsd_gen_merge_diff.gt.diff",$log2);
-
+    
     ### Keep only discordances caused by No Calls
     &mysystem("grep \"0/0\" bsd_gen_merge_diff.diff > bsd_gen_merge_diff.nocall.diff",$log2);
 
@@ -936,7 +936,7 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &wc_l("# of SNPs with at least 1 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff",$log);
     &cprint( "-------------------------------------------\n",$log);
     &mysystem("awk '{if (\$1 == 1) print \$0 }' bsd_gen_merge_diff.gt.ldiff > bsd_gen_merge_diff.gt.ldiff.1",$log2);
-    &wc_l("# of SNPs with 1 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff.1",$log);
+    &wc_l("# of SNPs with 1 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff.1",$log);    
     &mysystem("awk '{if (\$1 == 2) print \$0 }' bsd_gen_merge_diff.gt.ldiff > bsd_gen_merge_diff.gt.ldiff.2",$log2);
     &wc_l("# of SNPs with 2 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff.2",$log);
     &mysystem("awk '{if (\$1 > 2 && \$1 <= 5) print \$0 }' bsd_gen_merge_diff.gt.ldiff > bsd_gen_merge_diff.gt.ldiff.3_5",$log2);
@@ -948,29 +948,29 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &cprint( "-------------------------------------------\n",$log);
 
     ### count # of discordant calls per sample
-    &mysystem("awk '{if (NR != 1) print \$3 }' bsd_gen_merge_diff.gt.diff | sort -gk 1 | uniq -c | sort -gk 1 > bsd_gen_merge_diff.gt.idiff",$log2);
+    &mysystem("awk '{if (NR != 1) print \$3 }' bsd_gen_merge_diff.gt.diff | sort -gk 1 | uniq -c | sort -gk 1 > bsd_gen_merge_diff.gt.idiff",$log2);    
     &mysystem("awk '{if (NR != 1) print \$3 }' bsd_gen_merge_diff.nocall.diff | sort -gk 1 | uniq -c | sort -gk 1 > bsd_gen_merge_diff.nocall.idiff",$log2);
-
+    
     ## Plot of # different calls per sample ### NEED TO CREATE THIS
-    ## Plot of # discordant calls per sample ### NEED TO CREATE THIS
+    ## Plot of # discordant calls per sample ### NEED TO CREATE THIS        
     ## Plot of # discordant calls per SNP ### NEED TO CREATE THIS
-
+     
     #######################################
     ### QC of merged files
     #######################################
     &cprint( "\n###########################\n",$log);
     &cprint( "## Merge Calling Algorithms\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);            
 
     ######### MERGE birdseed and gencall using merge-mode 1
     &mysystem("${p2loc}plink --bfile birdseed.qc --bmerge gencall.qc.bed gencall.qc.bim gencall.qc.fam --make-bed --merge-mode 1 --out bsd_gen_merge.plink2 --noweb --allow-no-sex --silent",$log2);
-
+    
     ### Calculate HWE in new plink file
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.plink2 --filter-founders --hardy --noweb --allow-no-sex --out bsd_gen_merge.hwe --silent",$log2);
 
     ### Determine which snps failed HWE
     &mysystem("awk '{ if ( NR != 1 && match(\$3,\"ALL\") && \$9 < $hwe ) print \$2 }' bsd_gen_merge.hwe.hwe > bsd_gen_merge.exclude.hwe_$hwe.txt",$log2);
-    &wc_l("# of SNPs removed for HWE p-value < $hwe:","bsd_gen_merge.exclude.hwe_$hwe.txt",$log);
+    &wc_l("# of SNPs removed for HWE p-value < $hwe:","bsd_gen_merge.exclude.hwe_$hwe.txt",$log);                
 
     ### Calculate SNP call rate in new plink file
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.plink2 --missing --noweb --allow-no-sex --out bsd_gen_merge.missing --silent",$log2);
@@ -987,7 +987,7 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
 
     ### Create qc'd plink file removing bad snps after merge
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.plink2 --exclude bsd_gen_merge.exclude.geno_$geno.hwe_$hwe.txt --noweb --allow-no-sex --out bsd_gen_merge.geno_$geno.hwe_$hwe --silent --make-bed",$log2);
-
+    
     ##### Calculate sample call rate
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.geno_$geno.hwe_$hwe --missing --out bsd_gen_merge.geno_$geno.hwe_$hwe.missing --noweb --allow-no-sex --silent",$log2);
 
@@ -999,7 +999,7 @@ elsif ($callers{'zcall'} eq '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.geno_$geno.hwe_$hwe --remove bsd_gen_merge.remove.mind_$mind.txt --make-bed --out $out --noweb --allow-no-sex --silent",$log2);
     &wc_l("# of individuals remaining after filtering out for missing rate > $mind:","$out.fam",$log);
     &cprint( "-----------------------------\n",$log);
-
+    
     &wc_l("# of individuals after QC of merge:","$out.fam",$log);
     &wc_l("# of SNPs after QC of merge:","$out.bim",$log);
     &cprint("\n",$log);
@@ -1013,14 +1013,14 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} eq '' && $callers{'birdsee
 
     if ($callers{'other'} ne '') { &cprint("Ignoring $callers{'other'}. If not the desired behavior, remove $callers{'birdseed'} from this directory.\n",$log);}
 
-    ### Copy birdseed file to $out.[bed,bim,fam]
-    &cprint( "Using $callers{'birdseed'} for all SNPs.\nzCalls will not be used unless a GenCall or AutoCall file is present.\n");
+    ### Copy birdseed file to $out.[bed,bim,fam]        
+    &cprint( "Using $callers{'birdseed'} for all SNPs.\nzCalls will not be used unless a GenCall or AutoCall file is present.\n");    
     &mysystem("cp $callers{'birdseed'}.bed $out.bed",$log2);
     &mysystem("cp $callers{'birdseed'}.bim $out.bim",$log2);
     &mysystem("cp $callers{'birdseed'}.fam $out.fam",$log2);
 
-    ### Touch file so script knows all steps completed successfully
-    &mysystem("touch $out.success",$log2);
+    ### Touch file so script knows all steps completed successfully        
+    &mysystem("touch $out.success",$log2);    
 }
 
 
@@ -1040,8 +1040,8 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     #################################
     &cprint( "###########################\n",$log);
     &cprint( "## Sample Intersection\n",$log);
-    &cprint( "###########################\n",$log);
-
+    &cprint( "###########################\n",$log);        
+    
     my @fam = ("$callers{'gencall'}.fam","$callers{'birdseed'}.fam","$callers{'zcall'}.fam");
     my %ids = ();
     foreach (@fam) {
@@ -1064,53 +1064,53 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &a2filenew("id.intersection.txt",@keepIDs);
     &a2filenew("id.notinallfiles.txt",@dropIDs);
     &wc_l("# of individuals in intersection of Birdseed, GenCall & zCall:","id.intersection.txt",$log);
-    push(@META,"id_intersect " . &wc_l2("id.intersection.txt"));
+    push(@META,"id_intersect " . &wc_l2("id.intersection.txt"));    
     &wc_l("# of individuals removed because not in all of Birdseed, GenCall & zCall:","id.notinallfiles.txt",$log);
     my $iddrop = &wc_l2("id.notinallfiles.txt");
     push(@META,"id_notintersect $iddrop");
     &cprint( "\n",$log);
-
+    
     #################################
     ### Remove samples that aren't in both algorithms or are hapmap samples
     #################################
     &mysystem("${p2loc}plink --remove hapmap.drop --bfile $callers{'gencall'} --keep id.intersection.txt --make-bed --out gencall.intersect --noweb --allow-no-sex --silent ",$log2);
     &mysystem("${p2loc}plink --remove hapmap.drop --bfile $callers{'birdseed'} --keep id.intersection.txt --make-bed --out birdseed.intersect --noweb --allow-no-sex --silent ",$log2);
     &mysystem("${p2loc}plink --remove hapmap.drop --bfile $callers{'zcall'} --keep id.intersection.txt --make-bed --out zcall.intersect --noweb --allow-no-sex --silent ",$log2);
-
+    
     if (&wc_l2("birdseed.intersect.fam") != &wc_l2("gencall.intersect.fam")) {&cprint("Problem!! Number of samples between birdseed and autocall does not match",$log);exit;}
     if (&wc_l2("birdseed.intersect.fam") != &wc_l2("zcall.intersect.fam")) {&cprint("Problem!! Number of samples between birdseed and zcall does not match",$log);exit;}
     if (&wc_l2("zcall.intersect.fam") != &wc_l2("gencall.intersect.fam")) {&cprint("Problem!! Number of samples between zcall and autocall does not match",$log);exit;}
 
-
+    
     #################################
     ### Determine failing samples in each algorithm
     #################################
     &cprint( "###########################\n",$log);
     &cprint( "## Sample QC\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);        
 
     # Find snps with missing rate greater than 10%
     &mysystem("${p2loc}plink --bfile gencall.intersect --geno 0.1 --noweb --allow-no-sex --make-bed --out gencall.geno10 --silent",$log2);
     &mysystem("${p2loc}plink --bfile birdseed.intersect --geno 0.1 --noweb --allow-no-sex --make-bed --out birdseed.geno10 --silent",$log2);
 
-
+    
     ### Calculate sample missing rate
     &mysystem("${p2loc}plink --bfile gencall.geno10 --missing --noweb --allow-no-sex --out gencall.geno10.miss --silent",$log2);
     &mysystem("${p2loc}plink --bfile birdseed.geno10 --missing --noweb --allow-no-sex --out birdseed.geno10.miss --silent",$log2);
 
-    #### Determine which samples failed missing rate threshold of $mind
+    #### Determine which samples failed missing rate threshold of $mind    
     &mysystem("awk '{ if ( NR != 1 && \$6 > $mind ) print \$1,\$2 }' gencall.geno10.miss.imiss > gencall.remove.mind_$mind.txt",$log2);
     &wc_l("# of individuals failed missing rate of $mind in GenCall:","gencall.remove.mind_$mind.txt",$log);
-
+    
     &mysystem("awk '{ if ( NR != 1 && \$6 > $mind ) print \$1,\$2 }' birdseed.geno10.miss.imiss > birdseed.remove.mind_$mind.txt",$log2);
     &wc_l("# of individuals failed missing rate of $mind in Birdseed:","birdseed.remove.mind_$mind.txt",$log);
-
+    
 
     ############################################################
     #### Compare the samples dropped between birdseed and gencall
     ############################################################
     my @drop_ids = ("gencall.remove.mind_$mind.txt","birdseed.remove.mind_$mind.txt");
-    my @missing = ("gencall.geno10.miss.imiss","birdseed.geno10.miss.imiss");
+    my @missing = ("gencall.geno10.miss.imiss","birdseed.geno10.miss.imiss");    
     &imiss_summary(@drop_ids,@missing,$log,$mind); ### Function that compares the samples that got removed by any algorithm. Output is in file imiss_remove.$mind.summary
 
     my @both_drop = ();
@@ -1127,19 +1127,19 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
         if ($values[4] eq "both") {push(@both_drop,$values[0])}
     }
     close $fh;
-
+    
     my $n_gen_drop = @gencall_drop;
     my $n_bird_drop = @birdseed_drop;
     my $n_both_drop = @both_drop;
-
+    
     push(@META,"id_mind_gencall $n_gen_drop");
     push(@META,"id_mind_birdseed $n_bird_drop");
     push(@META,"id_mind_both $n_both_drop");
-
+    
     &mysystem("cat gencall.remove.mind_$mind.txt birdseed.remove.mind_$mind.txt | sort | uniq -c | awk '{print \$2,\$3}' > samples.drop.failbsdgen.txt",$log2);
     &wc_l("Total # of Samples removed:","samples.drop.failbsdgen.txt",$log);
     push(@META,"id_mind_total ". &wc_l2("samples.drop.failbsdgen.txt"));
-
+    
     #################################
     ### QC of Gencall/Autocall data
     #################################
@@ -1159,7 +1159,7 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
 #    &mysystem("${p2loc}plink --bfile gencall.mind_$mind --hardy --extract autosomal_snplist --filter-founders --noweb --allow-no-sex --out gencall.mind_$mind.hwe.auto --silent",$log2);
 #    &mysystem("${p2loc}plink --bfile gencall.mind_$mind --hardy --chr 23 --filter-females --filter-founders --noweb --allow-no-sex --out gencall.mind_$mind.hwe.x --silent",$log2);
 #    exit;
-
+    
     ### Calculate HWE from new PLINK file
     &mysystem("${p2loc}plink --bfile gencall.mind_$mind --hardy --filter-founders --noweb --allow-no-sex --out gencall.mind_$mind.hwe --silent",$log2);
 
@@ -1168,7 +1168,7 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &wc_l("# of SNPs removed for HWE p-value < $hwe:","gencall.exclude.mind_$mind.hwe_$hwe.txt",$log);
     push(@META,"snp_hwe_gencall ". &wc_l2("gencall.exclude.mind_$mind.hwe_$hwe.txt"));
 
-    ### Calculate Call rate per snp from new PLINK file
+    ### Calculate Call rate per snp from new PLINK file    
     &mysystem("${p2loc}plink --bfile gencall.mind_$mind --missing --noweb --allow-no-sex --out gencall.mind_$mind.missing --silent",$log2);
 
     ### Calculate and print the number of SNPs that failed call rate
@@ -1179,67 +1179,67 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     ### Determine the total number of SNPs that failed
     &mysystem("cat gencall.exclude.mind_$mind.geno_$geno.txt gencall.exclude.mind_$mind.hwe_$hwe.txt | sort -gk 1 | uniq -c | awk '{ print \$2 }' > gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt",$log2);
     &wc_l("Total number of SNPs removed:","gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt",$log);
-    push(@META,"snp_drop_gencall ". &wc_l2("gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt"));
+    push(@META,"snp_drop_gencall ". &wc_l2("gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt"));    
     &cprint( "-----------------------------\n",$log);
 
     ### Remove bad snps from the new plink file to create qc'd gencall dataset at gencall.qc
     &mysystem("${p2loc}plink --bfile gencall.mind_$mind --exclude gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt --noweb --allow-no-sex --out gencall.qc --silent --make-bed",$log2);
     &wc_l("# of individuals after QC in GenCall:","gencall.qc.fam",$log);
     &wc_l("# of SNPs after QC in GenCall:","gencall.qc.bim",$log);
-    push(@META,"snp_qc_gencall ". &wc_l2("gencall.qc.bim"));
+    push(@META,"snp_qc_gencall ". &wc_l2("gencall.qc.bim"));    
     push(@META,"id_qc_gencall ". &wc_l2("gencall.qc.fam"));
 
 
     #######################
     ##### QC birdseed data
-    ######################
+    ######################    
     &cprint( "\n",$log);
     &cprint( "###########################\n",$log);
     &cprint( "## QC of Birdseed data\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);    
 
     #### Create new plink file with failed samples removed
     &mysystem("${p2loc}plink --bfile birdseed.intersect --remove samples.drop.failbsdgen.txt --make-bed --out birdseed.mind_$mind --noweb --allow-no-sex --silent",$log2);
     &wc_l("# of individuals remaining after filtering out for missing rate > $mind:","birdseed.mind_$mind.fam",$log);
     &cprint( "-----------------------------\n",$log);
 
-    #### Calculate HWE
+    #### Calculate HWE 
     &mysystem("${p2loc}plink --bfile birdseed.mind_$mind --filter-founders  --hardy --noweb --allow-no-sex --out birdseed.mind_$mind.hwe --silent",$log2);
 
     ### Determine which snps failed HWE
     &mysystem("awk '{ if ( NR != 1 && match(\$3,\"ALL\") && \$9 < $hwe ) print \$2 }' birdseed.mind_$mind.hwe.hwe > birdseed.exclude.mind_$mind.hwe_$hwe.txt",$log2);
-    &wc_l("# of SNPs removed for HWE p-value < $hwe:","birdseed.exclude.mind_$mind.hwe_$hwe.txt",$log);
+    &wc_l("# of SNPs removed for HWE p-value < $hwe:","birdseed.exclude.mind_$mind.hwe_$hwe.txt",$log);                
     push(@META,"snp_hwe_birdseed ". &wc_l2("birdseed.exclude.mind_$mind.hwe_$hwe.txt"));
-
+    
     ### Calculate SNP call rate
     &mysystem("${p2loc}plink --bfile birdseed.mind_$mind --missing --noweb --allow-no-sex --out birdseed.mind_$mind.missing --silent",$log2);
 
     ### Determine which snps failed missing rate threshold ($geno)
     &mysystem("awk '{ if ( NR != 1 && \$5 > $geno ) print \$2 }' birdseed.mind_$mind.missing.lmiss > birdseed.exclude.mind_$mind.geno_$geno.txt",$log2);
-    &wc_l("# of SNPs removed for missing rate > $geno:","birdseed.exclude.mind_$mind.geno_$geno.txt",$log);
+    &wc_l("# of SNPs removed for missing rate > $geno:","birdseed.exclude.mind_$mind.geno_$geno.txt",$log);            
     push(@META,"snp_geno_birdseed ". &wc_l2("birdseed.exclude.mind_$mind.geno_$geno.txt"));
-
+    
     ### Calculate the total number of snps that failed
     &mysystem("cat birdseed.exclude.mind_$mind.geno_$geno.txt birdseed.exclude.mind_$mind.hwe_$hwe.txt | sort -gk 1 | uniq -c | awk '{ print \$2 }' > birdseed.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt",$log2);
     &wc_l("Total number of SNPs removed:","birdseed.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt",$log);
     &cprint( "-----------------------------\n",$log);
-    push(@META,"snp_drop_birdseed ". &wc_l2("birdseed.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt"));
+    push(@META,"snp_drop_birdseed ". &wc_l2("birdseed.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt"));        
 
     ### Create new plink file with poor performing snps and samples dropped (birdseed.qc)
     &mysystem("${p2loc}plink --bfile birdseed.mind_$mind --exclude birdseed.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt --noweb --allow-no-sex --out birdseed.qc --silent --make-bed",$log2);
     &wc_l("# of individuals after QC in Birdseed:","birdseed.qc.fam",$log);
     &wc_l("# of SNPs after QC in Birdseed:","birdseed.qc.bim",$log);
     &cprint( "\n",$log);
-    push(@META,"snp_qc_birdseed ". &wc_l2("birdseed.qc.bim"));
+    push(@META,"snp_qc_birdseed ". &wc_l2("birdseed.qc.bim"));    
     push(@META,"id_qc_birdseed ". &wc_l2("birdseed.qc.fam"));
-
-
+    
+    
     ############################################################
     #### Compare the snps dropped between birdseed and gencall
-    ############################################################
+    ############################################################    
     &cprint( "\n###########################\n",$log);
     &cprint( "## SNP Summary\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);            
     my @drop_snps = ("gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt","birdseed.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt");
     my @missing = ("gencall.mind_$mind.missing.lmiss","birdseed.mind_$mind.missing.lmiss");
     my @hardy = ("gencall.mind_$mind.hwe.hwe","birdseed.mind_$mind.hwe.hwe");
@@ -1247,42 +1247,42 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
 
     ### Count number of snps that failed each combination of gencall call rate, birdseed call rate, gencall hwe, birdseed hwe
     &mysystem("awk '{ if (NF == 9) print \$6,\$7,\$8,\$9 }' snp.exclude.summary | sort -gk 1 | uniq -c | sort -nk 1 >> $log",$log2);
-    &mysystem("awk '{ if (NF == 9) print \$6,\$7,\$8,\$9 }' snp.exclude.summary | sort -gk 1 | uniq -c | sort -nk 1",$log2);
+    &mysystem("awk '{ if (NF == 9) print \$6,\$7,\$8,\$9 }' snp.exclude.summary | sort -gk 1 | uniq -c | sort -nk 1",$log2);    
 
-    ### Count number of SNPs birdseed recovers
-    &mysystem("awk '{if (NF == 9 && (\$6 == 1 || \$8 == 1) && \$7 == 0 && \$9 == 0) print \$0 }' snp.exclude.summary > birdseed.recover",$log2);
+    ### Count number of SNPs birdseed recovers    
+    &mysystem("awk '{if (NF == 9 && (\$6 == 1 || \$8 == 1) && \$7 == 0 && \$9 == 0) print \$0 }' snp.exclude.summary > birdseed.recover",$log2); 
     &mysystem("head -n 100 birdseed.recover | awk '{ print \$1}' > birdseed.recover.snps",$log2); ### for plotting
-    push(@META,"snp_recov_birdseed ". &wc_l2("birdseed.recover"));
-
+    push(@META,"snp_recov_birdseed ". &wc_l2("birdseed.recover"));    
+    
     ### Count number of SNPs autocall recovers
-    &mysystem("awk '{if (NF == 9 && (\$7 == 1 || \$9 == 1) && \$6 == 0 && \$8 == 0) print \$0 }' snp.exclude.summary > autocall.recover",$log2);
+    &mysystem("awk '{if (NF == 9 && (\$7 == 1 || \$9 == 1) && \$6 == 0 && \$8 == 0) print \$0 }' snp.exclude.summary > autocall.recover",$log2);    
     &mysystem("head -n 100 autocall.recover | awk '{ print \$1}' > autocall.recover.snps",$log2); ### for plotting
     push(@META,"snp_recov_gencall ". &wc_l2("autocall.recover"));
-
+    
     ### Count number of SNPs not recovered
-    &mysystem("awk '{if (NF == 9 && (\$7 == 1 || \$9 == 1) && (\$6 == 1 || \$8 == 1)) print \$0 }' snp.exclude.summary > notrecovered",$log2);
+    &mysystem("awk '{if (NF == 9 && (\$7 == 1 || \$9 == 1) && (\$6 == 1 || \$8 == 1)) print \$0 }' snp.exclude.summary > notrecovered",$log2);    
     &mysystem("head -n 100 notrecovered | awk '{ print \$1}' > notrecovered.snps",$log2); ### for plotting
-    push(@META,"snp_notrecov ". &wc_l2("notrecovered"));
+    push(@META,"snp_notrecov ". &wc_l2("notrecovered"));        
 
     ### Count number of SNPs failed Call Rate both
-    &mysystem("awk '{if (NF == 9 && (\$7 == 1 && \$6 == 1)) print \$0 }' snp.exclude.summary > intersect.geno.fail",$log2);
-    push(@META,"snp_inter_geno ". &wc_l2("intersect.geno.fail"));
+    &mysystem("awk '{if (NF == 9 && (\$7 == 1 && \$6 == 1)) print \$0 }' snp.exclude.summary > intersect.geno.fail",$log2);    
+    push(@META,"snp_inter_geno ". &wc_l2("intersect.geno.fail"));        
 
     ### Count number of SNPs failed HWE both
-    &mysystem("awk '{if (NF == 9 && (\$8 == 1 && \$9 == 1)) print \$0 }' snp.exclude.summary > intersect.hwe.fail",$log2);
-    push(@META,"snp_inter_hwe ". &wc_l2("intersect.hwe.fail"));
-
-
+    &mysystem("awk '{if (NF == 9 && (\$8 == 1 && \$9 == 1)) print \$0 }' snp.exclude.summary > intersect.hwe.fail",$log2);    
+    push(@META,"snp_inter_hwe ". &wc_l2("intersect.hwe.fail"));        
+    
+    
     ### Print summary to log file
-    &cprint( "-----------------------------\n",$log);
+    &cprint( "-----------------------------\n",$log);        
     &wc_l("# of SNPs recovered by Birdseed","birdseed.recover",$log);
     &wc_l("# of SNPs recovered by AutoCall","autocall.recover",$log);
-    &wc_l("# of SNPs not passing in either algorithm","notrecovered",$log);
-    &cprint( "-----------------------------\n\n",$log);
-
+    &wc_l("# of SNPs not passing in either algorithm","notrecovered",$log);    
+    &cprint( "-----------------------------\n\n",$log);    
+     
     #################################################################################
     #### Compare the number of discordant genotype calls between birdseed and gencall
-    #################################################################################
+    #################################################################################    
     &cprint( "###########################\n",$log);
     &cprint( "## Genotype Comparison Between Calling Algorithms\n",$log);
     &cprint( "###########################\n",$log);
@@ -1292,7 +1292,7 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
 
     ### Remove discordances caused by No Calls
     &mysystem("grep -v \"0/0\" bsd_gen_merge_diff.diff > bsd_gen_merge_diff.gt.diff",$log2);
-
+    
     ### Keep only discordances caused by No Calls
     &mysystem("grep \"0/0\" bsd_gen_merge_diff.diff > bsd_gen_merge_diff.nocall.diff",$log2);
 
@@ -1302,55 +1302,55 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     ### Report to log file and stdout the number of snps with 1,2,3-5,6-10,11+ discordances
     &wc_l("# of SNPs with at least 1 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff",$log);
     push(@META,"disc_great1 ". &wc_l2("bsd_gen_merge_diff.gt.ldiff"));
-
+    
     &cprint( "-------------------------------------------\n",$log);
     &mysystem("awk '{if (\$1 == 1) print \$0 }' bsd_gen_merge_diff.gt.ldiff > bsd_gen_merge_diff.gt.ldiff.1",$log2);
     &wc_l("# of SNPs with 1 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff.1",$log);
     push(@META,"disc_1 ". &wc_l2("bsd_gen_merge_diff.gt.ldiff.1"));
-
+    
     &mysystem("awk '{if (\$1 == 2) print \$0 }' bsd_gen_merge_diff.gt.ldiff > bsd_gen_merge_diff.gt.ldiff.2",$log2);
     &wc_l("# of SNPs with 2 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff.2",$log);
     push(@META,"disc_2 ". &wc_l2("bsd_gen_merge_diff.gt.ldiff.2"));
-
+    
     &mysystem("awk '{if (\$1 > 2 && \$1 <= 5) print \$0 }' bsd_gen_merge_diff.gt.ldiff > bsd_gen_merge_diff.gt.ldiff.3_5",$log2);
     &wc_l("# of SNPs with 3-5 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff.3_5",$log);
     push(@META,"disc_3_5 ". &wc_l2("bsd_gen_merge_diff.gt.ldiff.3_5"));
-
+    
     &mysystem("awk '{if (\$1 > 5 && \$1 <= 10) print \$0 }' bsd_gen_merge_diff.gt.ldiff > bsd_gen_merge_diff.gt.ldiff.6_10",$log2);
     &wc_l("# of SNPs with 6-10 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff.6_10",$log);
     push(@META,"disc_6_10 ". &wc_l2("bsd_gen_merge_diff.gt.ldiff.6_10"));
-
+    
     &mysystem("awk '{if (\$1 > 10) print \$0 }' bsd_gen_merge_diff.gt.ldiff > bsd_gen_merge_diff.gt.ldiff.10_",$log2);
     &wc_l("# of SNPs with > 10 discordant genotype between AutoCall and Birdseed:","bsd_gen_merge_diff.gt.ldiff.10_",$log);
-    push(@META,"disc_10_ ". &wc_l2("bsd_gen_merge_diff.gt.ldiff.10_"));
+    push(@META,"disc_10_ ". &wc_l2("bsd_gen_merge_diff.gt.ldiff.10_"));    
     &cprint( "-------------------------------------------\n",$log);
 
     ### count # of discordant calls per sample
-    &mysystem("awk '{if (NR != 1) print \$3 }' bsd_gen_merge_diff.gt.diff | sort -gk 1 | uniq -c | sort -gk 1 > bsd_gen_merge_diff.gt.idiff",$log2);
+    &mysystem("awk '{if (NR != 1) print \$3 }' bsd_gen_merge_diff.gt.diff | sort -gk 1 | uniq -c | sort -gk 1 > bsd_gen_merge_diff.gt.idiff",$log2);    
     &mysystem("awk '{if (NR != 1) print \$3 }' bsd_gen_merge_diff.nocall.diff | sort -gk 1 | uniq -c | sort -gk 1 > bsd_gen_merge_diff.nocall.idiff",$log2);
-
+    
     ## Plot of # different calls per sample ### NEED TO CREATE THIS
-    ## Plot of # discordant calls per sample ### NEED TO CREATE THIS
+    ## Plot of # discordant calls per sample ### NEED TO CREATE THIS        
     ## Plot of # discordant calls per SNP ### NEED TO CREATE THIS
-
+    
     #######################################
     ### QC of merged files
     #######################################
     &cprint( "\n###########################\n",$log);
     &cprint( "## Merge Calling Algorithms\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);            
 
     ######### MERGE birdseed and gencall using merge-mode 1
     &mysystem("${p2loc}plink --bfile birdseed.qc --bmerge gencall.qc.bed gencall.qc.bim gencall.qc.fam --make-bed --merge-mode 1 --out bsd_gen_merge.plink2 --noweb --allow-no-sex --silent",$log2);
-
+    
     ### Calculate HWE in new plink file
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.plink2 --filter-founders --hardy --noweb --allow-no-sex --out bsd_gen_merge.hwe --silent",$log2);
 
     ### Determine which snps failed HWE
     &mysystem("awk '{ if ( NR != 1 && match(\$3,\"ALL\") && \$9 < $hwe ) print \$2 }' bsd_gen_merge.hwe.hwe > bsd_gen_merge.exclude.hwe_$hwe.txt",$log2);
-    &wc_l("# of SNPs removed for HWE p-value < $hwe:","bsd_gen_merge.exclude.hwe_$hwe.txt",$log);
+    &wc_l("# of SNPs removed for HWE p-value < $hwe:","bsd_gen_merge.exclude.hwe_$hwe.txt",$log);                
     push(@META,"snp_merge_hwe ". &wc_l2("bsd_gen_merge.exclude.hwe_$hwe.txt"));
-
+    
     ### Calculate SNP call rate in new plink file
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.plink2 --missing --noweb --allow-no-sex --out bsd_gen_merge.missing --silent",$log2);
 
@@ -1358,53 +1358,53 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &mysystem("awk '{ if ( NR != 1 && \$5 > $geno ) print \$2 }' bsd_gen_merge.missing.lmiss > bsd_gen_merge.exclude.geno_$geno.txt",$log2);
     &wc_l("# of SNPs removed for missing rate > $geno:","bsd_gen_merge.exclude.geno_$geno.txt",$log);
     push(@META,"snp_merge_geno ". &wc_l2("bsd_gen_merge.exclude.geno_$geno.txt"));
-
+    
     ### Calculate total number of SNPs that failed either hwe or call rate
     &mysystem("cat bsd_gen_merge.exclude.geno_$geno.txt bsd_gen_merge.exclude.hwe_$hwe.txt | sort -gk 1 | uniq -c | awk '{ print \$2 }' > bsd_gen_merge.exclude.geno_$geno.hwe_$hwe.txt",$log2);
     &wc_l("Total number of SNPs removed:","bsd_gen_merge.exclude.geno_$geno.hwe_$hwe.txt",$log);
-    push(@META,"snp_merge_totex ". &wc_l2("bsd_gen_merge.exclude.geno_$geno.hwe_$hwe.txt"));
+    push(@META,"snp_merge_totex ". &wc_l2("bsd_gen_merge.exclude.geno_$geno.hwe_$hwe.txt"));    
     &cprint( "-----------------------------\n",$log);
     &cprint( "-----------------------------\n",$log);
 
     ### Create qc'd plink file removing bad snps after merge
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.plink2 --exclude bsd_gen_merge.exclude.geno_$geno.hwe_$hwe.txt --noweb --allow-no-sex --out bsd_gen_merge.geno_$geno.hwe_$hwe --silent --make-bed",$log2);
-
+    
     ##### Calculate sample call rate
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.geno_$geno.hwe_$hwe --missing --out bsd_gen_merge.geno_$geno.hwe_$hwe.missing --noweb --allow-no-sex --silent",$log2);
 
     #### Determine which samples failed call rate
     &mysystem("awk '{ if ( NR != 1 && \$6 > $mind ) print \$1,\$2 }' bsd_gen_merge.geno_$geno.hwe_$hwe.missing.imiss > bsd_gen_merge.remove.mind_$mind.txt",$log2);
     &wc_l("# of individuals failed missing rate of $mind:","bsd_gen_merge.remove.mind_$mind.txt",$log);
-    push(@META,"id_merge_mind ". &wc_l2("bsd_gen_merge.remove.mind_$mind.txt"));
+    push(@META,"id_merge_mind ". &wc_l2("bsd_gen_merge.remove.mind_$mind.txt"));    
 
     ### Create new plink file dropping low call rate samples
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.geno_$geno.hwe_$hwe --remove bsd_gen_merge.remove.mind_$mind.txt --make-bed --out bsd_gen_merge.qc --noweb --allow-no-sex --silent",$log2);
     &wc_l("# of individuals remaining after filtering out for missing rate > $mind:","bsd_gen_merge.qc.fam",$log);
     &cprint( "-----------------------------\n",$log);
-
+    
     &wc_l("# of individuals after QC of merge:","bsd_gen_merge.qc.fam",$log);
-    push(@META,"id_merge_qc ". &wc_l2("bsd_gen_merge.qc.fam"));
+    push(@META,"id_merge_qc ". &wc_l2("bsd_gen_merge.qc.fam"));    
     &wc_l("# of SNPs after QC of merge:","bsd_gen_merge.qc.bim",$log);
-    push(@META,"snp_merge_qc ". &wc_l2("bsd_gen_merge.qc.bim"));
+    push(@META,"snp_merge_qc ". &wc_l2("bsd_gen_merge.qc.bim"));        
     &cprint("\n",$log);
-
-
+    
+    
     ###################################################
     ######### Extract Rare SNPs from zCall
     ###################################################
     &cprint( "\n###########################\n",$log);
     &cprint( "## Extract Rare SNPs from zCall\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);            
 
-    ### Get list of rare snps (maf < $maf) from birdseed, gencall merge
+    ### Get list of rare snps (maf < $maf) from birdseed, gencall merge    
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.qc --max-maf $maf --write-snplist --out bsd_gen_merge.qc.rare_$maf --silent --noweb --allow-no-sex",$log2);
     &wc_l("# of Rare SNPs (MAF < $maf) after QC in Birdseed & GenCall Merge:","bsd_gen_merge.qc.rare_$maf.snplist",$log);
     push(@META,"snp_merge_rare ". &wc_l2("bsd_gen_merge.qc.rare_$maf.snplist"));
-
+    
     ### Extract the list of rare snps from the gencall.qc file (want the gencall file bc zCall was based on gencall) and make a gencall rare snp list
     &mysystem("${p2loc}plink --bfile gencall.qc --extract bsd_gen_merge.qc.rare_$maf.snplist --write-snplist --silent --noweb --allow-no-sex --out gencall.qc.rare_$maf",$log2);
     &cprint( "-----------------------------\n",$log);
-    push(@META,"snp_gencall_rare ". &wc_l2("gencall.qc.rare_$maf.snplist"));
+    push(@META,"snp_gencall_rare ". &wc_l2("gencall.qc.rare_$maf.snplist"));    
 
     ### Extract the gencall rare (post-merge) snps from the zcall file
     &mysystem("${p2loc}plink --bfile zcall.intersect --extract gencall.qc.rare_$maf.snplist --noweb --allow-no-sex --out zcall.rare --silent --make-bed --keep bsd_gen_merge.qc.fam",$log2);
@@ -1414,9 +1414,9 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
 
     ### Calculate the # of snps that failed HWE
     &mysystem("awk '{ if (match(\$3,\"ALL\") && \$9 < $hwe) print \$2 }' zcall.rare.hardy.hwe > zcall.rare.hardy_$hwe.fail",$log2);
-    &wc_l("# of Rare SNPs failed HWE (P < $hwe) in zCall:","zcall.rare.hardy_$hwe.fail",$log);
+    &wc_l("# of Rare SNPs failed HWE (P < $hwe) in zCall:","zcall.rare.hardy_$hwe.fail",$log);        
     push(@META,"snp_rare_hwe ". &wc_l2("zcall.rare.hardy_$hwe.fail"));
-
+    
     ## Calculate call rate for zcalls
     &mysystem("${p2loc}plink --bfile zcall.rare --missing --out zcall.rare.missing --noweb --allow-no-sex --silent",$log2);
 
@@ -1424,29 +1424,29 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &mysystem("awk '{ if (\$5 > $geno && NR != 1) print \$2}' zcall.rare.missing.lmiss > zcall.rare.geno_$geno.fail",$log2);
     &wc_l("# of Rare SNPs failed Call Rate (Missing Rate > $geno) in zCall:","zcall.rare.geno_$geno.fail",$log);
     push(@META,"snp_rare_geno ". &wc_l2("zcall.rare.geno_$geno.fail"));
-
+    
     ### Calculate MAF
     &mysystem("${p2loc}plink --bfile zcall.rare --freq --out zcall.rare.freq --noweb --allow-no-sex --silent",$log2);
 
     ### Determine snps that are no longer rare after zCall
     &mysystem("awk '{ if (\$5 > $maxmaf && NR != 1) print \$2 }' zcall.rare.freq.frq > zcall.rare.freq_$maxmaf.fail",$log2);
     &wc_l("# of Rare SNPs failed MAF (MAF > $maxmaf) in zCall:","zcall.rare.freq_$maxmaf.fail",$log);
-    push(@META,"snp_rare_maf ". &wc_l2("zcall.rare.freq_$maxmaf.fail"));
+    push(@META,"snp_rare_maf ". &wc_l2("zcall.rare.freq_$maxmaf.fail"));    
 
     ### Compile a list of all snps that failed hwe, freq, and call rate
     &mysystem("cat zcall.rare*.fail > zcall.rare.hardy_$hwe.freq_$maxmaf.geno_$geno.exclude",$log2);
 
     ### Extract passing gencall-rare snps from zCalls and make new plink file (zcall.rare.qc)
     &mysystem("${p2loc}plink --bfile zcall.intersect --keep gencall.qc.fam --extract gencall.qc.rare_$maf.snplist --exclude zcall.rare.hardy_$hwe.freq_$maxmaf.geno_$geno.exclude --noweb --allow-no-sex --make-bed --out zcall.rare.qc --silent",$log2);
-    &cprint( "-----------------------------\n",$log);
+    &cprint( "-----------------------------\n",$log);    
     &wc_l("# of Samples after QC in zCall:","zcall.rare.qc.fam",$log);
-    push(@META,"id_rare_qc ". &wc_l2("zcall.rare.qc.fam"));
-    &wc_l("# of Rare SNPs (MAF < $maxmaf) after QC in zCall:","zcall.rare.qc.bim",$log);
-    push(@META,"snp_rare_qc ". &wc_l2("zcall.rare.qc.bim"));
-
+    push(@META,"id_rare_qc ". &wc_l2("zcall.rare.qc.fam"));    
+    &wc_l("# of Rare SNPs (MAF < $maxmaf) after QC in zCall:","zcall.rare.qc.bim",$log);    
+    push(@META,"snp_rare_qc ". &wc_l2("zcall.rare.qc.bim"));    
+    
     ###################################################
     ######### Merge of QC'd birdseed & autocall with zCall datasets
-    ###################################################
+    ###################################################    
     &cprint( "\n###########################\n",$log);
     &cprint( "## Merge of QC'd AutoCall/Birdseed & zCall Datasets\n",$log);
     &cprint( "###########################\n",$log);
@@ -1454,18 +1454,18 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     ### Exclude rare zcall qc'd snps from birdseed/gencall merge and make a common snp set
     &mysystem("awk '{print \$2}' zcall.rare.qc.bim > zcall.rare.snplist",$log2);
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.qc --exclude zcall.rare.snplist --make-bed --out bsd_gen_merge.qc.common_$maf --silent --noweb --allow-no-sex",$log2);
-    push(@META,"snp_common_qc ". &wc_l2("bsd_gen_merge.qc.common_$maf.bim"));
-
+    push(@META,"snp_common_qc ". &wc_l2("bsd_gen_merge.qc.common_$maf.bim"));    
+    
     ### Merge common birdseed/gencall merge with rare zcall snps
     &mysystem("${p2loc}plink --bfile bsd_gen_merge.qc.common_$maf --bmerge zcall.rare.qc.bed zcall.rare.qc.bim zcall.rare.qc.fam --make-bed --out $out --noweb --allow-no-sex --silent",$log2);
     &wc_l("# of Samples after Merge:","$out.fam",$log);
-    push(@META,"id_final ". &wc_l2("$out.fam"));
-    &wc_l("# of SNPs after Merge:","$out.bim",$log);
+    push(@META,"id_final ". &wc_l2("$out.fam"));        
+    &wc_l("# of SNPs after Merge:","$out.bim",$log);    
     push(@META,"snp_final ". &wc_l2("$out.bim"));
-    push(@META,"fn_final $out");
+    push(@META,"fn_final $out");    
     &a2filenew($meta,@META);
-
-    ### Touch file so script knows all steps completed successfully
+    
+    ### Touch file so script knows all steps completed successfully        
     &mysystem("touch $out.success",$log2);
 }
 
@@ -1490,8 +1490,8 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     #################################
     &cprint( "###########################\n",$log);
     &cprint( "## Sample Intersection\n",$log);
-    &cprint( "###########################\n",$log);
-
+    &cprint( "###########################\n",$log);        
+    
     my @fam = ("$callers{'gencall'}.fam","$callers{'zcall'}.fam");
     my %ids = ();
     foreach (@fam) {
@@ -1516,31 +1516,31 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &wc_l("# of individuals in intersection of GenCall & zCall:","id.intersection.txt",$log);
     &wc_l("# of individuals removed because not in both GenCall & zCall:","id.notinallfiles.txt",$log);
     &cprint( "\n",$log);
-
+    
     #################################
-    ### Remove samples that aren't in both algorithms
-    ### s.ripke added the removal of samples without phenotypes (also removing dubplicates) --remove hapmap.drop
-    #################################
+    ### Remove samples that aren't in both algorithms 
+    ### s.ripke added the removal of samples without phenotypes (also removing dubplicates) --remove hapmap.drop 
+    #################################    
     &mysystem("${p2loc}plink --remove hapmap.drop --bfile $callers{'gencall'} --keep id.intersection.txt --make-bed --out gencall.intersect --noweb --allow-no-sex --silent ",$log2);
     &mysystem("${p2loc}plink --remove hapmap.drop --bfile $callers{'zcall'} --keep id.intersection.txt --make-bed --out zcall.intersect --noweb --allow-no-sex --silent ",$log2);
-
+    
     if (&wc_l2("zcall.intersect.fam") != &wc_l2("gencall.intersect.fam")) {&cprint("Problem!! Number of samples between zcall and autocall does not match",$log);exit;}
 
-
+    
     #################################
     ### Determine failing samples in each algorithm
     #################################
     &cprint( "###########################\n",$log);
     &cprint( "## Sample QC\n",$log);
-    &cprint( "###########################\n",$log);
+    &cprint( "###########################\n",$log);        
 
     # Find snps with missing rate greater than 20%
     &mysystem("${p2loc}plink --bfile gencall.intersect --geno 0.1 --noweb --allow-no-sex --make-bed --out gencall.geno10 --silent",$log2);
-
+    
     ### Calculate sample missing rate
     &mysystem("${p2loc}plink --bfile gencall.geno10 --missing --noweb --allow-no-sex --out gencall.geno10.miss --silent",$log2);
 
-    #### Determine which samples failed missing rate threshold of $mind
+    #### Determine which samples failed missing rate threshold of $mind    
     &mysystem("awk '{ if ( NR != 1 && \$6 > $mind ) print \$1,\$2 }' gencall.geno10.miss.imiss > gencall.remove.mind_$mind.txt",$log2);
     &wc_l("# of individuals failed missing rate of $mind in GenCall:","gencall.remove.mind_$mind.txt",$log);
 
@@ -1549,7 +1549,7 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     ############################################################
 
     ### Make hash with list of samples that failed
-    open my $fh, "<", "gencall.remove.mind_$mind.txt" or die "can't open file: gencall.remove.mind_$mind.txt\n";
+    open my $fh, "<", "gencall.remove.mind_$mind.txt" or die "can't open file: gencall.remove.mind_$mind.txt\n";    
     my %fail_samples = ("FID IID" => "");
     while (<$fh>) {
         my $x = $_;
@@ -1566,7 +1566,7 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
             &cprint("$cells[1] $cells[2] $cells[6]\n",$log);
         }
     }
-    &cprint( "-----------------------------\n",$log);
+    &cprint( "-----------------------------\n",$log);    
 
     #################################
     ### QC of Gencall/Autocall data
@@ -1580,7 +1580,7 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     &mysystem("${p2loc}plink --bfile gencall.intersect --remove gencall.remove.mind_$mind.txt --make-bed --out gencall.mind_$mind --noweb --allow-no-sex --silent",$log2);
 
     ### Count number of samples in the new PLINK file
-    &wc_l("# of individuals remaining after filtering out for missing rate > $mind in both gencall and birdseed:","gencall.mind_$mind.fam",$log);
+    &wc_l("# of individuals remaining after filtering out for missing rate > $mind in both gencall and birdseed:","gencall.mind_$mind.fam",$log);        
     &cprint( "-----------------------------\n",$log);
 
     ### Calculate HWE from new PLINK file
@@ -1588,79 +1588,79 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
 
     ### Calculate and print the number of SNPs that failed HWE
     &mysystem("awk '{ if ( NR != 1 && match(\$3,\"ALL\") && \$9 < $hwe ) print \$2 }' gencall.mind_$mind.hwe.hwe > gencall.exclude.mind_$mind.hwe_$hwe.txt",$log2);
-    &wc_l("# of SNPs removed for HWE p-value < $hwe:","gencall.exclude.mind_$mind.hwe_$hwe.txt",$log);
+    &wc_l("# of SNPs removed for HWE p-value < $hwe:","gencall.exclude.mind_$mind.hwe_$hwe.txt",$log);                
     push(@META,"snp_hwe_gencall ". &wc_l2("gencall.exclude.mind_$mind.hwe_$hwe.txt"));
-
-    ### Calculate Call rate per snp from new PLINK file
+    
+    ### Calculate Call rate per snp from new PLINK file    
     &mysystem("${p2loc}plink --bfile gencall.mind_$mind --missing --noweb --allow-no-sex --out gencall.mind_$mind.missing --silent",$log2);
 
     ### Calculate and print the number of SNPs that failed call rate
     &mysystem("awk '{ if ( NR != 1 && \$5 > $geno ) print \$2 }' gencall.mind_$mind.missing.lmiss > gencall.exclude.mind_$mind.geno_$geno.txt",$log2);
-    &wc_l("# of SNPs removed for missing rate > $geno:","gencall.exclude.mind_$mind.geno_$geno.txt",$log);
+    &wc_l("# of SNPs removed for missing rate > $geno:","gencall.exclude.mind_$mind.geno_$geno.txt",$log);            
     push(@META,"snp_geno_gencall ". &wc_l2("gencall.exclude.mind_$mind.geno_$geno.txt"));
-
+    
     ### Determine the total number of SNPs that failed
     &mysystem("cat gencall.exclude.mind_$mind.geno_$geno.txt gencall.exclude.mind_$mind.hwe_$hwe.txt | sort -gk 1 | uniq -c | awk '{ print \$2 }' > gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt",$log2);
     &wc_l("Total number of SNPs removed:","gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt",$log);
     &cprint( "-----------------------------\n",$log);
-    push(@META,"snp_drop_gencall ". &wc_l2("gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt"));
+    push(@META,"snp_drop_gencall ". &wc_l2("gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt"));    
 
     ### Remove bad snps from the new plink file to create qc'd gencall dataset at gencall.qc
     &mysystem("${p2loc}plink --bfile gencall.mind_$mind --exclude gencall.exclude.mind_$mind.geno_$geno.hwe_$hwe.txt --noweb --allow-no-sex --out gencall.qc --silent --make-bed",$log2);
     &wc_l("# of individuals after QC in GenCall:","gencall.qc.fam",$log);
     &wc_l("# of SNPs after QC in GenCall:","gencall.qc.bim",$log);
-    push(@META,"snp_qc_gencall ". &wc_l2("gencall.qc.bim"));
+    push(@META,"snp_qc_gencall ". &wc_l2("gencall.qc.bim"));    
     push(@META,"id_qc_gencall ". &wc_l2("gencall.qc.fam"));
 
-
+    
     ###################################################
     ######### Extract Rare SNPs from zCall
-    ###################################################
+    ###################################################    
     &cprint( "\n###########################\n",$log);
     &cprint( "## Create Rare Passing zCall Dataset\n",$log);
     &cprint( "###########################\n",$log);
 
-    ### Get list of rare snps (maf < $maf) from gencall
+    ### Get list of rare snps (maf < $maf) from gencall    
     &mysystem("${p2loc}plink --bfile gencall.qc --max-maf $maf --write-snplist --out gencall.qc.rare_$maf --silent --noweb --allow-no-sex",$log2);
     &wc_l("# of Rare SNPs (MAF < $maf) after QC in GenCall:","gencall.qc.rare_$maf.snplist",$log);
     &cprint( "-----------------------------\n",$log);
     push(@META,"snp_gencall_rare ". &wc_l2("gencall.qc.rare_$maf.snplist"));
-
-    ### Extract the gencall qc rare snps from the zcall file
+    
+    ### Extract the gencall qc rare snps from the zcall file    
     &mysystem("${p2loc}plink --bfile zcall.intersect --extract gencall.qc.rare_$maf.snplist --noweb --allow-no-sex --out zcall.rare --silent --make-bed --keep gencall.qc.fam",$log2);
-
-    ### Calculate HWE for the zcalls
+    
+    ### Calculate HWE for the zcalls    
     &mysystem("${p2loc}plink --bfile zcall.rare --hardy --out zcall.rare.hardy --noweb --allow-no-sex --silent",$log2);
 
-    ### Calculate the # of snps that failed HWE
+    ### Calculate the # of snps that failed HWE    
     &mysystem("awk '{ if (match(\$3,\"ALL\") && \$9 < $hwe) print \$2 }' zcall.rare.hardy.hwe > zcall.rare.hardy_$hwe.fail",$log2);
-    &wc_l("# of Rare SNPs failed HWE (P < $hwe) in zCall:","zcall.rare.hardy_$hwe.fail",$log);
+    &wc_l("# of Rare SNPs failed HWE (P < $hwe) in zCall:","zcall.rare.hardy_$hwe.fail",$log);        
     push(@META,"snp_rare_hwe ". &wc_l2("zcall.rare.hardy_$hwe.fail"));
-
-    ## Calculate call rate for zcalls
+    
+    ## Calculate call rate for zcalls    
     &mysystem("${p2loc}plink --bfile zcall.rare --missing --out zcall.rare.missing --noweb --allow-no-sex --silent",$log2);
 
-    ### Determine SNPs that failed call rate
+    ### Determine SNPs that failed call rate    
     &mysystem("awk '{ if (\$5 > $geno && NR != 1) print \$2}' zcall.rare.missing.lmiss > zcall.rare.geno_$geno.fail",$log2);
     &wc_l("# of Rare SNPs failed Call Rate (Missing Rate > $geno) in zCall:","zcall.rare.geno_$geno.fail",$log);
-    push(@META,"snp_rare_geno ". &wc_l2("zcall.rare.geno_$geno.fail"));
+    push(@META,"snp_rare_geno ". &wc_l2("zcall.rare.geno_$geno.fail"));    
 
-    ### Calculate MAF
+    ### Calculate MAF    
     &mysystem("${p2loc}plink --bfile zcall.rare --freq --out zcall.rare.freq --noweb --allow-no-sex --silent",$log2);
 
-    ### Determine snps that are no longer rare after zCall
+    ### Determine snps that are no longer rare after zCall    
     &mysystem("awk '{ if (\$5 > $maxmaf && NR != 1) print \$2 }' zcall.rare.freq.frq > zcall.rare.freq_$maxmaf.fail",$log2);
     &wc_l("# of Rare SNPs failed MAF (MAF > $maxmaf) in zCall:","zcall.rare.freq_$maxmaf.fail",$log);
-    push(@META,"snp_rare_maf ". &wc_l2("zcall.rare.freq_$maxmaf.fail"));
+    push(@META,"snp_rare_maf ". &wc_l2("zcall.rare.freq_$maxmaf.fail"));    
 
-    ### Compile a list of all snps that failed hwe, freq, and call rate
+    ### Compile a list of all snps that failed hwe, freq, and call rate    
     &mysystem("cat zcall.rare*.fail > zcall.rare.hardy_$hwe.freq_$maxmaf.geno_$geno.exclude",$log2);
 
-    ### Extract passing gencall-rare snps from zCalls and make new plink file (zcall.rare.qc)
+    ### Extract passing gencall-rare snps from zCalls and make new plink file (zcall.rare.qc)    
     &mysystem("${p2loc}plink --bfile zcall.intersect --keep gencall.qc.fam --extract gencall.qc.rare_$maf.snplist --exclude zcall.rare.hardy_$hwe.freq_$maxmaf.geno_$geno.exclude --noweb --allow-no-sex --make-bed --out zcall.rare.qc --silent",$log2);
-    &cprint( "-----------------------------\n",$log);
+    &cprint( "-----------------------------\n",$log);    
     &wc_l("# of Samples after QC in zCall:","zcall.rare.qc.fam",$log);
-    &wc_l("# of Rare SNPs (MAF < $maf) after QC in zCall:","zcall.rare.qc.bim",$log);
+    &wc_l("# of Rare SNPs (MAF < $maf) after QC in zCall:","zcall.rare.qc.bim",$log);    
     push(@META,"id_rare_qc ". &wc_l2("zcall.rare.qc.fam"));
     push(@META,"snp_rare_qc ". &wc_l2("zcall.rare.qc.bim"));
 
@@ -1674,15 +1674,15 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
     #### Merge qc'd gencall dataset with the qc'd zcall rare dataset
     &mysystem("${p2loc}plink --bfile gencall.qc --bmerge zcall.rare.qc.bed zcall.rare.qc.bim zcall.rare.qc.fam --make-bed --out $out --noweb --allow-no-sex --silent",$log2);
     &wc_l("# of Samples after Merge:","$out.fam",$log);
-    &wc_l("# of SNPs after Merge:","$out.bim",$log);
+    &wc_l("# of SNPs after Merge:","$out.bim",$log);    
 
     push(@META,"id_final ". &wc_l2("$out.fam"));
     push(@META,"snp_final ". &wc_l2("$out.bim"));
-    push(@META,"fn_final $out");
+    push(@META,"fn_final $out");    
+    
+    &a2filenew($meta,@META);    
 
-    &a2filenew($meta,@META);
-
-    ### Touch file so script knows all steps completed successfully
+    ### Touch file so script knows all steps completed successfully        
     &mysystem("touch $out.success",$log2);
 }
 
@@ -1697,13 +1697,13 @@ elsif ($callers{'zcall'} ne '' && $callers{'gencall'} ne '' && $callers{'birdsee
 elsif ($callers{'zcall'} ne '' && $callers{'gencall'} eq '' && $callers{'birdseed'} eq '' && $callers{'other'} ne '') {
     &cprint( "Only detected zCall input... Must have Autocall input too for zCalls to be used!\nUsing $callers{'other'} for all SNPs.\n",$log);
 
-    ### Copy other algorithm input file to $out.[bed,bim,fam]
+    ### Copy other algorithm input file to $out.[bed,bim,fam]        
     &mysystem("cp $callers{'other'}.bed $out.bed",$log2);
     &mysystem("cp $callers{'other'}.bim $out.bim",$log2);
     &mysystem("cp $callers{'other'}.fam $out.fam",$log2);
 
-    ### Touch file so script knows all steps completed successfully
-    &mysystem("touch $out.success",$log2);
+    ### Touch file so script knows all steps completed successfully        
+    &mysystem("touch $out.success",$log2);    
 }
 
 # 16. No files detected
@@ -1719,7 +1719,7 @@ else {
 
 &cprint( "\n###########################\n",$log);
 &cprint( "## Summary\n",$log);
-&cprint( "###########################\n",$log);
+&cprint( "###########################\n",$log);            
 
 ### Check to see if $out.success was created; if not, die
 unless (-e "$out.success") {die "Problem -- script did not complete successfully\n";}
@@ -1745,7 +1745,7 @@ my $unknown = @unknown;
 
 push(@META,"final_case $case");
 push(@META,"final_control $control");
-push(@META,"final_unknown $unknown");
+push(@META,"final_unknown $unknown");    
 
 ### Copy $out to input directory
 &mysystem("cp $out.bim $indir",$log2);
@@ -1790,14 +1790,14 @@ else {
     }
 
     if ($bed) {
-        &mysystem("rm $out_dir/*.bed",$log2); # remove .bed files
+        &mysystem("rm $out_dir/*.bed",$log2); # remove .bed files        
     }
     if ($vmaj) {
-        &mysystem("rm $out_dir/*.bed.vmaj",$log2); # remove .bed.vmaj files
+        &mysystem("rm $out_dir/*.bed.vmaj",$log2); # remove .bed.vmaj files        
     }
     &mysystem("tar -czf caller_merge_$out.tar.gz $out_dir",$log2);
     &mysystem("rm -r $out_dir",$log2);
-
+    
 }
 
 ###### Finished message

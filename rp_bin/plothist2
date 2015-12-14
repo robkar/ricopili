@@ -13,7 +13,7 @@ use Ricopili::Utils qw(trans);
 # read config file
 #############################
 
-$rloc = &trans("rloc");
+my $rloc = &trans("rloc");
 
 ###############################################
 
@@ -31,7 +31,7 @@ my $out="outname";
 
 ##### help message
 my $usage = "
-Usage : $progname [options] [p-file]
+Usage : $progname [options] [p-file] 
 
 version: $version
 
@@ -49,7 +49,7 @@ version: $version
 
 
   ############ for standalone users #####################
-
+   
   --rloc STRING    directory containing R binary (default: $rloc)
                       download here: http://cran.r-project.org/
 
@@ -57,12 +57,12 @@ version: $version
  --out is mandatory
 
  created by Stephan Ripke 2008 at MGH, Boston, MA
-
+ 
 ";
 
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
     "pcol=i"=> \$pcol,
     "breaks=i"=> \$breaks,
     "help"=> \my $help,
@@ -274,3 +274,7 @@ print "success: $out.pdf\n";
 
 
 #exit;
+
+
+
+

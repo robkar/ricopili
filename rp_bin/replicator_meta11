@@ -59,7 +59,7 @@ my $r2_min_th = .1;
 my $nogene = 1;
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
    "out=s"=> \$out_name,
    "disc=s"=> \my $disc_name_raw,
    "prekno=s"=> \my $prekno_file1,
@@ -247,7 +247,7 @@ text(min.i+0.1,max.i - 0.1,paste ("N =",repl_better))
         dev.off();
             ';
     $R_templ =~ s/INFOFILE/$file/g;
-
+    
     &a2file ("$out_name.info.R",$R_templ);
     my $r_script = "$r_sys < $out_name.info.R --vanilla ";
 #    my $r_script = "source /broad/software/scripts/useuse; use R-2.14; R < $out_name.info.R --vanilla ";
@@ -287,7 +287,7 @@ sub a2file {
 my %excl = ();
 
 if ($excl_file) {
-    die "$!" unless open FILE, "< $excl_file";
+    die "$!" unless open FILE, "< $excl_file";    
     while (<FILE>){
 	chomp;
 
@@ -308,7 +308,7 @@ my @forest_files=();
 
 
 #####################################
-### read gene_names of areator file
+### read gene_names of areator file 
 #####################################
 
 my %area_missing;
@@ -435,7 +435,7 @@ my %prekno_reg_beg;
 my %prekno_reg_end;
 if ($prekno_file1) {
     my $row_count = 0;
-
+    
     die $!."($prekno_file1)" unless open FILE, "< $prekno_file1";
     while (my $line = <FILE>){
 	chomp($line);
@@ -463,7 +463,7 @@ my %prekno2_reg_chr;
 my %prekno2_reg_beg;
 my %prekno2_reg_end;
 if ($prekno_file2) {
-
+    
     my $row_count = 0;
     die $!."($prekno_file2)" unless open FILE, "< $prekno_file2";
     while (my $line = <FILE>){
@@ -532,7 +532,7 @@ foreach my $dfile (@ARGV){
 
 
 #####################################
-### define SNPs
+### define SNPs 
 #####################################
 
 my $disc_name = "$disc_name_raw.metasub";
@@ -557,7 +557,7 @@ while (my $line = <FILE>){
 #    if ($cells[0] eq "12_123742918" || $cells[0] eq "rs6846161"){
 #	print "found: $cells[0]\n";
 #	sleep(3);
-#    }
+#    } 
     $lc++;
 }
 close FILE;
@@ -609,10 +609,10 @@ while (my $line = <FILE>){
 		$cells[4] = "I";
 	    }
 	}
-
+	
 	print OUT "@cells\n";
 
-
+	
     }
     $lc++;
 }
@@ -672,8 +672,8 @@ unless ($nogene) {
 }
 
 else {
-    die "$!" unless open META, "< $out_name.comb.meta";
-    die "$!" unless open GENE, "> $out_name.comb.meta.gene";
+    die "$!" unless open META, "< $out_name.comb.meta"; 
+    die "$!" unless open GENE, "> $out_name.comb.meta.gene"; 
     my $head = <META>;
     chomp($head);
     print GENE "$head\tGene\tGene_range(300Kb)\n";
@@ -788,8 +788,8 @@ if (1) {
 
 }
 
-die "$!" unless open META, "< $out_name.comb.meta.gene";
-#die "$!" unless open DANER, "> $out_name.comb.meta.gene.metadaner";
+die "$!" unless open META, "< $out_name.comb.meta.gene"; 
+#die "$!" unless open DANER, "> $out_name.comb.meta.gene.metadaner"; 
 my $header = <META>;
 my $ngene_max;
 while (<META>){
@@ -798,11 +798,11 @@ while (<META>){
     my @cells = @{&split_line_ref(\$_)};
 
     my $snp_name = $cells[$scol];
-
+    
     next if (exists $excl{$snp_name});
 
     $comb_snps{$snp_name} = $_;
-
+    
     delete($area_missing{$snp_name});
 
     $comb_p{$snp_name} = $cells[$pcol];
@@ -818,8 +818,8 @@ while (<META>){
 
     my @gene_arr = split /,/, $cells[$gcol];
     $ngene_max = @gene_arr if (@gene_arr > $ngene_max);
-
-    if (0){
+    
+    if (0){   
 	print DANER $cells[$ccol];
 	print DANER "\t".$cells[$scol];
 	print DANER "\t".$cells[$poscol];
@@ -902,8 +902,8 @@ my $nreps = @dfile_arr;
 #####################################
 
 
-die "$!" unless open META, "< $out_name.rep.meta";
-#die "$!" unless open DANER, "> $out_name.rep.meta.metadaner";
+die "$!" unless open META, "< $out_name.rep.meta"; 
+#die "$!" unless open DANER, "> $out_name.rep.meta.metadaner"; 
 my $header = <META>;
 my $rep_single = 0;
 my @cells = @{&split_line_ref(\$header)};
@@ -968,7 +968,7 @@ while (<META>){
 	    $rep_i{$snp_name} = "same";
 	}
 
-
+	
     }
 #    exit;
 
@@ -1054,7 +1054,7 @@ my %out_hash = ();
 #print "$disc_name\n";
 #sleep(5);
 
-die "$!" unless open DISC, "< $disc_name";
+die "$!" unless open DISC, "< $disc_name"; 
 
 my $header= <DISC>;
 chomp($header);
@@ -1176,8 +1176,8 @@ foreach my $repout (@dfile_arr) {
 
     my $possum = 0;
     my $nsum = 0;
-    my @p_coll_all;
-    my @inf_coll_all;
+    my @p_coll_all;    
+    my @inf_coll_all;    
 
     my $possum_p3 = 0;
     my $nsum_p3 = 0;
@@ -1219,7 +1219,7 @@ foreach my $repout (@dfile_arr) {
 
     print "repout: $repout\n";
 
-    die "$!" unless open REPOUT, "< $repout";
+    die "$!" unless open REPOUT, "< $repout"; 
     my $header= <REPOUT>;
     while (<REPOUT>){
 	chomp;
@@ -1238,7 +1238,7 @@ foreach my $repout (@dfile_arr) {
 
 	if ( $disc_p_hash{$snp_name} > $phi) {
 	    $phi = $disc_p_hash{$snp_name};
-	}
+	}  
 
 
 #	if ($cells[$q_col] < $r2_min_th){
@@ -1336,14 +1336,14 @@ foreach my $repout (@dfile_arr) {
 	    sleep(2);
 #	    $possum_gws++ if ($sumdir eq "+");
 #	    $nsum_gws++ if ($sumdir eq "+" || $sumdir eq "0");
-	}
+	}	
 
 
 
 	$count_hash{$snp_name}++;
 #	$chr_hash{$snp_name} = $cells[$chr_col];
 #	$pos_hash{$snp_name} = $cells[$pos_col];
-
+	
     }
     close REPOUT;
 
@@ -1372,7 +1372,7 @@ foreach my $repout (@dfile_arr) {
 #    push @repsum,"$repname\tall\t$npos\t$nsum\t=BINOMDIST(D$rc-(C$rc),D$rc,0.5,TRUE)\t=$ratio";
 
 
-
+    
     my $ratio = "NA";
     if ($nsum > 0){
 	$ratio = sprintf "%.2f",$possum/$nsum;
@@ -1397,7 +1397,7 @@ foreach my $repout (@dfile_arr) {
     if ($nsum_gws > 0){
 	$ratio_gws = sprintf "%.2f",$possum_gws/$nsum_gws;
     }
-
+    
     my $nca_loc = $dfile_arr_cas{$repout};
     my $nco_loc = $dfile_arr_con{$repout};
     $nca_glob += $dfile_arr_cas{$repout};
@@ -1408,12 +1408,12 @@ foreach my $repout (@dfile_arr) {
 #    $info_repname =~ s///;
     &info_comp ("info.all.$info_repname",@inf_coll_all);
     push @info_pdf_collection, "info.all.$info_repname.pdf";
-
+    
 #    print "phi: $phi\n";
 #    exit;
 
     if ($phi >1.0e-03) {
-	$rc++;
+	$rc++;    
 	push @repsum,"$repname\tall\t$possum\t$nsum\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio\t$nca_loc\t$nco_loc" ;
 	&qqplot ("qq.all.$repname",@p_coll_all);
 	push @pdf_collection, "qq.all.$repname"."-qq.pdf";
@@ -1439,7 +1439,7 @@ foreach my $repout (@dfile_arr) {
 	&qqplot ("qq.p5.$repname",@p_coll_p5);
 	push @pdf_collection, "qq.p5.$repname"."-qq.pdf";
     }
-
+    
     if ($phi >5.0e-08) {
 	$rc++;
 	push @repsum,"$repname\t1.0e-06\t$possum_p6\t$nsum_p6\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p6\t$nca_loc\t$nco_loc";
@@ -1455,7 +1455,7 @@ foreach my $repout (@dfile_arr) {
     }
 
 #    print "$repname\t$possum_gws\t$nsum_gws\n";
-
+    
 #    }
 
 
@@ -1490,7 +1490,7 @@ die $! unless open REP, "> $out_name.rep.txt";
 use Spreadsheet::WriteExcel;                             # Step 0
 use Parse::RecDescent;                             # Step 0
 my $workbook = Spreadsheet::WriteExcel->new("$out_name.xls");   # Step 1
-$workbook->compatibility_mode();
+$workbook->compatibility_mode(); 
 my $formatred = $workbook->add_format(color => 'red');
 my $formatorange = $workbook->add_format(color => 'orange');
 my $formatblue = $workbook->add_format(color => 'blue');
@@ -1534,7 +1534,7 @@ die "Problems creating new Excel file: $!" unless defined $workbook;
 unless ($nosingle) {
 if ($nreps > 1) {
 print "single worksheet\n";
-my $worksheet_single   = $workbook->add_worksheet("single results");
+my $worksheet_single   = $workbook->add_worksheet("single results");  
 $worksheet_single->freeze_panes(1, 1);
 my $lc = 0;
 
@@ -1700,7 +1700,7 @@ foreach my $snp_name (keys %comb_snps) {
 
 print "combined worksheet\n";
 
-my $worksheet_repl   = $workbook->add_worksheet("replication results");
+my $worksheet_repl   = $workbook->add_worksheet("replication results");  
 $worksheet_repl->freeze_panes(1, 9);
 my $lc = 0;
 $worksheet_repl->set_column(3, 3,  4, $formats);
@@ -1868,24 +1868,24 @@ print REP "@cells\n";
 
 my $possum = 0;
 my $nsum = 0;
-my @p_coll_all;
+my @p_coll_all;  
 
 my $possum_p3 = 0;
 my $nsum_p3 = 0;
-my @p_coll_p3;
+my @p_coll_p3;  
 
 my $possum_p4 = 0;
 my $nsum_p4 = 0;
-my @p_coll_p4;
+my @p_coll_p4;  
 my $possum_p5 = 0;
 my $nsum_p5 = 0;
-my @p_coll_p5;
+my @p_coll_p5;  
 my $possum_p6 = 0;
 my $nsum_p6 = 0;
-my @p_coll_p6;
+my @p_coll_p6;  
 my $possum_gws = 0;
 my $nsum_gws = 0;
-my @p_coll_gws;
+my @p_coll_gws;  
 
 my $counts = 0 ;
 
@@ -1910,7 +1910,7 @@ foreach my $snp_name (keys %comb_snps) {
 #	print "found wiex: $snp_name\n";
 #	print "out-hash: $out_hash{$snp_name}\n";
 #	sleep(3);
-#    }
+#    } 
 
     next unless (exists $out_hash{$snp_name});
 
@@ -1975,7 +1975,7 @@ foreach my $snp_name (keys %comb_snps) {
 		$p_2_loc = abs(abs(2*$p_loc - 1)-1);
 	    }
 	    push @p_coll_all, $cells[$snp_col]." $p_2_loc";
-
+	    
 	    if ($disc_p_hash{$snp_name} <= 0.001) {
 		$possum_p3++ if ($sumdir eq "+");
 		$nsum_p3++ if ($sumdir eq "+" || $sumdir eq "0");
@@ -2137,7 +2137,7 @@ foreach my $snp_name (keys %comb_snps) {
 #			sleep(5);
 			my $ref = "~/pgc-samples/hapmap_ref/plink_p3/single_chr/hapmap3_r2_b36_fwd.CEU.TSI.FOUNDERS.qc.poly.chr$chr_txt";
 #			$ref = "~/pgc-samples/hapmap_ref/plink_p2b/single_chr/hapmap_CEU_r23a.chr$chr_txt" if ($phase2);
-
+			
 #			my $ref = "ref_subdir/ref.$ichr";
 
 			my @pos_arr_ps_c = `grep -w $ps_c $ref.bim`;
@@ -2147,12 +2147,12 @@ foreach my $snp_name (keys %comb_snps) {
 			    $ld_info = "(no-ld-info) - " ;
 			}
 			else {
-
+			    
 			    my $ld_cmd = "$ploc/plink --filter-founders --out ld_subdir/prekno.$ps_c.$isnp.ld --bfile $ref --ld $ps_c $isnp";
 			    unless (-e "ld_subdir/prekno.$ps_c.$isnp.ld.log") {
 				&mysystem ($ld_cmd);
 			    }
-			    die "$!" unless open LOG, "< ld_subdir/prekno.$ps_c.$isnp.ld.log";
+			    die "$!" unless open LOG, "< ld_subdir/prekno.$ps_c.$isnp.ld.log";    
 			    while (my $line_tmp = <LOG>){
 				my @cells =  @{&split_line_ref(\$line_tmp)};
 				if ($cells[0] eq "R-sq") {
@@ -2163,20 +2163,20 @@ foreach my $snp_name (keys %comb_snps) {
 				}
 			    }
 			    close LOG;
-
+			    
 			    if ($ld_info_r2 eq "LD-R2") {
 				print "something is wrong\n";
 				exit;
 			    }
-
-
-			    my @cells = @{&split_line_ref(\@pos_arr_ps_c[0])};
+			    
+			    
+			    my @cells = @{&split_line_ref(\@pos_arr_ps_c[0])}; 
 			    my $pos1 = @cells[3];
-			    my @cells = @{&split_line_ref(\@pos_arr_isnp[0])};
+			    my @cells = @{&split_line_ref(\@pos_arr_isnp[0])}; 
 			    my $pos2 = @cells[3];
-
+			    
 			    my $pos_diff = $pos1-$pos2;
-
+			    
 			    $ld_info = " $ld_info_r2 $pos_diff" ;
 			}
 
@@ -2239,7 +2239,7 @@ foreach my $snp_name (keys %comb_snps) {
 			my $ref = "~/pgc-samples/hapmap_ref/plink_p3/single_chr/hapmap3_r2_b36_fwd.CEU.TSI.FOUNDERS.qc.poly.chr$chr_txt";
 
 #			$ref = "~/pgc-samples/hapmap_ref/plink_p2b/single_chr/hapmap_CEU_r23a.chr$chr_txt" if ($phase2);
-#			my $ref = "ref_subdir/ref.$ichr";
+#			my $ref = "ref_subdir/ref.$ichr";	
 
 			my @pos_arr_ps_c = `grep -w $ps_c $ref.bim`;
 			my @pos_arr_isnp = `grep -w $isnp $ref.bim`;
@@ -2248,12 +2248,12 @@ foreach my $snp_name (keys %comb_snps) {
 			    $ld_info = "(no-ld-info) - " ;
 			}
 			else {
-
+			    
 			    my $ld_cmd = "$ploc/plink --filter-founders --out ld_subdir/prekno.$ps_c.$isnp.ld --bfile $ref --ld $ps_c $isnp";
 			    unless (-e "ld_subdir/prekno.$ps_c.$isnp.ld.log") {
 				&mysystem ($ld_cmd);
 			    }
-			    die "$!" unless open LOG, "< ld_subdir/prekno.$ps_c.$isnp.ld.log";
+			    die "$!" unless open LOG, "< ld_subdir/prekno.$ps_c.$isnp.ld.log";    
 			    while (my $line_tmp = <LOG>){
 				my @cells =  @{&split_line_ref(\$line_tmp)};
 				if ($cells[0] eq "R-sq") {
@@ -2264,19 +2264,19 @@ foreach my $snp_name (keys %comb_snps) {
 				}
 			    }
 			    close LOG;
-
+			    
 			    if ($ld_info_r2 eq "LD-R2") {
 				print "something is wrong\n";
 				exit;
 			    }
-
-			    my @cells = @{&split_line_ref(\@pos_arr_ps_c[0])};
+			    
+			    my @cells = @{&split_line_ref(\@pos_arr_ps_c[0])}; 
 			    my $pos1 = @cells[3];
-			    my @cells = @{&split_line_ref(\@pos_arr_isnp[0])};
+			    my @cells = @{&split_line_ref(\@pos_arr_isnp[0])}; 
 			    my $pos2 = @cells[3];
-
+			    
 			    my $pos_diff = $pos1-$pos2;
-
+			    
 			    $ld_info = " $ld_info_r2 $pos_diff" ;
 			}
 
@@ -2319,7 +2319,7 @@ foreach my $snp_name (keys %comb_snps) {
 #	print "found wiex: $snp_name\n";
 #	print "$tmp_str\n";
 #	sleep(3);
- #   }
+ #   } 
 
 
     @cells = @{&split_line_ref(\$tmp_str)};
@@ -2342,35 +2342,35 @@ foreach my $snp_name (keys %comb_snps) {
 	print REP "@cells\n";
 
 
-	if ($counts < 3000) {
+	if ($counts < 3000) {	
 	    $worksheet_repl->write_row($lc, 0, \@cells,);
-
+	    
 	    $worksheet_repl->write($lc,8,$disc_p_hash{$snp_name} , $formatred) if ($disc_p_hash{$snp_name} < .05);
 	    $worksheet_repl->write($lc,8,$disc_p_hash{$snp_name} , $format_gwsign) if ($disc_p_hash{$snp_name} < 5e-08);
-
-
+	    
+	    
 	    #### rep P
 	    $worksheet_repl->write($lc,$out_size+2,$rep_p{$snp_name} , $formatred) if ($rep_p{$snp_name} < .05);
 #    $worksheet_repl->write($lc,$out_size+3,$rep_p_r{$snp_name} , $formatred) if ($rep_p_r{$snp_name} < .05);
-
+	    
 	    if ($rep_single) {
 		$worksheet_repl->write($lc,$out_size+5,$rep_q{$snp_name} , $formatred) if ($rep_q{$snp_name} < $r2_min_th);
 	    }
 	    else {
 		$worksheet_repl->write($lc,$out_size+5,$rep_q{$snp_name} , $formatred) if ($rep_q{$snp_name} < .05);
 	    }
-
-
+	    
+	    
 	    ####  comb P
 	    $out_size += 5;
 	    $worksheet_repl->write($lc,$out_size+2,$comb_p{$snp_name} , $formatred) if ($comb_p{$snp_name} < .05);
 #    $worksheet_repl->write($lc,$out_size+3,$comb_p_r{$snp_name} , $formatred) if ($comb_p_r{$snp_name} < .05);
 	    $worksheet_repl->write($lc,$out_size+8,$single_tp , $formatred) if ($single_tp < .05);
 	    $worksheet_repl->write($lc,$out_size+5,$comb_q{$snp_name} , $formatred) if ($comb_q{$snp_name} < .05);
-
+	    
 	    $worksheet_repl->write($lc,$out_size+2,$comb_p{$snp_name} , $format_gwsign) if ($comb_p{$snp_name} < 5e-08);
 #    $worksheet_repl->write($lc,$out_size+3,$comb_p_r{$snp_name} , $format_gwsign) if ($comb_p_r{$snp_name} < 5e-08);
-
+	    
 
 
 	    ####### ricolinks
@@ -2386,10 +2386,10 @@ foreach my $snp_name (keys %comb_snps) {
 	    ###################
 	    ##### links to genes
 	    ##################
-
+	    
 	    my $genestr = $comb_gene{$snp_name};
 	    my @gene_arr = split /,/, $genestr;
-
+	    
 #	    foreach my $geneloc (@gene_arr) {
 	    foreach my $genenn (0..$ngene_max-1) {
 		my $geneloc = @gene_arr[$genenn];
@@ -2502,18 +2502,18 @@ if (@p_coll_gws > 0 ) {
 ## single sum results
 ##########################################
 
-    my $worksheet_sisu   = $workbook->add_worksheet("sign_tests");
+    my $worksheet_sisu   = $workbook->add_worksheet("sign_tests");  
     $worksheet_sisu->set_column(0, 0,  40, );
-
+    
     my $lc = 0;
-
+    
     my $tmp_str = "Name\tP_TH\tnpos\tnsum\tsign-test\tratio\tNcase\tNcontrol\n";
     my @cells = @{&split_line_ref(\$tmp_str)};
     $worksheet_sisu->write_row($lc, 0, \@cells);
-
+    
 #my $form="BINOMDIST(C2-(B2+1),C2,0.5,TRUE)";
-
-
+    
+    
     foreach my $rep_str (@repsum) {
 	$lc++;
 	@cells = @{&split_line_ref(\$rep_str)};
@@ -2522,7 +2522,7 @@ if (@p_coll_gws > 0 ) {
 	my $nsum_loc = $cells[3];
 	my $npos_loc = $cells[2];
 	my $signout = "sign.$npos_loc.$nsum_loc";
-
+	
 	if ($nsum_loc > 0) {
 	    unless (-e $signout) {
 		my $R_templ = '
@@ -2530,14 +2530,14 @@ if (@p_coll_gws > 0 ) {
             ';
 		$R_templ =~ s/NSUM/$nsum_loc/g;
 		$R_templ =~ s/NPOS/$npos_loc/g;
-
+		
 		&a2file ("$out_name.sign.R",$R_templ);
 		my $r_script = "$r_sys < $out_name.sign.R --vanilla > $signout";
 #		my $r_script = "source /broad/software/scripts/useuse; use R-2.14; R < $out_name.sign.R --vanilla > $signout";
 		print "$r_script\n";
 		&mysystem ($r_script);
 	    }
-	    die "$!" unless open SIGN, "< $signout";
+	    die "$!" unless open SIGN, "< $signout"; 
 	    print "get p-values out of $signout\n";
 	    while (<SIGN>){
 		my @cells = @{&split_line_ref(\$_)};
@@ -2564,23 +2564,23 @@ if (@p_coll_gws > 0 ) {
 #	my $pv_loc = 0.5;
 
 	if ($pv_loc < .05) {
-	    $worksheet_sisu->write($lc,4,$pv_loc , $formatred)
+	    $worksheet_sisu->write($lc,4,$pv_loc , $formatred) 
 	}
 	if ($pv_loc > .95) {
-	    $worksheet_sisu->write($lc,4,$pv_loc , $formatorange)
+	    $worksheet_sisu->write($lc,4,$pv_loc , $formatorange) 
 	}
 #	$worksheet_sisu->write($lc,4,$cells[4] , $formatorange) if ($cells[4] > .95);
 #    $worksheet_sisu->write($lc,3,$cells[3] , $formatred) if ($cells[3] < .05);
     }
 #exit;
-
+    
 
 ## regions
 ##########################################
 
-    my $worksheet_sisu   = $workbook->add_worksheet("regions");
+    my $worksheet_sisu   = $workbook->add_worksheet("regions");  
 
-
+    
     my $lc = 0;
 
 {
@@ -2590,7 +2590,7 @@ $worksheet_sisu->write_row($lc, 0, \@cells);
 $lc++;
 }
 
-die $! unless open IN, "< $areator.regions";
+die $! unless open IN, "< $areator.regions";    
 while (my $line = <IN>){
 my @cells = @{&split_line_ref(\$line)};
 $worksheet_sisu->write_row($lc, 0, \@cells);
@@ -2605,7 +2605,7 @@ $worksheet_sisu->write_row($lc, 0, \@cells);
 $lc++;
 }
 
-die $! unless open IN, "< $out_name.comb.meta.gene.regions";
+die $! unless open IN, "< $out_name.comb.meta.gene.regions";    
 while (my $line = <IN>){
 my @cells = @{&split_line_ref(\$line)};
 $worksheet_sisu->write_row($lc, 0, \@cells);
@@ -2724,7 +2724,7 @@ my $ninfo = keys %info_hash;
 
 
 
-die "$!" unless open OUT, "> $out_name";
+die "$!" unless open OUT, "> $out_name"; 
 my $o_head;
 my $se_head;
 print OUT $info_hash{"SNP"};
@@ -2793,12 +2793,12 @@ sumrow2<-function(x){
     sumf <- 0;cnter = 0;
    for(i in 13:(12+NREPS)){
        if(!is.na(x[i])){
-          sumf <- sumf +  qnorm(as.numeric(x[i]));
+          sumf <- sumf +  qnorm(as.numeric(x[i])); 
           cnter <- cnter + 1;
 
        }
        else{}
-     };
+     };  
    pnorm(sumf/sqrt(cnter));
 }
 
@@ -2838,7 +2838,7 @@ for (j in 1:dim(rep)[1]) {
          weight <- weight + w;
 
       }
-     };
+     };  
 
      sumz <- (sumz*cnter)/weight
      sumo <- (sumo)/weight
@@ -2877,7 +2877,7 @@ for (j in 1:dim(rep)[1]) {
 
         mhc =0
         if (rep[j,2] == 6 & rep[j,3] > 25000000 & rep[j,3] < 35000000) {
-             mhc =1
+             mhc =1 
         }
 
 #print (c(rep[j,1:3]))
@@ -2908,11 +2908,11 @@ for (j in 1:dim(rep)[1]) {
 
        }
 
-     };
+     };  
      ea = sumhi / sumlo
      sa = sqrt(1/ sumlo)
 
-     quot = ea / sa
+     quot = ea / sa 
 
 #print (c(rep[j,1:3],quot,ea,sa,sumhi,sumlo))
 
@@ -2936,7 +2936,7 @@ for (j in 1:dim(rep)[1]) {
              dirp[5,4] = dirp[5,4] -2 * log(psum);
          }
 
-
+  
      rep[j,15+(3*NREPS)] = psum;
      rep[j,16+(3*NREPS)] = exp(ea);
      rep[j,17+(3*NREPS)] = sa;
@@ -3004,11 +3004,11 @@ for (j in 1:dim(rep)[1]) {
 
        }
 
-     };
+     };  
      ea = sumhi / sumlo
      sa = sqrt(1/ sumlo)
 
-     quot = ea / sa
+     quot = ea / sa 
 
 #print (c(rep[j,1:3],quot,ea,sa,sumhi,sumlo))
 
@@ -3024,7 +3024,7 @@ for (j in 1:dim(rep)[1]) {
 #       psum = 1-psum;
 #    }
 
-
+  
      rep[j,19+(3*NREPS)] = psum;
      rep[j,20+(3*NREPS)] = exp(ea);
      rep[j,21+(3*NREPS)] = sa;
@@ -3082,10 +3082,10 @@ write.table(file="INNAME.dirpsum", dirp, quote=F, sep = "\t")
 #&mysystem ("R < $out_name.R --vanilla > /dev/null");
 
 
-&mysystem ("head -1 $out_name.remeta > tmp");
+&mysystem ("head -1 $out_name.remeta > tmp"); 
 my $lac = $nreps*3 + 19;
-&mysystem ("tail -n +2 $out_name.remeta | sort -k$lac,$lac"."g >> tmp");
-&mysystem ("mv tmp $out_name.remeta");
+&mysystem ("tail -n +2 $out_name.remeta | sort -k$lac,$lac"."g >> tmp"); 
+&mysystem ("mv tmp $out_name.remeta"); 
 
 #exit;
 
@@ -3096,7 +3096,7 @@ my $lac = $nreps*3 + 19;
 
 
 
-
+  
 my $workbook = Spreadsheet::WriteExcel->new("$out_name.xls");   # Step 1
 
 die "Problems creating new Excel file: $!" unless defined $workbook;
@@ -3112,9 +3112,9 @@ $fheader->set_bold();
 #my $format_scien3 = $workbook->add_format();
 #$format_scien3->set_num_format('0.000000000');
 
-my $worksheet   = $workbook->add_worksheet("replication");
-my $expl   = $workbook->add_worksheet("columns");
-my $sum   = $workbook->add_worksheet("summary");
+my $worksheet   = $workbook->add_worksheet("replication");  
+my $expl   = $workbook->add_worksheet("columns");  
+my $sum   = $workbook->add_worksheet("summary");  
 
 #$worksheet->set_column(12, 12+(2*$nreps),  10, $format_scien2);
 #$worksheet->set_column(13+(2*$nreps), 13+(2*2*$nreps),  16, $format_scien3);
@@ -3136,7 +3136,7 @@ $formatb->set_bold();
 my $formatgrey = $workbook->add_format(bg_color => 41);
 my $formatnei = $workbook->add_format(bg_color => 45);
 my $formatnavy = $workbook->add_format(
-               bg_color => 47,
+               bg_color => 47, 
 #               fg_color=> 'white'
             );
 
@@ -3256,7 +3256,7 @@ my $lc=0;
 my $nnom=0;
 my $npos=0;
 my $nneg=0;
-die "$!" unless open REPOUT, "< $out_name.remeta";
+die "$!" unless open REPOUT, "< $out_name.remeta"; 
 while (<REPOUT>){
     chomp;
     my @cells = @{&split_line_ref(\$_)};
@@ -3336,7 +3336,7 @@ while (<REPOUT>){
     $cc++;
 
 
-
+	
     if ($cells[$#cells-4] < 0.05){
 	$nnom++;
     }
@@ -3346,7 +3346,7 @@ while (<REPOUT>){
     if ($cells[$#cells-4] > 0.5){
 	$nneg++;
     }
-
+	
     $lc++;
 }
 #if (0){
@@ -3358,7 +3358,7 @@ $sum->set_column(5, 5,  14, );
 
 
 
-die "$!" unless open DIRP, "< $out_name.dirpsum";
+die "$!" unless open DIRP, "< $out_name.dirpsum"; 
 $lc=0;
 while (<DIRP>){
 
@@ -3384,27 +3384,27 @@ while (<DIRP>){
     }
 
     if (0){
-
-	$sum->write($lc+7, 0, "direction summary, meta-p", $fheader);
-
-	$sum->write($lc+8, 0, $nnom,);
+	
+	$sum->write($lc+7, 0, "direction summary, meta-p", $fheader); 
+	
+	$sum->write($lc+8, 0, $nnom,); 
 	if ($nnom < 0.05){
-	    $sum->write($lc+8, 0, $nnom, $format_nomsign);
+	    $sum->write($lc+8, 0, $nnom, $format_nomsign); 
 	}
-
-	$sum->write($lc+8, 1, "nominal singificant meta-values",);
-	$sum->write($lc+9, 0, $npos,);
-	$sum->write($lc+9, 1, "right direction meta-values",);
-	$sum->write($lc+10, 0, $nneg,);
-	$sum->write($lc+10, 1, "wrong direction",);
-
-	$sum->write($lc++, 0, "direction summary, all samples", $fheader);
-	$sum->write($lc, 0, $dir_sum[1], );
-	$sum->write($lc++, 1, "same direction",);
-	$sum->write($lc, 0, $dir_sum[2], );
-	$sum->write($lc++, 1, "opposite direction",);
-	$sum->write($lc, 0, $dir_sum[0],);
-	$sum->write($lc++, 1, "missing values",);
+	
+	$sum->write($lc+8, 1, "nominal singificant meta-values",); 
+	$sum->write($lc+9, 0, $npos,); 
+	$sum->write($lc+9, 1, "right direction meta-values",); 
+	$sum->write($lc+10, 0, $nneg,); 
+	$sum->write($lc+10, 1, "wrong direction",); 
+	
+	$sum->write($lc++, 0, "direction summary, all samples", $fheader); 
+	$sum->write($lc, 0, $dir_sum[1], ); 
+	$sum->write($lc++, 1, "same direction",); 
+	$sum->write($lc, 0, $dir_sum[2], ); 
+	$sum->write($lc++, 1, "opposite direction",); 
+	$sum->write($lc, 0, $dir_sum[0],); 
+	$sum->write($lc++, 1, "missing values",); 
     }
     $lc++;
 }
@@ -3455,8 +3455,8 @@ $expl->set_column(2, 2,  40);
 
 $lc =0;
 foreach my $pl (@columns){
-    $expl->write($lc, 0, $alpha[$lc],);
-    $expl->write($lc, 1, $pl,);
+    $expl->write($lc, 0, $alpha[$lc],); 
+    $expl->write($lc, 1, $pl,); 
     $lc++;
 }
 $lc = 0;
@@ -3473,3 +3473,6 @@ $lc = 0;
 
 
 $workbook->close();
+
+
+

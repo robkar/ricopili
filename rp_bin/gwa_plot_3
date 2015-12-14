@@ -100,7 +100,7 @@ version: $version
 
   --pth FLOAT    threshold, from where thinning down
   --last FLOAT   threshold, from where no p-values
-  --help         print this message and exit
+  --help         print this message and exit  
 
   --fac INT      use these many as minimum, then scale down
                      default: $fac
@@ -110,7 +110,7 @@ version: $version
   --gc FLOAT     genomic control with FLOAT = lsmbda
 
  created by Stephan Ripke 2008 at MGH, Boston, MA
-
+ 
  pfile will be sorted for pvalue if nercessary, iv you do it in advance you save time and money
 
 ";
@@ -124,7 +124,7 @@ my $areafile = "";
 my $lambda = 1.0;
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
     "title=s"=> \$title,
     "top=i"=> \my $ntop,
     "chr=i"=> \my $chr,
@@ -237,7 +237,7 @@ my $refgene_file="refGene_processed.txt";
 
 my $pdfout = $pfile."_gwa.pdf" if ($title eq "");
 $pdfout = $title."_gwa.pdf" unless ($title eq "");
-$title = $pfile."_GWA" if ($title eq "") ;
+$title = $pfile."_GWA" if ($title eq "") ; 
 
 foreach my $sn (keys %stuna) {
     $title = $stuna{$sn} if ($title =~ /$sn/);
@@ -321,7 +321,7 @@ sub count_lines {
 }
 
 
-###   here preparation of ucsc-file:
+###   here preparation of ucsc-file: 
 ###   sed  -r '/chr[0-9XY]+_.*/d'  refGene.txt | sed 's/chrX/chr23/' | sed 's/chrY/chr24/' | sed 's/chr//' |cut -f3,5,6,13 | sort | uniq > refGene_processed.txt
 
 
@@ -582,7 +582,7 @@ while (<IN>){
 	$old_chr = $cells[$chrcol];
 	$old_pos = $new_pos;
     }
-    $new_pos = $old_pos + $cells[$poscol];
+    $new_pos = $old_pos + $cells[$poscol];	
     my $linestr=$cells[$snpcol];
     $linestr.="\t$cells[$chrcol]";
     $linestr.="\t$cells[$poscol]";
@@ -594,7 +594,7 @@ while (<IN>){
     my $new = 0;
     if ($cells[$pcol] < $prekno_th){
 	my $found = 0;
-	foreach my $reg (@prekno_arr) {
+	foreach my $reg (@prekno_arr) {	
 	    my ($chr_prekno, $start_prekno, $end_prekno) = &split_line($reg);
 	    if ($chr_prekno == $cells[$chrcol]){
 		if ($start_prekno < $cells[$poscol] && $end_prekno > $cells[$poscol]){
@@ -606,7 +606,7 @@ while (<IN>){
 	    }
 	}
 	$new = 1 if ($found == 0);
-
+	
 #	if ($new == 0) {
 #	    print "prekno: $linestr" ;
 #	}
@@ -646,7 +646,7 @@ while (<IN>){
     if ($lc++ == 0){
 	$old_pos=$cells[$#cells];
 	$new_pos=$old_pos;
-
+	
     }
     if ($cells[1] != $old_chr){
 	$new_pos=$cells[5];
@@ -655,13 +655,13 @@ while (<IN>){
 	$old_chr=$cells[1];
 	$old_pos=$cells[5];
 #	$old_pos=$cells[$#cells];
-
+	
 	$linestr=$cells[1];
 	$linestr.="\t$new_pos";
 	$linestr.="\t$mean_pos\n";
 	push @out_lines, $linestr;
     }
-
+    
 }
 
 $linestr=$cells[1];
@@ -694,7 +694,7 @@ pdf("OUTNAME",title="GWA-Plot",PLOTSHAPE)
 
 ## png("OUTNAME.png",width = 11, height = 7.5, units="in",res=300)
 
-read.table ("TICKNAME",header=F)-> pos
+read.table ("TICKNAME",header=F)-> pos 
 read.table ("INNAME",header=F)-> asnp
 
 ymin = min(asnp[,4]);
@@ -726,7 +726,7 @@ col1=colors()[100]
 
 if (0) {
   liz_col = c("black","orange","green","blue","cyan","magenta","yellow","red","black","orange","green","blue","cyan","magenta","yellow","red","black","orange","green","blue","cyan","magenta","yellow","red","black","orange","green","blue","cyan","magenta","yellow","red")
-  points (x=asnp[,6],y=-log10(asnp[,4]), col=liz_col[asnp[,2]], cex=0.8, pch=19 )
+  points (x=asnp[,6],y=-log10(asnp[,4]), col=liz_col[asnp[,2]], cex=0.8, pch=19 ) 
 
 
 } else {
@@ -745,7 +745,7 @@ write.table (snp_out, file="OUTNAME.prekno.gc", row.names=F, quote=F)
 
 #  asnp[,"gc"] = 1-pchisq(qchisq(1 - asnp[,4],1)/LAMBDA,1)
 
-  points (x=asnp[asnp[,2]%%2==1,6],y=-log10(asnp[asnp[,2]%%2==1,"gc"]), col=col1, cex=0.5, pch=asnp[asnp[,2]%%2==1,"pch"] )
+  points (x=asnp[asnp[,2]%%2==1,6],y=-log10(asnp[asnp[,2]%%2==1,"gc"]), col=col1, cex=0.5, pch=asnp[asnp[,2]%%2==1,"pch"] ) 
   points (x=asnp[asnp[,2]%%2==0,6],y=-log10(asnp[asnp[,2]%%2==0,"gc"]), col=col2, cex=0.5, pch=asnp[asnp[,2]%%2==0,"pch"])
   points (x=asnp[asnp[,4]==MAXY,6],y=-log10(asnp[asnp[,4]==MAXY,"gc"]), col="green", cex=0.8)
   points (x=asnp[asnp[,7] == 1,6],y=-log10(asnp[asnp[,7] == 1,"gc"]), col="blue", cex=1.2)
@@ -814,14 +814,14 @@ ymax = -log10(min(asnp[,4]))
 
 drawchrom <- function (ymax_chr) {
 
-	    plot ( 0,0, type="n",
-		   ylim = c(-log10(max(asnp[,4])),ymax_chr),
-		   xlim = c(min(asnp[,3]),xmax),
-		   axes=F,
-		   xlab="", ylab="-log10(p_val)",
-		   main=paste ("TITLE, Chr. ",chr,", (n=",length(asnp[asnp[,2]==chr,4]),")",sep=""), col=colors()[100],
+	    plot ( 0,0, type="n",  
+		   ylim = c(-log10(max(asnp[,4])),ymax_chr), 
+		   xlim = c(min(asnp[,3]),xmax), 
+		   axes=F, 
+		   xlab="", ylab="-log10(p_val)", 
+		   main=paste ("TITLE, Chr. ",chr,", (n=",length(asnp[asnp[,2]==chr,4]),")",sep=""), col=colors()[100], 
 		   cex.lab = 0.6,cex.main=.6)
-
+	    
 # here the area-makrs
 	    if (chr %in% are[,1]){
 		for (x in 1:dim(are)[1]){
@@ -838,9 +838,9 @@ drawchrom <- function (ymax_chr) {
 		}
 	    }
 	    mtext("ripke @ chgr mgh harvard edu",4,cex=.3)
-
+	    
 	    col1="black"
-
+	    
 	    points (x=asnp[asnp[,2]==chr,3],y=-log10(asnp[asnp[,2]==chr,4]), col=col1, cex=0.5)
 	    xrange = trunc ((max(asnp[asnp[,2]==chr,3]) -  min(asnp[asnp[,2]==chr,3]))/1000);
 	    mtext(paste ("Position, ",xrange," KB",sep = ""),side=1,line=3, cex=0.5,adj=max(asnp[asnp[,2]==chr,3])/xmax*0.5)
@@ -848,22 +848,22 @@ drawchrom <- function (ymax_chr) {
 	    ## left axis
 	    axis(2,floor(min(-log10(asnp[,4]))):ceiling(ymax_chr), cex.axis=0.4) ## left axis
 	    axis(1, at= seq(min(asnp[asnp[,2]==chr,3]),max(asnp[asnp[,2]==chr,3]),length=BPAX), lab = trunc(seq(min(asnp[asnp[,2]==chr,3]),max(asnp[asnp[,2]==chr,3]),length=BPAX)/(10^3)), las=3, line = 0, cex.axis=0.5, lty=1)
-
+	    
 
 }
 
 
 
-
+    
     par(mfrow = c(2, 1))
-
+    
     xmax = max(asnp[,3]);
 #ymax = -log10(min(asnp[,4]))
-
+    
     for (chr in 1:25){
-
+	
 	if (length(asnp[asnp[,2]==chr,3]) > 5){
-
+	    
 	    if (chr == 23) {
 		xmax=xmax*2
 	    }
@@ -881,14 +881,14 @@ drawchrom <- function (ymax_chr) {
 		par(mfrow = c(2, 2))
 		xmax=xmax/2;
 	    }
-
+	    
 	    if (chr == 22) {
 		par(mfrow = c(2, 1))
                 #    layout(matrix(c(1,2,3,4,5,5),3,2,byrow=T),heights=c(.33,.33,.33))
 	    }
-
+	    
 	}
-
+	
     }
 dev.off();
 
@@ -901,7 +901,7 @@ dev.off();
 pdf("OUTNAME",6,7.8,title="GWA-Plot")
 par(mfrow = c(4, 1))
 
-read.table ("TICKNAME",header=F)-> pos
+read.table ("TICKNAME",header=F)-> pos 
 read.table ("INNAME",header=F)-> a
 
 
@@ -973,7 +973,7 @@ dev.off()
 my $best_num_str='
 asnp[order(asnp[,4]),][1:BESTNUM,] -> best_snps
 text (x=best_snps[,6],y=-log10(best_snps[,4]),best_snps[,1], pos=4 , cex=0.6)
-points (x=best_snps[,6],y=-log10(best_snps[,4]), pch=19, col=colors()[497], cex=0.6)"
+points (x=best_snps[,6],y=-log10(best_snps[,4]), pch=19, col=colors()[497], cex=0.6)" 
 ';
 
 

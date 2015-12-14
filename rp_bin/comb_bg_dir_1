@@ -38,7 +38,7 @@ version: $version
   --help              print help massage and exits
 
  created by Stephan Ripke 2014 at MGH, Boston, MA
-
+ 
 combined all bfiles from specified directory
 
 ";
@@ -174,3 +174,6 @@ close BC;
 #########################################
 exit
 ########################################
+
+
+

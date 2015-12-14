@@ -117,7 +117,7 @@ version: $version
                      SNPCOL,PCOL,CHRCOL,POSCOL
   --check        check columns with sample output
 
-  --refdir       reference dir, only one bed/bim/fam per chromosome in there, please
+  --refdir       reference dir, only one bed/bim/fam per chromosome in there, please 
 
   --r2th FLOAT   r2-threshold, default $r2th
   --plink-clump  use plink-cluming
@@ -138,7 +138,7 @@ version: $version
 
 
  best-file: gzipped best-file
-
+ 
 
  cond-file - example (2nd row without out)
   /home/gwas/pgc-samples/scz/QC1B/imputation
@@ -149,7 +149,7 @@ version: $version
 
 SNP=name of variant; CHR=chromosome; BP=basepair position (hg19); P=p-value, OR= odds ratio for allele1;
 SE=standard error, A1A2=allele1 and allele2; FRQ_A=frequency of allele1 in cases, FRQ_U=frequency of allele1 in controls;
-INFO=imputation info score; ngt=number of studies this variant is genotyped (vs. imputed);
+INFO=imputation info score; ngt=number of studies this variant is genotyped (vs. imputed); 
 friends(.1).p0.001 = list of all variants with LD-r2 > 0.1 to index SNP, in brackets LD-r2 and distance in kb, sorted by LD-r2;
 range.left=left margin of region (defined by LD friends); range.right=right margin of region (defined by LD friends)
 span(kb)=right margin - left margin (in kb)
@@ -164,13 +164,13 @@ genes.6.50kb(dist2index)= list of genes within the region of friends.6 (50kb buf
 
 
  created by Stephan Ripke 2009 at MGH, Boston, MA
-
+ 
 ";
 
 my $bfile = "";
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
     "help"=> \my $help,
     "nohead"=> \my $nohead,
     "1KG"=> \my $my1KG,
@@ -317,7 +317,7 @@ sub mysystem_nodie(){
 }
 
 ########################################
-# test plink
+# test plink 
 ###################################
 
 
@@ -507,27 +507,27 @@ my $bb_head;
 while ($ns == 0) {
     my $begz = gzopen("$bestfile_path", "rb")  or die "Cannot open $bestfile_path: $gzerrno\n" ;
 
-
+    
     die $! unless open SF, "> $snpfile";
     die $! unless open BB, "> $bestbasic";
-
-
+    
+    
     $begz->gzreadline($bhead);
     chomp($bhead);
-
+    
     my @cells = @{&split_line_ref(\$bhead)};
     if (@cells > $detcol_beg) {
 	foreach my $cc ($detcol_beg-1 .. $#cells) {
 	    $det_str{"SNP"} .= "\t".$cells[$cc];
 	}
     }
-
+    
     print SF $cells[$snpcol-1]."\t".$cells[$pcol-1]."\n";
     print BB "@cells\n";
+    
 
 
-
-
+    
     $bb_head .= "SNP";
     $bb_head .= " CHR";
     $bb_head .= " BP";
@@ -554,28 +554,28 @@ while ($ns == 0) {
 #    $bb_head .= " range.left.4";
 #    $bb_head .= " range.right.4";
 #    $bb_head .= " span.4(kb)";
-
+	
     $bb_head .= " gwas_catalog_span.6";
     $bb_head .= " genes.6.50kb(dist2index)";
-
-
+  
+    
     my $ns_loc = 0;
     my $mhc = 0;
-
+    
     while ($begz->gzreadline(my $line)){
 	my @cells = @{&split_line_ref(\$line)};
-
-
+	
+	
 #    print "$ns_loc rows read\n" if ($ns_loc++ % 1000 == 0);
 #    print "atcu rows r\n";
-
+	
 #	next if ($cells[$pcol-1] > .05 || $cells[$pcol-1] eq "NA" || $cells[$pcol-1] == 0);
 	next if ($cells[$pcol-1] > $pth2 || $cells[$pcol-1] eq "NA" || $cells[$pcol-1] == 0);
-
+	
 	if ($onechr) {
 	    next if ($cells[$chrcol-1] != $onechr);
 	}
-
+	
 #########!!!!!!!!!!!!!!!###########
 #########!!!!!!!!!!!!!!!###########
 #########!!!!!!!!!!!!!!!###########
@@ -588,9 +588,9 @@ while ($ns == 0) {
 #########!!!!!!!!!!!!!!!###########
 #########!!!!!!!!!!!!!!!###########
 #########!!!!!!!!!!!!!!!###########
-
+	
 	$chr_hash{$cells[$chrcol-1]} = 1;
-
+	
 #	print $cells[$pcol-1]."\n";
 #	print $cells[$snpcol-1]."\n";
 	$ns++;
@@ -617,14 +617,14 @@ while ($ns == 0) {
 	$bb_hash{$cells[$snpcol-1]} .= " ".$cells[$ngtcol-1];
 #	print 	$bb_hash{$cells[$snpcol-1]} ;
 #	print 	"\n" ;
-
+	
 
 
 
 
     }
-
-
+    
+    
     $begz -> gzclose();
     close SF;
     close BB;
@@ -723,7 +723,7 @@ while (my $line = <GI>){
     push @{ $gene_stop_arr[$chr_loc] }, $cells[2];
 }
 close GI;
-
+ 
 
 #my @name_arr_loc = @{ $gene_name_arr[1] };
 #print "@name_arr_loc\n";
@@ -747,8 +747,8 @@ if ($pliclu) {
 
     foreach my $chr (@chro){
 	$chr = $chr *1;
-
-
+	
+	
 #########!!!!!!!!!!!!!!!###########
 #########!!!!!!!!!!!!!!!###########
 #########!!!!!!!!!!!!!!!###########
@@ -762,7 +762,7 @@ if ($pliclu) {
 #########!!!!!!!!!!!!!!!###########
 #########!!!!!!!!!!!!!!!###########
 #########!!!!!!!!!!!!!!!###########
-
+	
 	unless (-e "chr$chr.hv.ped.LD") {
 	    die unless ($refdir);
 	    my $bfile_sc = `ls $refdir/*chr$chr.*bed`;
@@ -841,7 +841,7 @@ if ($pliclu) {
 
 
 
-
+			
 			    print "Error: clumping not successfulL: see $out_name.clump.chr$chr.log\n";
 			    exit;
 			}
@@ -850,7 +850,7 @@ if ($pliclu) {
 
 	    }
 	    else {
-		&mysystem_nodie ($sys)
+		&mysystem_nodie ($sys) 
 	    }
 #	    exit;
 
@@ -871,47 +871,47 @@ if ($pliclu) {
 	    }
 	    else {
 		&mysystem ("cp $out_name.clump.chr$chr.clumped $rootdir");
-
+		
 #	    &mysystem_nodie ("$ploc/plink --bfile $bfile_sc --clump $snpfile --clump-verbose --clump-p1 $pth --clump-p2 $pth --clump-r2 $r2th --clump-kb $window_size --out $out_name");
-
+		
 		print "first chr $chr\n";
 
 #	    exit;
 
 		die $! unless open LDI, "< $out_name.clump.chr$chr.clumped";
 		die $! unless open LDO, "> $out_name.clump.chr$chr.r2";
-
-
+		
+		
 		my $index = "";
 		my $index_pos = 0;
 		my @ld_friends = ();
 		my %ld_hash = ();
 		my %dist_hash = ();
-
+		
 		my %ld_hash_6 = ();
 		my %dist_hash_6 = ();
-
-
+		
+		
 		my @prekno_hash = ();
-
-
+		
+		
 #	    my $prekno_out = "";
 		my $genes = "-";
 		my $range = "";
 		my $span = "";
 		my $span_left = 0;
 		my $span_right = 0;
-
+		
 		my $genes_6 = "-";
 		my $range_6 = "";
 		my $span_6 = "";
 		my $span_left_6 = 0;
 		my $span_right_6 = 0;
-
+		
 #	    my $span_4 = "";
 		my $span_left_4 = 0;
 		my $span_right_4 = 0;
-
+		
 		while (my $line = <LDI>){
 		    my @cells = @{&split_line_ref(\$line)};
 		    if (@cells == 11 && $cells[0] ne "CHR"){   ### this is not checked yet !!!!!!!!!!!!
@@ -970,7 +970,7 @@ if ($pliclu) {
 #		    print $bb_hash{$index}."\n";
 #		    sleep(1);
 			#######################
-			## here print it out,
+			## here print it out, 
 			print LDA $bb_hash{$index};
 
 			my $ld_str = "";
@@ -1054,7 +1054,7 @@ if ($pliclu) {
 #		    print LDA " ".sprintf "%.1f",$index_pos + $span_left_4 * 1000;
 #		    print LDA " ".sprintf "%.1f",$index_pos + $span_right_4 * 1000;
 #		    print LDA " ".$span_calc_4;
-
+			
 
 
 
@@ -1062,7 +1062,7 @@ if ($pliclu) {
 			my @name_arr_loc = @{ $gene_name_arr[$chr] };
 			my @star_arr_loc = @{ $gene_star_arr[$chr] };
 			my @stop_arr_loc = @{ $gene_stop_arr[$chr] };
-
+			
 			my $left_m = $index_pos + $span_left_6*1000 ;
 			my $right_m = $index_pos + $span_right_6*1000 ;
 			my %gene_hash= ();
@@ -1076,11 +1076,11 @@ if ($pliclu) {
 			    my $gene_left = $star_arr_loc[$ac] - 50000;
 			    my $gene_right = $stop_arr_loc[$ac] + 50000;
 			    my $name_loc = $name_arr_loc[$ac];
-
+			    
 			    if ($gene_left < $right_m ) {
 				if ($gene_right > $left_m ) {
 				    unless (exists $gene_hash{$name_loc}) {
-
+					
 					my $dist = 0;
 					if ($gene_right < $index_pos) {
 					    $dist = $gene_right - $index_pos;
@@ -1089,14 +1089,14 @@ if ($pliclu) {
 					    $dist = $gene_left - $index_pos;
 					}
 					$dist = sprintf "%.1f",$dist/1000;
-
-
-
+					
+					
+					
 #				    print $name_loc."(".$dist.")"."\n";
 					$gene_str .= ",".$name_loc."(".$dist.")";
 					$gene_hash{$name_loc} = 1;
 				    }
-
+				    
 				}
 			    }
 			}  ## end gene array
@@ -1145,15 +1145,15 @@ if ($pliclu) {
 
 #		if (exists $prekno_txt{$cells[0]}) {
 #		    $prekno_out .= "/".$prekno_txt{$cells[0]};
-#		    push @prekno_friends,$prekno_txt{$cells[0]}."$cells[0]($cells[2])";
-#		    $prkno_hash{$cells[0]} = $prekno_txt{$cells[0];
+#		    push @prekno_friends,$prekno_txt{$cells[0]}."$cells[0]($cells[2])"; 
+#		    $prkno_hash{$cells[0]} = $prekno_txt{$cells[0]; 
 #		}
 
 
 
-#		push @ld_friends,"$cells[0]($cells[2])";
-		    $ld_hash{$cells[0]} = $cells[2];
-		    $dist_hash{$cells[0]} = $cells[1];
+#		push @ld_friends,"$cells[0]($cells[2])"; 
+		    $ld_hash{$cells[0]} = $cells[2]; 
+		    $dist_hash{$cells[0]} = $cells[1]; 
 
 		    $span_left = $cells[1] if ($cells[1] < $span_left);
 		    $span_right = $cells[1] if ($cells[1] > $span_right);
@@ -1161,8 +1161,8 @@ if ($pliclu) {
 		    if ($cells[2] >= 0.6) {
 			$span_left_6 = $cells[1] if ($cells[1] < $span_left_6);
 			$span_right_6 = $cells[1] if ($cells[1] > $span_right_6);
-			$ld_hash_6{$cells[0]} = $cells[2];
-			$dist_hash_6{$cells[0]} = $cells[1];
+			$ld_hash_6{$cells[0]} = $cells[2]; 
+			$dist_hash_6{$cells[0]} = $cells[1]; 
 
 		    }
 
@@ -1195,12 +1195,12 @@ if ($pliclu) {
 	}
 #	exit;
     }
-
-
+    
+    
 #/fg/debakkerscratch/ripke/plink/1.08/src/plink --bfile /home/radon01/sripke/bakker_ripke/hapmap_ref/subchr/hapmap3_r2_b36_fwd.consensus.qc.poly.chr20.CEUTSI.phased.bgl --clump daner_IBD_CD7.all --clump-verbose --clump-p1 0.0001 --clump-p2 0.0001 --clump-r2 0.20 --clump-kb 3000 --out plink2
-
-
-
+    
+    
+    
 
 #    exit ;
 
@@ -1234,7 +1234,7 @@ if ($pliclu) {
 
     if ($lcc < 2) {
 	print "\n\n********* Warning: no index SNPs left\n";
-	&mysystem ("txt2xls --pcol 3 --cogr 4,12,13,16 --txt $out_name.clump.areator.sorted.1mhc --xls $out_name.clump.areator.sorted.1mhc.xls");
+	&mysystem ("txt2xls --pcol 3 --cogr 4,12,13,16 --txt $out_name.clump.areator.sorted.1mhc --xls $out_name.clump.areator.sorted.1mhc.xls");	
 	exit;
     }
 
@@ -1245,3 +1245,6 @@ if ($pliclu) {
     print "enough is enough\n";
     exit;
 }
+
+
+

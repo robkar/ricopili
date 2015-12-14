@@ -87,7 +87,7 @@ my $sc;
 
 if (1){
     $sc = system ($sys);
-
+    
     if ($sc != 0) {
 	print "Error with munging\n";
 	exit;
@@ -203,7 +203,7 @@ unless (-e $mdd_sumstats_loc) {
 my $nca_mdd = 16823;
 my $nco_mdd = 25632;
 
-
+    
 $sys = "$ldsc_sys"."ldsc.py --rg $danerfile.ldsc.sumstats.gz,$scz_sumstats_loc,$bip_sumstats_loc,$mdd_sumstats_loc --ref-ld-ch $ldsc/ref/eur_w_ld_chr/ --w-ld-chr $ldsc/ref/eur_w_ld_chr/ --out ldsc.rg.$danerfile.scz52.bip32.mdd29";
 
 die $!."(cmd.ldsc.txt)" unless open OUT, ">> cmd.ldsc.txt";
@@ -242,3 +242,7 @@ if ($sc == 0) {
 
 
 print "success2\n";
+
+
+
+

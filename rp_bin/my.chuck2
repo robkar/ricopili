@@ -37,7 +37,7 @@ my $inname = "";
 my $sfile = "";
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
 
     "out=s"=> \ $outname,
     "empty=s"=> \ $emptyname,
@@ -85,3 +85,9 @@ else {
 	print "empty dataset detected\n";
     }
 }
+
+
+
+
+
+
