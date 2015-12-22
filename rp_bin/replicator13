@@ -4,7 +4,7 @@ use strict;
 
 
 # version 9 with bed/bim/fam support
-# version 10 with info comparisons and
+# version 10 with info comparisons and 
 # version 11 with rformat-file
 
 
@@ -82,7 +82,7 @@ my $refdir = "$hmloc/subchr/";
 use Compress::Zlib ;
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
    "out=s"=> \$out_name,
    "proxy=s"=> \my $proxy_name,
    "expr=s"=> \$expr_name,
@@ -141,15 +141,15 @@ if ($help || @ARGV != 0 || $areat_name eq "no_name" ){
         --proxy STRING    proxy file
         --expr STRING     extended proxy-name
 	--help            print this message and exit
-	--n1 INT          size of basic dataset
-	--n2 INT          size of repl dataset
+	--n1 INT          size of basic dataset 
+	--n2 INT          size of repl dataset 
 	--nco INT         number of controls in replication (for SE)
 	--nca INT         number of cases in replication (for SE)
 
         --rebasic       replication dataset is a basic file (complete and zipped)
         --noftest       no frequency test on ambiguous SNPs
 
-        --dan           aretor from daner, default
+        --dan           aretor from daner, default 
         --noareat       areator is in fact a daner-file
 
         --gwas STRING   gwas result file for proxy lookups.
@@ -213,11 +213,11 @@ if ($help || @ARGV != 0 || $areat_name eq "no_name" ){
 
 
         --refdir STRING   directory of imputation reference
-  refdir:
+  refdir: 
    HM3 $hmloc/subchr/
    HM2 $hmloc/phas2/subchr/
 
-example from MDD:
+example from MDD: 
 
 have a look here:
 
@@ -246,7 +246,7 @@ if ($out_name eq "out"){
 	}
         $rep_short = $repbfile;
     }
-
+    
     $rep_short =~ s/^daner_//;
     $rep_short =~ s/.gz$//;
     $out_name = "$ar_short.$rep_short";
@@ -360,7 +360,7 @@ my %prekno_reg_chr;
 my %prekno_reg_beg;
 my %prekno_reg_end;
 if ($prekno_file) {
-
+    
     die $!."($prekno_file)" unless open FILE, "< $prekno_file";
     while (my $line = <FILE>){
 	chomp($line);
@@ -407,9 +407,9 @@ if ($dan){
     $chr_bas = 1;
     $pos_bas = 2;
     $p_bas = 3;
-
+    
     $gt_bas = 6;
-
+    
     $or_bas = 4;
     $se_bas = 5;
     $f_bas = 8;
@@ -424,11 +424,11 @@ if ($noareat) {
     $chr_bas = 0;
     $pos_bas = 2;
     $p_bas = 10;
-
+    
     $gt_bas = 3; ## needs to be taken care of later
     $allnogt = 1; ## takes care that second allele is in next column (right of $gt_bas)
 
-
+    
     $or_bas = 8;
     $se_bas = 9;
     $f_bas = 6;
@@ -449,10 +449,10 @@ if ($dan == 2){
      $chr_bas = 1;
      $pos_bas = 2;
      $p_bas = 10;
-
+     
      $gt_bas = 3;
 
-
+     
      $or_bas = 8;
      $se_bas = 9;
      $f_bas = 8;
@@ -491,9 +491,9 @@ if ($clump_format) {
     $pos_bas = 2;
     $p_bas = 10;
 
-    $gt_bas = 3;
+    $gt_bas = 3; 
     $allnogt = 1;
-
+    
     $or_bas = 8;
     $se_bas = 9;
     $f_bas = 6;
@@ -619,14 +619,14 @@ elsif ($rformat == 22) {
 
 
 
-#  snpid clump ldrank ldwithindex hg19chr bp.hg19
+#  snpid clump ldrank ldwithindex hg19chr bp.hg19 
 #   0      1      2       3            4      5
-#   SNP CHR BP_HG18 ALL1 ALL2 Freq_1 Freq_2 Obs_1
+#   SNP CHR BP_HG18 ALL1 ALL2 Freq_1 Freq_2 Obs_1 
 #    6    7   8       9   10   11    12     13
-#   Untrans1 Exp_1 Var.O.E._1 Chisq.1df._1 Obs_2 Untrans2 Exp_2
-#      14     15      16          17         18       19   20
+#   Untrans1 Exp_1 Var.O.E._1 Chisq.1df._1 Obs_2 Untrans2 Exp_2 
+#      14     15      16          17         18       19   20  
 #   Var.O.E._2 Chisq.1df._2 HetObs1 HetObs2 OR P.value se
-#     21           22         23       24    25    26  27
+#     21           22         23       24    25    26  27 
 
 
 elsif ($rformat == 222) {
@@ -675,7 +675,7 @@ elsif ($rformat == 225) {
 ##### multiped out unphased (OR is for second allele)
 #SNP         A1  FRQU_1A1  A2  FRQU_2A2  OR      95%Lo   95%Hi  Chisq      P         loglo         loghi         SE           SNP         CHR
 #rs10779702  A   0.3118    G   0.6882    0.9619  0.8279  1.118  0.2578     0.6116    -0.082022117  0.048441804   0.033281612  rs10779702  1
-#  0         1    2         3    4       5         6      7       8         9          10            11              12        13          14
+#  0         1    2         3    4       5         6      7       8         9          10            11              12        13          14 
 
  $snp_col = 0;
  $p_col = 9;
@@ -691,7 +691,7 @@ elsif ($rformat == 226) {
 ##### multiped out unphased (OR is for second allele)
 #CHR  MARKER      BP_START  BP_END    ALLELE1  Freq_trans  Freq_untrans  ALLELE2  Freq_trans  Freq_untrans  CHISQ   DF  P       OR      SE      L95     U95
 #1    rs10910078  2380448   2380448   C        0.5306      0.5129        T        0.4694      0.4871        0.9416  1   0.3319  0.9316  0.0732  0.8071  1.0750
-# 0   1            2         3          4        5            6            7         8          9            10       11  12      13      14      15      16
+# 0   1            2         3          4        5            6            7         8          9            10       11  12      13      14      15      16 
 
 
  $snp_col = 1;
@@ -879,7 +879,7 @@ elsif ($rformat == 333) {
 }
 
 ###### sgene_mdd
-#SNP        al1 al2 freq_al1   OR_al1   pval       se
+#SNP        al1 al2 freq_al1   OR_al1   pval       se  
 elsif ($rformat == 332) {
 	$snp_col = 0;
 	$p_col = 5;
@@ -1212,7 +1212,7 @@ elsif ($rformat == 8) {
  $f_col = 5;
 # $rest = 9;
  $se_col = 6;
-
+ 
  }
 
 ##### colaus_2
@@ -1229,7 +1229,7 @@ elsif ($rformat == 88) {
  $f_col = 6;
 # $rest = 9;
  $se_col = 7;
-
+ 
  }
 
 
@@ -1243,7 +1243,7 @@ elsif ($rformat == 9) {
  $f_col = 5;
 # $rest = 9;
  $se_col = 8;
-
+ 
  }
 
 ## CHR SNP BP A1 A2 T U OR CHISQ P A:U_PAR CHISQ_PAR P_PAR CHISQ_COM P_COM F  SE
@@ -1257,11 +1257,11 @@ elsif ($rformat == 25) {
  $f_col = 15;
 # $rest = 9;
  $se_col = 16;
-
+ 
  }
 
 ## CHR  SNP         POS        A1  A2  P          OR      RA  FRQU    SE    OA
-##  0   1             2         3  4    5         6         7   8      9  10
+##  0   1             2         3  4    5         6         7   8      9  10  
 elsif ($rformat == 2525) {
  $snp_col = 1;
  $p_col = 5;
@@ -1271,12 +1271,12 @@ elsif ($rformat == 2525) {
  $f_col = 8;
  $se_col = 9;
  $chr_col = 0;
-
+ 
  }
 
 
 ## CHR  SNP         POS        A1  A2  P          OR      RA  FRQU    SE    OA
-##  0   1             2         3  4    5         6         7   8      9  10
+##  0   1             2         3  4    5         6         7   8      9  10  
 elsif ($rformat == 2526) {
  $snp_col = 1;
  $p_col = 5;
@@ -1286,7 +1286,7 @@ elsif ($rformat == 2526) {
  $f_col = 8;
  $se_col = 9;
  $chr_col = 0;
-
+ 
  }
 
 
@@ -1301,11 +1301,11 @@ elsif ($rformat == 99) {
 # $rest = 9;
  $se_col = 7;
  $rest = 1;
-
+ 
  }
 
 # mick immunochip
-# SNP         CHR  A1  A2  AFF    UNAFF  P      OR    SE
+# SNP         CHR  A1  A2  AFF    UNAFF  P      OR    SE   
 #  0            1   2   3   4      5     6      7      8
 elsif ($rformat == 999) {
  $snp_col = 0;
@@ -1316,7 +1316,7 @@ elsif ($rformat == 999) {
  $f_col = 4;
  $se_col = 8;
  $chr_col = 1;
-
+ 
  }
 
 
@@ -1331,7 +1331,7 @@ elsif ($rformat == 9999) {
  $f_col = 4;
  $se_col = 8;
  $chr_col = 1;
-
+ 
  }
 
 # rsID SNP CHR A1 A2 AFF UNAFF P OR SE Chr Strand Mapped_pos Note A1.positive A2.positive POS GWASNAME
@@ -1344,10 +1344,10 @@ elsif ($rformat == 9998) {
  $a1_col = 3;
  $a2_col = 4;
  $or_col = 8;
- $f_col = 6;
+ $f_col = 6; 
  $se_col = 9;
  $chr_col = 2;
-
+ 
  }
 
 #SNP              CHR  A1  A2  AFF    UNAFF  P      OR    SE     Chr  Strand  Mapped_pos  Note    rsID        A1.positive  A2.positive  POS           SNP
@@ -1359,10 +1359,10 @@ elsif ($rformat == 99989) {
  $a1_col = 2;
  $a2_col = 3;
  $or_col = 7;
- $f_col = 5;
+ $f_col = 5; 
  $se_col = 8;
  $chr_col = 1;
-
+ 
  }
 
 #   BOMA 0812
@@ -1378,7 +1378,7 @@ elsif ($rformat == 9997) {
  $f_col = 9;
  $se_col = 5;
  $chr_col = 1;
-
+ 
  }
 # BOMA ext
 # SNP          Chr  Position   p-value   OR           SE        EffectAllele  OtherAllele  FRQ_U_1   Info_Score
@@ -1392,7 +1392,7 @@ elsif ($rformat == 9996) {
  $f_col = 8;
  $se_col = 5;
  $chr_col = 1;
-
+ 
  }
 
 # SCOT ext
@@ -1407,7 +1407,7 @@ elsif ($rformat == 9995) {
  $f_col = 13;
  $se_col = 7;
  $chr_col = 0;
-
+ 
  }
 
 
@@ -1479,7 +1479,7 @@ if ($rformat == 0) {
 	$ggz -> gzclose();
 
         print  "write new format_file\n";
-	die "$!" unless open RFF, "> $rep_name_ffile";
+	die "$!" unless open RFF, "> $rep_name_ffile";  
 
 	print RFF "## please replace NA with the following: SNP P A1 A2 OR FA1 SE INFO CHR BP\n";
 	print RFF "## do not change the order of rows\n";
@@ -1491,14 +1491,14 @@ if ($rformat == 0) {
 	print RFF "## row1: $row2\n";
 	print RFF "## row1: $row3\n";
 	close RFF;
-
+	
         print  "please edit $rep_name_ffile and restart\n";
 	exit;
 
     }
 
     else {
-	die "$!" unless open RFF, "< $rep_name_ffile";
+	die "$!" unless open RFF, "< $rep_name_ffile";  
 	my $rcc = 0;
 	while (my $line = <RFF>){
 	    my @cells = @{&split_line_ref(\$line)};
@@ -1585,7 +1585,7 @@ if ($rformat == 0) {
 	print "A2\t$a2_col\n";
 	print "OR\t$or_col\n";
 	print "FA1\t$f_col\n";
-	print "CHR\t$chr_col\n";
+	print "CHR\t$chr_col\n";	
 	print "INFO\t$info_col\n";
 	print "SE\t$se_col\n";
 
@@ -1598,7 +1598,7 @@ if ($rformat == 0) {
 
 
 print "rformat: $rformat\n";
-#exit;
+#exit; 
 
 
 #print "hier\n";
@@ -1623,8 +1623,8 @@ if ($eproxy) {
 if ($one_chr) {
     my $areat_name_chr = $areat_name.".chr$one_chr";
     unless (-e $areat_name_chr) {
-	die "$!" unless open BASIC, "< $areat_name";
-	die "$!" unless open OUT, "> $areat_name_chr";
+	die "$!" unless open BASIC, "< $areat_name";   
+	die "$!" unless open OUT, "> $areat_name_chr";   
 	my $head = <BASIC>;
 	print OUT $head;
 	while (my $line = <BASIC>){
@@ -1658,8 +1658,8 @@ my $buffer = 500000;
 
 if ($region){
 #    unless (-e $areat_name_region){
-	die "$!" unless open IN, "< $areat_name";
-	die "$!" unless open OUT, "> $areat_name_region";
+	die "$!" unless open IN, "< $areat_name";   
+	die "$!" unless open OUT, "> $areat_name_region";   
 	my $head = <IN>;
 	print OUT $head;
 	while (my $line = <IN>){
@@ -1730,8 +1730,8 @@ $expr_name = "$areat_name.expr" if ($expr_name eq "no_name");
 unless (-e $expr_name) {
 
 
-    die "$!: $areat_name" unless open FILE, "< $areat_name";
-    die "$!" unless open OUT, "> $expr_name";
+    die "$!: $areat_name" unless open FILE, "< $areat_name";    
+    die "$!" unless open OUT, "> $expr_name";    
     <FILE>;
     while (<FILE>){
 	chomp;
@@ -1749,7 +1749,7 @@ unless (-e $expr_name) {
 my %arsnps;
 unless ($eproxy) {
     if ($expr_name) {
-	die "$!" unless open FILE, "< $expr_name";
+	die "$!" unless open FILE, "< $expr_name";    
 	while (<FILE>){
 	    chomp;
 	    my @cells = @{&split_line_ref(\$_)};
@@ -1772,7 +1772,7 @@ unless ($eproxy) {
 		my $einfo = $pcell;
 		$einfo =~ s/.*\(/(/;
 		$expr{"$rs_name\t$bsnp"} = $einfo;
-
+		
 		unless ($index){
 		    $arsnps{$rs_name} = 1;
 		}
@@ -1880,10 +1880,10 @@ if ($repbfile) {
 	    print "$asso_cmd\n";
 #	    exit;
 	    &mysystem ($asso_cmd);
+	    
 
-
-	    die "$!" unless open TI, "< $bfile_sub_tdt.tmp.tdt";
-	    die "$!" unless open TO, "> $bfile_sub_tdt.tdt";
+	    die "$!" unless open TI, "< $bfile_sub_tdt.tmp.tdt";   
+	    die "$!" unless open TO, "> $bfile_sub_tdt.tdt";   
 	    while (my $line = <TI>){
 		chomp ($line);
 		my @cells = @{&split_line_ref(\$line)};
@@ -1923,27 +1923,27 @@ if ($repbfile) {
 	$f_col = 16;
 	$ci= 1;
 
-
+	    
     }
     else {
-
+	
 	my $bfile_sub_assoc = "$out_name.$repbfile.assoc";
 	unless (-e "$bfile_sub_assoc.assoc"){
 	    my $asso_cmd = "$ploc/plink --allow-no-sex --filter-founders --bfile $bfile_sub --assoc --out $bfile_sub_assoc.tmp --ci .95";
 	    print "$asso_cmd\n";
 	    &mysystem ($asso_cmd);
-
+	    
 	    if ($kemds) {
 		my $asso_cmd = "$ploc/plink --allow-no-sex --filter-founders --bfile $bfile_sub --logistic --out $bfile_sub_assoc.tmp --ci .95 $covar_str --covar-name C1,C2,C3,C4";
-
+		
 		print "$asso_cmd\n";
 		&mysystem ($asso_cmd);
-
+		
 		my %or_hash;
 		my %pv_hash;
 		my %se_hash;
-
-		die "$!" unless open LG, "< $bfile_sub_assoc.tmp.assoc.logistic";
+		
+		die "$!" unless open LG, "< $bfile_sub_assoc.tmp.assoc.logistic";   
 		my $head = <LG>;
 		while (my $line = <LG>){
 		    my @cells = @{&split_line_ref(\$line)};
@@ -1954,10 +1954,10 @@ if ($repbfile) {
 		    }
 		}
 		close LG;
-
-
-		die "$!" unless open IN, "< $bfile_sub_assoc.tmp.assoc";
-		die "$!" unless open OUT, "> $bfile_sub_assoc.tmp.assoc.tmp";
+		
+		
+		die "$!" unless open IN, "< $bfile_sub_assoc.tmp.assoc";   
+		die "$!" unless open OUT, "> $bfile_sub_assoc.tmp.assoc.tmp";   
 		my $head = <IN>;
 		print OUT $head;
 		while (my $line = <IN>){
@@ -1974,10 +1974,10 @@ if ($repbfile) {
 		close BASIC;
 		close OUT;
 		&mysystem("mv $bfile_sub_assoc.tmp.assoc.tmp $bfile_sub_assoc.tmp.assoc");
-
-
+		
+		
 	    }
-
+	    
 	    &mysystem("mv $bfile_sub_assoc.tmp.assoc $bfile_sub_assoc.assoc");
 
 	    unless (-e "$bfile_sub_comb.gz"){
@@ -1999,17 +1999,17 @@ if ($repbfile) {
 	$or_col = 9;
 	$se_col = 10;
 	$f_col = 17;
-
+	
 #  CHR  SNP         BP       A1  F_A     F_U     A2  CHISQ  P          OR      SE       L95     U95     CHR  SNP         A1  A2  MAF     NCHROBS
-#   0    1           2      3     4      5        6     7    8          9       10       11       12     13    14        15  16   17       18
-
-
-
+#   0    1           2      3     4      5        6     7    8          9       10       11       12     13    14        15  16   17       18  
+	
+	
+	
     }
 }
 else {
     if ($rep_name eq "no_name") {
-	print "Error: either a bfile or a replication dataset\n";
+	print "Error: either a bfile or a replication dataset\n"; 
 	exit;
     }
 }
@@ -2030,7 +2030,7 @@ print "read areator\n";
 
 my %areat_snps;
 my %areat_pos;
-die "$!" unless open BASIC, "< $areat_name";
+die "$!" unless open BASIC, "< $areat_name";   
 while (my $line = <BASIC>){
     chomp ($line);
     my @cells = @{&split_line_ref(\$line)};
@@ -2100,7 +2100,7 @@ unless (-e $repname_sub) {
     $cells[$or_col] = "OR";
 #    $cells[$f_col] = "FRQU_";
 
-
+ 
 
     print FILE "@cells\n";
 #    print FILE $header;
@@ -2194,16 +2194,16 @@ print "read rep_sub ($repname_sub) into memory\n";
 
 my %all_chr;
 
-die "$!" unless open FILE, "< $repname_sub";
+die "$!" unless open FILE, "< $repname_sub";    
 
 while (<FILE>){
-
+    
     chomp;
     my @cells = @{&split_line_ref(\$_)};
 
     my $chr_si = $cells[$chr_col];
     $chr_si = $chr_si * 1;
-    $all_chr {$chr_si} = 1;
+    $all_chr {$chr_si} = 1; 
 
 
 
@@ -2228,7 +2228,7 @@ while (<FILE>){
 
 
 	if ($repbfile) {
-	    die "$!" unless open TI, "< $repbfile.fam";
+	    die "$!" unless open TI, "< $repbfile.fam";   
 	    while (my $line = <TI>){
 		chomp ($line);
 		my @cells = @{&split_line_ref(\$line)};
@@ -2242,25 +2242,25 @@ while (<FILE>){
 	    close TI;
 	}
 
-
+	
 
 	print "file: $repname_sub\n";
 	print "nfa: $nfa\n";
 	print "nfu: $nfu\n";
 	if ($nfu > 0 || $nfa > 0 ){
-	    die "$!" unless open NCACO, "> $out_name_daner_dir.ncaco";
+	    die "$!" unless open NCACO, "> $out_name_daner_dir.ncaco";    
 	    print NCACO $nfa."\n";
 	    print NCACO $nfu."\n";
 	    close NCACO;
 	}
 	else {
 	    if ($nca == 0 || $nco == 0){
-
+		
 		print "***************\nERROR\nno CACO numbers, please name them separately with --nca INT and --nco INT\n";
 		die;
 	    }
 	    else {
-		die "$!" unless open NCACO, "> $out_name_daner_dir.ncaco";
+		die "$!" unless open NCACO, "> $out_name_daner_dir.ncaco";    
 		print NCACO $nca."\n";
 		print NCACO $nco."\n";
 		close NCACO;
@@ -2374,20 +2374,20 @@ while (<FILE>){
     }
     $rep_se {$cells[$snp_col]} = $cells[$se_col];
 
-
+    
     if ($ci) {
 	unless ($p == 0){
 	    my $ci_l = $rep_se {$cells[$snp_col]};
 	    $ci_l =~ s/,.*//g;
 	    $ci_l =~ s/[^0-9.]//g;
 	    $ci_l *= 1;
-
+	    
 	    if ($rep_or {$cells[$snp_col]} == 0) {
 		$rep_se {$cells[$snp_col]} = 1;
 	    }
 	    else {
 		my $es = log($rep_or {$cells[$snp_col]});
-
+		
 		my $se = ($es-log($ci_l))/1.96;
 		$rep_se {$cells[$snp_col]} = $se;
 	    }
@@ -2473,12 +2473,12 @@ print "read gwas_sub into memory\n";
 
 
 my %gwas_info;
-die "$!" unless open IN, "< $gwas_sub";
+die "$!" unless open IN, "< $gwas_sub";    
 while (my $line = <IN>){
     chomp($line);
     my @cells = @{&split_line_ref(\$line)};
     $gwas_info{$cells[1]} = "@cells";
-    $all_chr {$cells[0]} = 1;
+    $all_chr {$cells[0]} = 1; 
 }
 close IN;
 
@@ -2563,8 +2563,8 @@ my %expr = ();
 $expr_name = "$areat_name.expr" if ($expr_name eq "no_name");
 unless (-e $expr_name) {
 
-    die "$!" unless open FILE, "< $areat_name";
-    die "$!" unless open OUT, "> $expr_name";
+    die "$!" unless open FILE, "< $areat_name";    
+    die "$!" unless open OUT, "> $expr_name";    
     <FILE>;
     while (<FILE>){
 	chomp;
@@ -2579,7 +2579,7 @@ unless (-e $expr_name) {
 
 
 if ($expr_name) {
-    die "$!" unless open FILE, "< $expr_name";
+    die "$!" unless open FILE, "< $expr_name";    
     while (<FILE>){
 	chomp;
 	my @cells = @{&split_line_ref(\$_)};
@@ -2611,7 +2611,7 @@ $proxy_count{"SNP"} = "proxy_count";
 
 if ($expr_name) {
 
-    die "$!" unless open FILE, "< $expr_name";
+    die "$!" unless open FILE, "< $expr_name";    
     while (<FILE>){
 	chomp;
 	my @cells = @{&split_line_ref(\$_)};
@@ -2623,9 +2623,9 @@ if ($expr_name) {
 	foreach my $pcell(@snpcells){
 	    next if ($pcell eq "");
 	    $pcell .= ")";
-
+	    
 	    my $rs_name = $pcell;
-
+	    
 	    $rs_name =~ s/\(.*\)//;
 
 	    $proxy{$rs_name} = $cells[0];
@@ -2636,22 +2636,22 @@ if ($expr_name) {
 	$proxy_str{$cells[0]} =~ s/^\t//;
     }
     close FILE;
-}
+} 
 else {
-    die "$!" unless open FILE, "< $areat_name";
+    die "$!" unless open FILE, "< $areat_name";    
     while (<FILE>){
 	chomp;
 	my @cells = @{&split_line_ref(\$_)};
 	$snps{$cells[$snp_bas]} = 1;
 	foreach (1..$#cells) {
 	    my $cell = $cells[$_];
-
+	    
 	    if ($cell =~ /^rs/) {
 		my @snpcells = split ',', $cell;
 		foreach my $pcell(@snpcells){
 		    next if ($pcell eq "");
 		    my $rs_name = $pcell;
-
+		    
 		    $rs_name =~ s/\(.*\)//;
 		    $proxy{$rs_name} = $cells[$snp_bas];
 		    $snps{$pcell} = 1;
@@ -2736,21 +2736,21 @@ use lib '/home/unix/sripke/perl_modules/Spreadsheet-WriteExcel-2.25/blib/lib';
 use Spreadsheet::WriteExcel;                             # Step 0
 
 ### read basic file
-die "$!" unless open BASIC, "< $areat_name";
-die "$!" unless open OUT, "> $out_name";
-die "$!" unless open OUTDD, "> $out_name_daner_dir_tmp";
+die "$!" unless open BASIC, "< $areat_name";    
+die "$!" unless open OUT, "> $out_name";    
+die "$!" unless open OUTDD, "> $out_name_daner_dir_tmp";    
 my $workbook = Spreadsheet::WriteExcel->new("$out_name.xls");   # Step 1
 die "Problems creating new Excel file: $!" unless defined $workbook;
 # Create a format for the column headings
 my $fheader = $workbook->add_format();
 $fheader->set_bold();
 
-my $worksheet   = $workbook->add_worksheet("replication");
+my $worksheet   = $workbook->add_worksheet("replication"); 
 
-if (0) {
-my $unvalidsheet   = $workbook->add_worksheet("unvalid_p_value");
-my $xreplsheet   = $workbook->add_worksheet("missing_in_replication");
-my $xbasheet   = $workbook->add_worksheet("additional_in_replication");
+if (0) { 
+my $unvalidsheet   = $workbook->add_worksheet("unvalid_p_value"); 
+my $xreplsheet   = $workbook->add_worksheet("missing_in_replication");  
+my $xbasheet   = $workbook->add_worksheet("additional_in_replication");  
 }
 
 
@@ -2778,7 +2778,7 @@ $worksheet->set_column(20, 20,  12, $format_scien1);
 
 
 
-
+  
 
 
 
@@ -2876,23 +2876,23 @@ while (my $line = <BASIC>){
 		$rs_name =~ s/\(.*\)//;
 		$r2_loc =~ s/.*\(//;
 		$r2_loc =~ s/\)//;
-
+		
 #	    print "pr:$rs_name, r2:$r2_loc\n";
 #	    sleep(1);
 #	    if ($found == 0) {
-
+		
 		if ($r2_loc > $r2_max) {
 		    if (exists $rep_p{$rs_name}) {
-
+			
 #		    $snp_txt = $cells[$snp_bas];
 			$cells[$snp_bas] = $rs_name;
 			$repsnp_name = $rs_name;
 			$proxy_sw = $_;
 			$found = 1;
-			$r2_max = $r2_loc;
+			$r2_max = $r2_loc; 
 
 
-
+			
 #		    print "proxy found, $rs_name \t $snp_txt !!\n";
 #		    sleep(1);
 #		    print "extended info:\t".$expr{"$rs_name\t$snp_txt"}."\n";
@@ -2900,15 +2900,15 @@ while (my $line = <BASIC>){
 #		    print "gwas info:\t".$gwas_info{"$cells[$snp_bas]"}."\n";
 #		    print "gwas info:\t".$gwas_info{"$snp_txt"}."\n";
 #		    print "rextended info:\t".$expr{"$snp_txt\t$cells[$snp_bas]"}."\n";
-
+			
 #		    exit;
 		    }
 		}
-
+		
 #	    }
-
-
-
+		
+		
+		
 	    }
 	}
 
@@ -2919,22 +2919,22 @@ while (my $line = <BASIC>){
 	}
 
 
-	if ($found == 0){   # not even a proxy
+	if ($found == 0){   # not even a proxy 
 
 	    $xc++ ;
 	    delete $rep_p{$cells[$snp_bas]};
 #	    print "try to find a proxy for $cells[$snp_bas]\n";
-
+	    
 	    my $ipos = $cells[$pos_bas];
 	    my $ichr = $cells[$chr_bas];
 	    my $isnp = $snp_txt;
 	    my $epsnp = "nosnp";
 	    my $max_r2 = 0;
 	    my $max_diff = 0;
-
+	    
 	    ####### look for more proxies
 	    if ($eproxy) {
-
+	
 		my $rem = $ipos %10;
 		my $ld_subdir = "ld_subdir/chr$ichr/$rem";
 		unless (-e $ld_subdir) {
@@ -2954,7 +2954,7 @@ while (my $line = <BASIC>){
 
 #		    $ggz->gzreadline(my $header);
 #		    print LDOUT $header;
-
+		    
 		    my $rep_count= 0;
 		    while (my $line = <REPSUB>){
 #		    while ($ggz->gzreadline(my $line)){
@@ -2977,7 +2977,7 @@ while (my $line = <BASIC>){
 			}
 		    }
 		    print LDOUT "$isnp\t$ichr\t$ipos\n";
-
+		    
 
 
 
@@ -2995,14 +2995,14 @@ while (my $line = <BASIC>){
 #		    exit;
 
 
-
+		    
 #		    my $ref = "$hmloc/subchr/hapmap3_r2_b36_fwd.consensus.qc.poly.chr$ichr.CEUTSI.phased.bgl";
 		    my $ref = "$ref_subdir/ref.$ichr";
 #		    $ref = "$hmloc/phas2/subchr/genotypes_chr$ichr"."_CEU_r22_nr.b36_fwd.phased.bgl" if ($phase2);
-
+		    
 		    my $ld_cmd = "$ploc/plink --filter-founders --extract $ld_subdir/rep.ld.$isnp.results --out $ld_subdir/rep.ld.$isnp.results.ld.tmp --bfile $ref --r2 --ld-snp $isnp --ld-window-kb 1000 --ld-window 99999 --ld-window-r2 0";
-
-
+		    
+		    
 		    if ($rep_count > 0) {
 			&mysystem ($ld_cmd);
 			&mysystem ("mv $ld_subdir/rep.ld.$isnp.results.ld.tmp.ld $ld_subdir/rep.ld.$isnp.results.ld.ld");
@@ -3013,17 +3013,17 @@ while (my $line = <BASIC>){
 		    }
 
 		}
-
-
+		
+		
 #		    print "6th debug: $ld_subdir/rep.ld.$isnp.results\n";
 #		    exit;
 
 
-
+		
 		die $!."($ld_subdir/rep.ld.$isnp.results.ld.ld)" unless open FILE, "< $ld_subdir/rep.ld.$isnp.results.ld.ld";
 
-
-
+		
+		
 		while (my $line = <FILE>){
 		    $line =~ s/^[\s]+//g;
 		    my @cells_rep = split /\s+/, $line;
@@ -3036,57 +3036,57 @@ while (my $line = <BASIC>){
 			    $max_r2 = $loc_r2;
 			    $epsnp = $loc_snp;
 			    $max_diff = $cells_rep[1] - $cells_rep[4];
-
-
-
+			    
+			    
+			    
 			    $cells[$snp_bas] = $loc_snp;
 			    $repsnp_name = $loc_snp;
 			    $found = 1;
-			    $r2_max = $loc_r2;
+			    $r2_max = $loc_r2; 
 			    $proxy_sw = 1;
 
 #			    print "hier: $loc_snp\n";
 			}
-
+			
 		    }
 		}
 		close FILE;
-
+		
 
 #		print "found:$isnp\t$cells[$snp_bas]\t$r2_max\t$ld_subdir/rep.ld.$isnp.results.ld.ld\n";
 #		print "sleep\n";
 #		exit;
-
+		
 	    }
-
+	    
 #	    if ($proxy_sw == 1) {
 #		print "sleep: snp: $epsnp, r2: $max_r2\n";
 #		print "sleep: snp_bas: $cells[$snp_bas]\n";
 #		print "sleep: snp_bas: $snp_txt\n";
-
+		
 #		sleep(5);
 #	    }
 #		push @norep_arr, "$cells[$snp_bas]\n";
-
-
+	    
+	    
 	    #######PREKNO
 	    ###############
 	    my $preknotxt = "";
-
+	    
 	    my $norep_out = "$line";
-
+	    
 	    if ($prekno_file) {
-
+		
 		my $wide = 200000;
-
+		
 		my $mhctxt = "";
-
+		
 		if ($ichr == 6 && $ipos > 25000000 && $ipos < 35000000) {
 		    $mhctxt = "MHC.";
 		}
-
+		
 		$preknotxt = "not_in_published_region";
-
+		
 		######### region
 		foreach my $ps_c (keys %prekno_reg_chr) {
 		    if ($prekno_reg_chr{$ps_c} == $ichr) {
@@ -3096,12 +3096,12 @@ while (my $line = <BASIC>){
 			}
 		    }
 		}
-
+		
 		$preknotxt = "$mhctxt$preknotxt";
-
+		
 		$norep_out .= "\t$preknotxt";
 	    }
-
+	    
 	    $norep_out .= "\t$epsnp\t$max_r2\t$max_diff";
 	    if ($found ==0) {
 
@@ -3153,7 +3153,7 @@ while (my $line = <BASIC>){
 		$gt = $gt_tmp;
 	    }
 
-
+	    
 	}
     }
 
@@ -3231,7 +3231,7 @@ while (my $line = <BASIC>){
 		print "subdir not existing: $ld_subdir\n";
 		&mysystem("mkdir -p $ld_subdir");
 	    }
-
+	    
 
 
 	    my $errcount = 1;
@@ -3242,7 +3242,7 @@ while (my $line = <BASIC>){
 		    print "$ld_cmd\n";
 		    &mysystem ($ld_cmd);
 		}
-		die "$ref, $ld_subdir/$snp_txt.$repsnp_name.ld.log: $!" unless open LOG, "< $ld_subdir/$snp_txt.$repsnp_name.ld.log";
+		die "$ref, $ld_subdir/$snp_txt.$repsnp_name.ld.log: $!" unless open LOG, "< $ld_subdir/$snp_txt.$repsnp_name.ld.log";    
 		while (my $line_tmp = <LOG>){
 
 		    my @cells = @{&split_line_ref(\$line_tmp)};
@@ -3258,7 +3258,7 @@ while (my $line = <BASIC>){
 		}
 		close LOG;
 #	    exit;
-
+		
 		if ($ld_info_r2 eq "LD-R2") {
 		    $errcount ++;
 
@@ -3271,7 +3271,7 @@ while (my $line = <BASIC>){
 		    &mysystem ("rm $ld_subdir/$snp_txt.$repsnp_name.ld.log");
 		}
 		else {
-		    $errcount = 0;
+		    $errcount = 0; 
 		}
 	    }
 
@@ -3352,10 +3352,10 @@ while (my $line = <BASIC>){
 
 #		print $ld_info_phase_os."\n";
 #		print $ld_info_phase_gwas."\n";
-
+		
 #		print $ld_info_phase_os2."\n";
 #		print $ld_info_phase_gwas2."\n";
-
+		
 #		exit;
 #	    }
 
@@ -3369,12 +3369,12 @@ while (my $line = <BASIC>){
 		$ld_info = $expr{"$repsnp_name\t$snp_txt"} if (exists $expr{"$repsnp_name\t$snp_txt"});
 	    }
 	}
-
-
+	
+	
     }
-
+    
     my $or;
-
+    
     if ($cells[$snp_bas] ne "SNP"){
 	if ($est){
 	    $or = sprintf "%.5g",exp($cells[$or_bas]);
@@ -3422,8 +3422,8 @@ while (my $line = <BASIC>){
 	$gwas_info{"$repsnp_name"} .= "\t".$rfr;
 	$gwas_info{"$repsnp_name"} .= "\t".$ld_info_r2;
 	$gwas_info{"$repsnp_name"} .= "\t".$or;
-	$gwas_info{"$repsnp_name"} .= "\t".$se ;
-	$gwas_info{"$repsnp_name"} .= "\t".$pb ;
+	$gwas_info{"$repsnp_name"} .= "\t".$se ; 
+	$gwas_info{"$repsnp_name"} .= "\t".$pb ; 
 	$gwas_info{"$repsnp_name"} .= "\t---";
 
     }
@@ -3478,11 +3478,11 @@ while (my $line = <BASIC>){
     $out_str .= $gwas_a2;
 #    $out_str .= "\t".$gt;
     $out_str .= "\t".$or;
-    $out_str .= "\t".$fr ;
-    $out_str .= "\t".$se ;
-    $out_str .= "\t".$pb ;
+    $out_str .= "\t".$fr ; 
+    $out_str .= "\t".$se ; 
+    $out_str .= "\t".$pb ; 
 
-    $out_str .= "\t".$repsnp_name;
+    $out_str .= "\t".$repsnp_name; 
     $out_str .= "\t".$ld_info;
 
     $out_str .= "\t".$gwas_info{"$repsnp_name"};
@@ -3531,24 +3531,24 @@ while (my $line = <BASIC>){
 	}
     }
 
-#    $out_str .= "\t".$rgt ;
+#    $out_str .= "\t".$rgt ; 
 
 #    if ($ra1 eq "") {
 #	print "no A1 in replication data for: $repsnp_name: $ra1, $ra2, orig: ". $rep_a1{$cells[$snp_bas]}."\n";
 #	sleep(1);
  #   }
 
-    $out_str .= "\t".$ra1 ;
-    $out_str .= $ra2 ;
+    $out_str .= "\t".$ra1 ; 
+    $out_str .= $ra2 ; 
     if ($freq_fli == 1) {
 	$out_str .= "*" ;
 	$nfrq_fli++;
     }
-    $out_str .= "\t".$ror ;
-    $out_str .= "\t".$rse ;
-    $out_str .= "\t".$rfr ;
-    $out_str .= "\t".$rp ;
-#    $out_str .= "\t".$rif ;
+    $out_str .= "\t".$ror ; 
+    $out_str .= "\t".$rse ; 
+    $out_str .= "\t".$rfr ; 
+    $out_str .= "\t".$rp ; 
+#    $out_str .= "\t".$rif ; 
 
 #    print "$gwas_frq\t$rfr\n";
  #   sleep(3);
@@ -3797,7 +3797,7 @@ while (my $line = <BASIC>){
     if ($cells[$snp_bas] eq "SNP") {
 	my @ex_out =  split /\t/, $out_str;
 	foreach my $rc (0..$#ex_out){
-	    $worksheet->write($lc, $rc, $ex_out[$rc], );
+	    $worksheet->write($lc, $rc, $ex_out[$rc], ); 
 	}
 
 	if ($extra_cols) {
@@ -3837,7 +3837,7 @@ while (my $line = <BASIC>){
 		next;
 	    }
 	}
-
+	
 ### old multireplic stuff
 	if ($region{$snp_txt}) {
 	    print "this region is multi-replicated:".$region{$cells[$snp_bas]}."\n";
@@ -3851,7 +3851,7 @@ while (my $line = <BASIC>){
 
 #    print "1: ".$out_str."\n";
 #    print "d: ".$out_str_dd."\n";
-
+    
 #    exit;
 
 
@@ -3859,7 +3859,7 @@ while (my $line = <BASIC>){
 
     unless ($noxls) {
 	foreach my $rc (0..$#ex_out){
-	    $worksheet->write($lc, $rc, $ex_out[$rc], );
+	    $worksheet->write($lc, $rc, $ex_out[$rc], ); 
 	}
     }
 
@@ -3872,8 +3872,8 @@ while (my $line = <BASIC>){
     $out_str .= "\n";
     $out_str_dd .= "\n";
     print OUT $out_str;
-
-
+    
+ 
 
     print OUTDD $out_str_dd;
 #    print $out_str_dd;
@@ -3914,16 +3914,16 @@ print "$nfrq_fli freq_flipped ambigious SNPs, out of $unfli_count ambigious tota
 
 
 if (1) {
-$worksheet->write($lc+2, 0, "freq-direction summary", );
-#$worksheet->write($lc+2, 0, "freq-direction summary", $fheader);
-$worksheet->write($lc+3, 0, $posdir_count, );
-$worksheet->write($lc+3, 1, "same direction",);
-$worksheet->write($lc+4, 0, $negdir_count, );
-$worksheet->write($lc+4, 1, "opposite direction",);
-$worksheet->write($lc+5, 0, $strandflip_count,);
-$worksheet->write($lc+5, 1, "strandflip",);
-$worksheet->write($lc+6, 0, $unfli_count,);
-$worksheet->write($lc+6, 1, "ambiguous GT",);
+$worksheet->write($lc+2, 0, "freq-direction summary", ); 
+#$worksheet->write($lc+2, 0, "freq-direction summary", $fheader); 
+$worksheet->write($lc+3, 0, $posdir_count, ); 
+$worksheet->write($lc+3, 1, "same direction",); 
+$worksheet->write($lc+4, 0, $negdir_count, ); 
+$worksheet->write($lc+4, 1, "opposite direction",); 
+$worksheet->write($lc+5, 0, $strandflip_count,); 
+$worksheet->write($lc+5, 1, "strandflip",); 
+$worksheet->write($lc+6, 0, $unfli_count,); 
+$worksheet->write($lc+6, 1, "ambiguous GT",); 
 }
 
 
@@ -3935,13 +3935,13 @@ print "$out_name.xls\n";
 
 
 
-my $xreplsheet   = $workbook->add_worksheet("missing_in_replication");
+my $xreplsheet   = $workbook->add_worksheet("missing_in_replication");  
 my $lc=0;
 foreach my $out_str (@norep_arr) {
     chomp ($out_str);
     my @ex_out =  split /\t/, $out_str;
     foreach my $rc (0..$#ex_out){
-	$xreplsheet->write($lc, $rc, $ex_out[$rc], );
+	$xreplsheet->write($lc, $rc, $ex_out[$rc], ); 
     }
     $lc++;
 }
@@ -3977,3 +3977,5 @@ print "$unfli_count with ambiguous GT\n";
 
 print "\ncheck common AT/CG SNPs\n";
 print "\ncheck $freq_mm_count frequency missmatched SNPs\n";
+
+

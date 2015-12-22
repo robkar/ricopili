@@ -15,7 +15,7 @@ $progname =~ s!^.*/!!;
 
 
 
-#  sripke@tin.broadinstitute.org:/psych/genetics_data/ripke/clozuk/combine_0812/verystric_qc_CLOZUK_co1m_full.no_clzo/imputation/pi_sub/test_hap$ splithap_1 plink.CLOZUK_co1m_full-no_clzo-qc2.ch.fl.chr12_021_024.haps.h100
+#  sripke@tin.broadinstitute.org:/psych/genetics_data/ripke/clozuk/combine_0812/verystric_qc_CLOZUK_co1m_full.no_clzo/imputation/pi_sub/test_hap$ splithap_1 plink.CLOZUK_co1m_full-no_clzo-qc2.ch.fl.chr12_021_024.haps.h100 
 
 
 
@@ -49,7 +49,7 @@ version: $version
 
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
 
     "help"=> \my $help,
     "outname=s"=> \my $outname,
@@ -154,16 +154,16 @@ foreach my $sp (1..$nsp) {
 
     while (my $line = <HA>){
 	my @cells = @{&split_line_ref(\$line)};
-
-	my $begstr = shift(@cells);
-
-	$begstr .= " ".shift(@cells);
-	$begstr .= " ".shift(@cells);
-	$begstr .= " ".shift(@cells);
-	$begstr .= " ".shift(@cells);
-
+	
+	my $begstr = shift(@cells); 
+	
+	$begstr .= " ".shift(@cells); 
+	$begstr .= " ".shift(@cells); 
+	$begstr .= " ".shift(@cells); 
+	$begstr .= " ".shift(@cells); 
+	
 	print OUT $begstr;
-
+	
 	my $cend = ($sp * $nhaps_ch) - 1 ;
 	if ($cend > @cells - 1) {
 	    $cend = @cells -1;
@@ -171,12 +171,12 @@ foreach my $sp (1..$nsp) {
 	my $cbeg = ($sp-1) * $nhaps_ch;
 
 	my $cdiff = $cend - $cbeg;
-#	print "cdiff: $cdiff\n";
+#	print "cdiff: $cdiff\n";	
 
 	foreach my $spl ($cbeg .. $cend) {
 	    print OUT " ".$cells[$spl];
 	}
-
+	
 	print OUT "\n";
     }
     close OUT;
@@ -247,4 +247,4 @@ foreach (@outfiles){
     print OUT"$_\n";
 }
 close OUT;
-&mysystem("mv $haps_file.split.done.tmp $haps_file.split.done");
+&mysystem("mv $haps_file.split.done.tmp $haps_file.split.done"); 

@@ -56,7 +56,7 @@ if ($nin == 0){
 print "$nin SNPs in\n";
 
 ############################
-## create subset
+## create subset 
 
 my $sys = "$p2loc/plink --memory 2000 --bfile $bfile --out prune.bfile.$bfile --extract prune.$bfile.prune.in --make-bed";
 
@@ -65,3 +65,9 @@ if ($sc == 0 ) {
     &mysystem ("touch prune.$bfile.fini");
     print "success2\n";
 }
+
+
+
+
+
+

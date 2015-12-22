@@ -27,7 +27,7 @@ COMAND DIR1 DIR2 DIR3 .....
 #  --clean             clean directory
   --dirfile STRING       file containing merge directories
 #  --out               name of imputation run
-
+ 
 
 # --out is mandatory
 
@@ -77,7 +77,7 @@ sub mysystem(){
 }
 
 ###################################################
-###  soft link to here
+###  soft link to here 
 ###################################################
 sub mylink(){
     my $source = "@_";
@@ -185,8 +185,8 @@ foreach my $sd (@sourcedirs) {
 	print "more than 1 cobg_dir in source dir: $sd\n";
 	exit;
     }
-
-
+    
+    
     if (@bimfiles == 0) {
 	print "---------------------------\n";
 	print "Error: directory without plink datasets: $sd\n";
@@ -212,7 +212,7 @@ foreach my $sd (@sourcedirs) {
 	}
 
 
-
+	 
 	&mylink("$sd/$bfile.bed");
 	&mylink("$sd/$bfile.bim");
 	&mylink("$sd/$bfile.fam");
@@ -230,7 +230,7 @@ foreach my $sd (@sourcedirs) {
 	}
 #	exit;
 
-
+	
 	unless (-e "reference_info") {
 	    &mysystem("cp $sd/reference_info .");
 	}
@@ -244,7 +244,7 @@ foreach my $sd (@sourcedirs) {
 		sleep (3);
 	    }
 	}
-
+	
 #	chdir("pi_sub");
 
 	# if ($nohg19 == 0) {
@@ -260,7 +260,7 @@ foreach my $sd (@sourcedirs) {
 	#     &mylink("$sd/pi_sub/$bfile.bed");
 	#     &mylink("$sd/pi_sub/$bfile.bim");
 	#     &mylink("$sd/pi_sub/$bfile.fam");
-
+	    
 	# }
 	# else {
 
@@ -275,17 +275,17 @@ foreach my $sd (@sourcedirs) {
 	#     &mysystem("touch $bfile.ch.fl.bed");
 	#     &mysystem("touch $bfile.ch.fl.bim");
 	#     &mysystem("touch $bfile.ch.fl.fam");
-	#     &mysystem("touch $bfile.ch.fl.fam.fake");
+	#     &mysystem("touch $bfile.ch.fl.fam.fake");	    
 
-
+	    
 	# }
-
+	
 
 #	chdir("../");
 
 
 	chdir("cobg_dir_genome_wide");
-
+	
 	#	print "1\n";
 	if (@cobg_dir > 0) {
 	    if (-e "$sd/$cobg_dir[0]/$bfile.hg19.ch.fl.bgs.fini") {
@@ -319,7 +319,7 @@ foreach my $sd (@sourcedirs) {
 
 	chdir("../");
 
-
+	
 	print JI "$sd\t$bfile\n" ;
     }
 
@@ -329,7 +329,7 @@ foreach my $sd (@sourcedirs) {
 	&mylink("$sd/triset_loc");
 	$triset_found = 1;
     }
-
+    
     my $mdscov_found = 0;
     if (@mds_cov_files > 0) {
 #	print "mds_files:\n";
@@ -345,7 +345,7 @@ foreach my $sd (@sourcedirs) {
 
 
 
-
+	
 
 print "renaming reference_info\n";
 #print "have to rename with config file\n";
@@ -392,7 +392,7 @@ while (my $line = <FI>){
 }
 close FI;
 close FO;
-
+		    
 
 #&mysystem("touch buigue_done");
 #&mysystem("touch chucking_done");
@@ -433,3 +433,6 @@ print "--------------------------------------------------------\n";
 #########################################
 exit
 ########################################
+
+
+

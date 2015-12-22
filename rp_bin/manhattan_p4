@@ -39,7 +39,7 @@ else {
 
 # gwas@lisa.sara.nl:~/pgc-samples/mdd/QC1B/imputation_MDD9/clean/0611/report_MDD9_BothSex_0611/manh_repl$ manhattan_plot  --pgene 0.00001 --title Manhattan-Plot --sig-gwa --cols 2,11,1,3 -areator MDD9_BothSex_0611.p4.2.areator.txt --out manhattan_bs_rep --remeta remeta5_PGC_MDD_bs_1011b.comb.meta daner_MDD9_BothSex_0611.gz
 
-# sripke@tin.broadinstitute.org:/humgen/atgu1/fs02/wip/stephan_sandbox/ibd/0611/imputation/report_IBD15_CD7_0711a$ manhattan_plot --pgene 0.00001 --title Manhattan-Plot --sig-gwa --cols 2,11,1,3 -areator IBD15_CD7_0711a.p4.2.areator.txt --out IBD15_CD7_0711a.rep.ceil.test2 --ceiling 8 --remeta remeta6_IBD_CD_1011f.comb.meta daner_IBD15_CD7_0711a.rand.gz
+# sripke@tin.broadinstitute.org:/humgen/atgu1/fs02/wip/stephan_sandbox/ibd/0611/imputation/report_IBD15_CD7_0711a$ manhattan_plot --pgene 0.00001 --title Manhattan-Plot --sig-gwa --cols 2,11,1,3 -areator IBD15_CD7_0711a.p4.2.areator.txt --out IBD15_CD7_0711a.rep.ceil.test2 --ceiling 8 --remeta remeta6_IBD_CD_1011f.comb.meta daner_IBD15_CD7_0711a.rand.gz 
 
 
 my $version = "3.0.1";
@@ -88,10 +88,10 @@ version: $version
   --pth FLOAT    threshold, from where thinning down, default $pth
   --lastp FLOAT  threshold, from where no p-values any more
   --pgene FLOAT  threshold, from where how genes
-  --help         print this message and exit
+  --help         print this message and exit  
 
   --areator STRING  areator-file with best areas
-  --remeta       remeta-columns
+  --remeta       remeta-columns 
 
   --cacohead          read ncases and ncontrols out of header
 
@@ -100,7 +100,7 @@ version: $version
  --cols 2,11,1,3 d
 
  created by Stephan Ripke 2008 at MGH, Boston, MA
-
+ 
  pfile will be sorted for pvalue if nercessary, iv you do it in advance you save time and money
 
 ";
@@ -114,7 +114,7 @@ my $rootdir = &Cwd::cwd();
 my $areafile = "";
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
     "title=s"=> \$title,
     "out=s"=> \$out,
     "top=i"=> \my $ntop,
@@ -213,8 +213,8 @@ my $refgene_file="refGene_processed.txt";
 
 $out = $pfile if ($out eq "");
 my $pdfout = "manhattan.".$out.".pdf" ;
-$title = $pfile."_GWA" if ($title eq "Manhattan-Plot") ;
-#$title = $pfile."_GWA" ;
+$title = $pfile."_GWA" if ($title eq "Manhattan-Plot") ; 
+#$title = $pfile."_GWA" ; 
 
 use File::Path;
 my @created = mkpath(   ## $created ?
@@ -335,7 +335,7 @@ sub count_lines {
 
 
 
-###   here preparation of ucsc-file:
+###   here preparation of ucsc-file: 
 ###   sed  -r '/chr[0-9XY]+_.*/d'  refGene.txt | sed 's/chrX/chr23/' | sed 's/chrY/chr24/' | sed 's/chr//' |cut -f3,5,6,13 | sort | uniq > refGene_processed.txt
 
 
@@ -415,7 +415,7 @@ push @prefgenes, "CALR";
 
 
 ###############################
-##   read remeta
+##   read remeta 
 ##############################
 
 my %reme;
@@ -428,7 +428,7 @@ if ($remeta) {
     my $rcol_po = 2;
 
 #    my %mep =();
-
+    
     die $! unless open RE , "< $remeta";
     my $header= <RE>;
     my @cells = @{&split_line_ref(\$header)};
@@ -469,7 +469,7 @@ my $rcol_s = 0;
 my $rcol_g = 3;
 my $rcol_ch = 1;
 my $rcol_po = 2;
-
+ 
 
 
 ###############################
@@ -513,7 +513,7 @@ if ($areator) {
 	my $area_mhc = 0;
 	$count_p=0;
 	my $header= <AR>;
-
+	
 	while (1){
 	    my $line;
 	    unless ($line=<AR>) {
@@ -538,7 +538,7 @@ if ($areator) {
 		$asnps{$tmp} = 1;
 		$asnp_c++;
 #		last if ($asnp_c > 10);
-
+		
 	    }
 	    ## safe area with gene info
 	    my @rgenes= split ',', $cells[$acol_g];
@@ -547,7 +547,7 @@ if ($areator) {
 	    foreach my $r (0..$#rgenes) {
 		foreach my $pg (@prefgenes) {
 		    if ($rgenes[$r] eq $pg){
-#my $tmp =
+#my $tmp = 
 #		$rgenes[$cou+1] = $rgenes[$cou];#
 #		$rgenes[$cou] = $pg;
 #		$cou++;
@@ -555,16 +555,16 @@ if ($areator) {
 		    }
 		}
 	    }
-
+	    
 	    my $fgene = "$show";
 	    if ($fgene eq "-") {
 		$fgene = "no_gene";
 	    }
-
+	    
 	    if (@rgenes > 1) {
 		$fgene .= " (+".(@rgenes-1).")";
 	    }
-
+	    
 	    if (0) {
 #    print "1: <$fgene>\n";
 		#### search for gene-multi-annotation
@@ -581,12 +581,12 @@ if ($areator) {
 			}
 		    }
 		}
-
-
+		
+		
 		if (@rgenes > 1) {
 		    $fgene .= ";$rgenes[1]";
 		    if (exists $gene_names{"$rgenes[1]"}) {
-
+			
 			foreach (keys %aarea){
 			    my @tcells = split '\t', $aarea {$_};
 			    if ( $tcells[0] =~ /$rgenes[1]/) {
@@ -596,22 +596,22 @@ if ($areator) {
 				$aarea{$_} = "$tcells[0]\t$cells[$acol_po]\t$tcells[2]\t$tcells[3]";
 				$fgene = s/$rgenes[1]//;
 			    }
-
+			    
 			}
 		    }
 		}
 		$fgene .= " , a.o." if (@rgenes > 2);
-
+		
 	    }
-
-
-	    $gene_names{"$rgenes[0]"} = 1;
-	    $gene_names{"$rgenes[1]"} = 1;
-
+	    
+	    
+	    $gene_names{"$rgenes[0]"} = 1;  
+	    $gene_names{"$rgenes[1]"} = 1;  
+	    
 	    ## safe area with position for later processing
-
+	    
 #    print "2: $fgene\n";
-
+	    
 	    if ($cells[$acol_ch]==6 && $cells[$acol_po] > 25000000 && $cells[$acol_po] < 35000000) {
 		if ($area_mhc == 0){
 		    $fgene = "MHC (369)";
@@ -621,9 +621,9 @@ if ($areator) {
 		    next;
 		}
 	    }
-
+	    
 	    my $skip = 0;
-
+	    
 	    foreach (%aarea) {
 		my @tcells = split '\t', $_;
 		my $bdist = $tcells[1] - $cells[$acol_po];
@@ -631,7 +631,7 @@ if ($areator) {
 		$skip =1 if ($tcells[0] eq $cells[$acol_ch] && $bdist < 300000);
 	    }
 	    next if ($skip == 1);
-
+	    
 	    my $p_rep = $cells[$acol_pr];
 	    if (exists $reme{"$cells[$acol_ch]\t$cells[$acol_po]"}) {
 	        $p_rep = $reme{"$cells[$acol_ch]\t$cells[$acol_po]"};
@@ -646,9 +646,9 @@ if ($areator) {
 #	    print "landed\n";
 #	    sleep(2);
 #	    }
-
+	    
 	    $n_gene++;
-
+	    
 	}
 	close AR;
 #close AOUT;
@@ -756,7 +756,7 @@ while (1){
 	    }
 	}
     }
-
+    
     printf T5 "%s\t%s\t%s\t%s\t$asnp_sw\n",$cells[$snpcol-1],$cells[$pcol-1],$cells[$chrcol-1],$cells[$poscol-1],$asnp_sw;
 
     $pc++;
@@ -773,7 +773,7 @@ if ($pc == 0) {
    my $R_templ='
 pdf("OUTNAME",title="GWA-Plot",PLOTSHAPE)
 
-plot(0,0,main=paste("TITLE",", none meets threshold"))
+plot(0,0,main=paste("TITLE",", none meets threshold")) 
 
 dev.off()
 ';
@@ -782,11 +782,11 @@ dev.off()
     $R_templ =~ s/PLOTSHAPE/6,6/g if $regstr;
     $R_templ =~ s/PLOTSHAPE/11,7.5/g unless $regstr;
     &a2file ( "$outdir/R_GWAplot.in_tmp" , $R_templ);
-
-
+    
+    
     my $systemGWA="$r_sys < $outdir/R_GWAplot.in_tmp --vanilla > /dev/null\n";
 #    my $systemGWA="source /broad/software/scripts/useuse; use R-2.14; R < $outdir/R_GWAplot.in_tmp --vanilla > /dev/null\n";
-
+    
     &mysystem ($systemGWA);
 
     &mysystem ("cp $pdfout $rootdir");
@@ -844,7 +844,7 @@ while (my $line = <IN>){
 	$old_chr = $cells[$chrcol];
 	$old_pos = $new_pos;
     }
-    $new_pos = $old_pos + $cells[$poscol];
+    $new_pos = $old_pos + $cells[$poscol];	
     my $linestr=$cells[$snpcol];
     $linestr.="\t$cells[$chrcol]";
     $linestr.="\t$cells[$poscol]";
@@ -853,7 +853,7 @@ while (my $line = <IN>){
     $linestr.="\t$new_pos";
     $linestr.="\t$cells[$asnpcol]\n";
     push @out_lines, $linestr;
-
+    
 
 #    my $repl_p = 1;
 #    print "new: $cells[$chrcol]\t$cells[$poscol]\n";
@@ -866,7 +866,7 @@ while (my $line = <IN>){
 
 
 
-#$repl_p =
+#$repl_p = 
 	push @area_lines, "$tcells[0]\t$new_pos\t$tcells[2]\t$tcells[3]\t$cells[$chrcol]\n";
 #	push @area_lines, "$tcells[0]\t$new_pos\t$tcells[2]\t$cells[$chrcol]\t$repl_p\n";
 	delete ($aarea {"$cells[$chrcol]\t$cells[$poscol]"});
@@ -889,7 +889,7 @@ if ($aaout_size < 1) {
    my $R_templ='
 pdf("OUTNAME",title="GWA-Plot",PLOTSHAPE)
 
-plot(0,0,main=paste("TITLE",", none meets threshold"))
+plot(0,0,main=paste("TITLE",", none meets threshold")) 
 
 dev.off()
 ';
@@ -898,11 +898,11 @@ dev.off()
     $R_templ =~ s/PLOTSHAPE/6,6/g if $regstr;
     $R_templ =~ s/PLOTSHAPE/11,7.5/g unless $regstr;
     &a2file ( "$outdir/R_GWAplot.in_tmp" , $R_templ);
-
-
+    
+    
     my $systemGWA="$r_sys < $outdir/R_GWAplot.in_tmp --vanilla > /dev/null\n";
 #    my $systemGWA="source /broad/software/scripts/useuse; use R-2.14; R < $outdir/R_GWAplot.in_tmp --vanilla > /dev/null\n";
-
+    
     &mysystem ($systemGWA);
 
     &mysystem ("cp $pdfout $rootdir");
@@ -946,13 +946,13 @@ while (my $line = <IN>){
 	$mean_pos=($old_pos+$new_pos)/2;
 	$old_chr=$cells[1];
 	$old_pos=$cells[5];
-
+	
 	$linestr=$cells[1];
 	$linestr.="\t$new_pos";
 	$linestr.="\t$mean_pos\n";
 	push @out_lines, $linestr;
     }
-
+    
 }
 
 $linestr=$cells[1] + 1;
@@ -982,7 +982,7 @@ read.delim ("AAOUT",header=F)-> aout
 
 ## png("OUTNAME.png",width = 11, height = 7.5, units="in",res=300)
 
-read.table ("TICKNAME",header=F)-> pos
+read.table ("TICKNAME",header=F)-> pos 
 read.table ("INNAME",header=F)-> a
 
 ymin = min(c(a[,4],aout[,4]))/10;
@@ -1141,7 +1141,7 @@ ngenes = dim(aout)[1]
 nrow = 15
 ncol = 8
 ncol = 11
-colstart = 2
+colstart = 2 
 rowstart = nrow + .5
 rowend = 10
 #rowend = 14
@@ -1163,7 +1163,7 @@ for (x in 1:ngenes) {
   cc = floor((aout[x,2] / xrange ) * ncol) +1 ;
 
   xpos = (cc - .5) * xstep + xmin
-  ypos = rr[cc] * ystep + ylogmin
+  ypos = rr[cc] * ystep + ylogmin 
 
 
   rr[cc] = rr[cc] - 1
@@ -1178,9 +1178,9 @@ for (x in 1:ngenes) {
   xstart = xpos
   ystart = ypos - 0.5 *ystep
   ysnp = ystart + 0.1*ystep
-  segments(xstart,ystart,xstart,ysnp, col="gray80")
-  segments(xstart,ystart,xhit,ystart, col="gray80")
-  segments(xhit, ystart, xhit, yhigh, col="gray80")
+  segments(xstart,ystart,xstart,ysnp, col="gray80")  
+  segments(xstart,ystart,xhit,ystart, col="gray80")  
+  segments(xhit, ystart, xhit, yhigh, col="gray80") 
 
 }
 
@@ -1193,7 +1193,7 @@ for (x in 1:ngenes) {
   cc = floor((aout[x,2] / xrange ) * ncol) +1 ;
 
   xpos = (cc - .5) * xstep + xmin
-  ypos = rr[cc] * ystep + ylogmin
+  ypos = rr[cc] * ystep + ylogmin 
 
 
   rr[cc] = rr[cc] - 1
@@ -1222,31 +1222,31 @@ for (x in 1:ngenes) {
   ystart = ypos - 0.5 *ystep
   ysnp = ypos - recfac * ystep
 
-  segments(xhit, yorg, xhit, yhit, col=hitcol, lwd = 2.0)
+  segments(xhit, yorg, xhit, yhit, col=hitcol, lwd = 2.0) 
 
   ########### orig
-#  points(xhit,yhit, col=colors()[100],cex=1.5,pch=18)
-#  points(xhit,yorg, col=hitcol,cex=1.0,pch=20)
-#  points(xhit,yorg, col=colors()[100],cex=.7,pch=20)
+#  points(xhit,yhit, col=colors()[100],cex=1.5,pch=18)  
+#  points(xhit,yorg, col=hitcol,cex=1.0,pch=20)  
+#  points(xhit,yorg, col=colors()[100],cex=.7,pch=20)  
   ###################
 
 
  if (yhit == yorg) {
-  points(xhit,yhit, col="black",cex=1.8,pch=18)
-  points(xhit,yhit, col="red",cex=1.0,pch=18)
-  points(xhit,yhit, col="green",cex=.5,pch=18)
+  points(xhit,yhit, col="black",cex=1.8,pch=18)  
+  points(xhit,yhit, col="red",cex=1.0,pch=18)  
+  points(xhit,yhit, col="green",cex=.5,pch=18)  
  }
 
   if (yhit < yorg) {
-     points(xhit,yhit, col="blue",cex=1.8,pch=18)
+     points(xhit,yhit, col="blue",cex=1.8,pch=18) 
   }
 
   if (yhit > yorg) {
-     points(xhit,yhit, col=6,cex=1.8,pch=18)
+     points(xhit,yhit, col=6,cex=1.8,pch=18) 
   }
 
 
-#  arrows(xhit, ystart, xhit, yhit, col="gray80", length=0.05)
+#  arrows(xhit, ystart, xhit, yhit, col="gray80", length=0.05) 
 
 #  text(x= xpos ,y = ypos, cex = .6, labels = paste (aout[x,1], "\n","(chr.",aout[x,5], ")", sep = ""), col="gray30", font=3)
 

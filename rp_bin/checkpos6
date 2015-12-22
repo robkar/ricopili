@@ -64,7 +64,7 @@ my $cmd_line = "$progname @new_arg";
 my $subdir = "dbsnp_subdir";
 
 my $home_dir = "$ENV{HOME}";
-my $dbsnp_file = "/psych/genetics_data/ripke/references_from_debakkerscratch/ref_db/sorted_dbsnp_positions_129_b36";## created from this one  /humgen/gsa-hpprojects/GATK/data/dbsnp_129_b36.rod
+my $dbsnp_file = "/psych/genetics_data/ripke/references_from_debakkerscratch/ref_db/sorted_dbsnp_positions_129_b36";## created from this one  /humgen/gsa-hpprojects/GATK/data/dbsnp_129_b36.rod 
 my $dbsnp_file_lisa = "/home/gwas/1KG_reference/sorted_dbsnp_positions_129_b36";           ## including sed 's/\tY\t/\t24\t/' sorted_dbsnp_positions_129_b36 | sed 's/\tX\t/\t23\t/' | sed 's/MT/26/'
 
 
@@ -80,8 +80,8 @@ version: $version
                        HM3: /home/gwas/pgc-samples/hapmap_ref/infosum.annot.markers.sorted
   --ploc STRING       location of plink-binary (default is found at Broad)
                        default: $p2loc
-  --col INT,INT,INT   snp-col,chr-col,kb-col in bim-file: default: $scol,$ccol,$kcol
-  --dbcol INT,INT,INT snp-col,chr-col,kb-col in dbsnp-file: default: $dscol,$dccol,$dkcol
+  --col INT,INT,INT   snp-col,chr-col,kb-col in bim-file: default: $scol,$ccol,$kcol 
+  --dbcol INT,INT,INT snp-col,chr-col,kb-col in dbsnp-file: default: $dscol,$dccol,$dkcol 
 
   --nocreate          do not create clean datasets, only analyse
   --exmulti           exclude all multiple annotated
@@ -96,7 +96,7 @@ version: $version
 ";
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
     "dbsnp=s"=> \$dbsnp_file,
     "ploc=s"=> \$p2loc,
     "col=s"=> \my $colstr,
@@ -180,7 +180,7 @@ sub mysystem(){
     my ($systemstr)="@_";
     system($systemstr);
     my $status = ($? >> 8);
-    die "$systemstr\n->system call failed: $status" if ($status != 0);
+    die "$systemstr\n->system call failed: $status" if ($status != 0);    
     push @cmd_collect, $systemstr;
 }
 
@@ -337,7 +337,7 @@ while (my $line = <FI>){
 	    else {
 		if ($cells[$ccol-1] != $cname || $cells[$kcol-1] != $pname){
 		    print FD "Warning: pos_name doesnt match positions: $snp $cells[$ccol-1] $cells[$kcol-1] $cname $pname\n";
-		    $name_war++;
+		    $name_war++;	    
 		}
 	    }
 	}
@@ -499,7 +499,7 @@ while (my $line = <FILE>){
 #if ()
 
 #	$bim_in_ref{$cells[$dscol-1]} = 1;
-
+	
 	print AP $cells[$dscol-1]." ".$loc_info{$info_loc}." ".$info_loc."\n";
 #	delete ($bim_info{$loc_info{$info_loc}});
     }
@@ -570,7 +570,7 @@ while (my $line = <POS>) {
 #   print "$line\n";
 #    print "$snp\t$chr_bim\t$kb_bim\t$chr_ref\t$kb_ref\n";
 #    exit;
-
+	
     if ($chr_ref ne "") {
 
 	if (($chr_bim eq $chr_ref) && ($kb_bim eq $kb_ref)){
@@ -603,7 +603,7 @@ while (my $line = <POS>) {
 	    push @non_pos, $snp."\t$chr_bim:$kb_bim\n";
 	}
     }
-
+	
 #    delete ($pos_chr{$snp});
 }
 close POS;
@@ -728,7 +728,7 @@ print "copy files...\n";
 &mysystem ("cat $bim_rpos $bim_ukb $bim_uchr $bim_addpos > $bim_extr");
 
 
-my $exclude_txt = "";
+my $exclude_txt = ""; 
 $exclude_txt = "--exclude $bim_xdup" if ($exmulti);
 my $cmd3 = "$p2loc/plink --memory 2000 --bed $bfile.bed --fam $bfile.fam --bim $bim_updated --out $bfile_dbsnp --extract $bim_extr $exclude_txt --make-bed \n";
 
@@ -771,7 +771,7 @@ exit;
 my $cmd1 = "$p2loc/ploc --memory 2000 --bfile $bfile --update-map $bim_uchr --update-chr --out $bfile_chr --make-bed > /dev/null\n";
 my $cmd2 = "$p2loc/ploc --memory 2000 --bfile $bfile --update-map $bim_ukb --out $bfile_kb --make-bed > /dev/null\n";
 
-my $nokeep_txt = "";
+my $nokeep_txt = ""; 
 $nokeep_txt = "cat $bim_npos >> $bim_rpos; " if ($nokeep);
 $cmd3 = $nokeep_txt.$cmd3;
 
@@ -822,3 +822,9 @@ chdir ($rootdir);
 &mysystem ("rm -r $work_dir");
 
 print "have a look at this file: $bim_log\n";
+
+
+
+
+
+

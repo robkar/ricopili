@@ -1035,17 +1035,17 @@ elsif ($clusters{mssm}){
 }
     elsif ($clusters{uppmax}){
         %variables = ("ploc", "/sw/apps/bioinfo/plink/1.07/$uppmax_cluster/",
-    		  "p2loc","/proj/$uppmax_project/ricopili/software/plink2/",
-    		  "shloc","/proj/$uppmax_project/ricopili/software/shapeit/bin/",
-    		  "i2loc","/proj/$uppmax_project/ricopili/software/impute2/impute_v2.3.2_x86_64_static/",
-    		  "liloc","/proj/$uppmax_project/ricopili/software/liftover/",
-    		  "ldloc","/proj/$uppmax_project/ricopili/software/ldsc/",
-    		  "eloc","/sw/apps/bioinfo/eigensoft/6.0.1/$uppmax_cluster/bin/",
-    		  "rloc","/usr/bin/",
-    		  "rpac","/proj/$uppmax_project/ricopili/software/Rpackages",
-    		  "hmloc","/proj/$uppmax_project/ricopili/hapmap_ref/",
-    		  "meloc","/proj/$uppmax_project/ricopili/software/metal/generic-metal/"
-    	);
+            "p2loc","/proj/$uppmax_project/ricopili/software/plink2/",
+            "shloc","/proj/$uppmax_project/ricopili/software/shapeit/bin/",
+            "i2loc","/proj/$uppmax_project/ricopili/software/impute2/impute_v2.3.2_x86_64_static/",
+            "liloc","/proj/$uppmax_project/ricopili/software/liftover/",
+            "ldloc","/proj/$uppmax_project/ricopili/software/ldsc/",
+            "eloc","/sw/apps/bioinfo/eigensoft/6.0.1/$uppmax_cluster/bin/",
+            "rloc","/usr/bin/",
+            "rpac","/proj/$uppmax_project/ricopili/software/Rpackages",
+            "hmloc","/proj/$uppmax_project/ricopili/hapmap_ref/",
+            "meloc","/proj/$uppmax_project/ricopili/software/metal/generic-metal/"
+        );
 }
 
 

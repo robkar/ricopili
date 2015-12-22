@@ -23,7 +23,7 @@ my $usage = "
 Usage : my.imp2 --out OUTNAME --in INNAME --ref REFFILE --gema GEMAFILE
 
  --out STRING      name of out file
- --in STRING       name of haps file
+ --in STRING       name of haps file 
  --gema STRING     gema-file
  --reffile STRING  name of ref file
  --refstart INT    Mb of start
@@ -40,7 +40,7 @@ my $refstart = "";
 my $refend = "";
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
 
     "out=s"=> \ $outname,
     "in=s"=> \ $inname,
@@ -96,8 +96,8 @@ my $end_loc =  $refend *1.0e06;
 
 #if ($phas == 15) {
 if (0) {
-    $start_loc = 25 *1.0e06;
-    $end_loc = 35 *1.0e06;
+    $start_loc = 25 *1.0e06; 
+    $end_loc = 35 *1.0e06; 
     $allow_str = "-allow_large_regions";
 }
 
@@ -125,9 +125,11 @@ close BC;
 
 my  $sc = system ($sys_loc) ;
 
-if ($sc == 0 ) {
+if ($sc == 0 ) { 
     system ("touch $outname.fini");
 }
 else {
     print "job finished with error\n";
 }
+
+

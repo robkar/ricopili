@@ -77,9 +77,9 @@ options:
   --cacohead          read ncases and ncontrols out of header
 
   --exhla INT,INT     exclude hla region and print as red, columns of CHR and POS
-
-  --maf FLOAT         threshold of
-  --info FLOAT        threshold of
+ 
+  --maf FLOAT         threshold of 
+  --info FLOAT        threshold of 
 
   --ac INT            allele-count of max. INT (cases and controls together)
 
@@ -135,7 +135,7 @@ my $info_th = 3.00;
 my $af_th = 0;
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
 #    "header"=> \my $header,   # header present, skip first line
     "ceiling=f"=> \$ceiling, # lowers ceiling (fo very low pvalues
     "maf=f"=> \$maf_th, # maf-th
@@ -433,15 +433,15 @@ my $lastep = 1/$nlasteps;
 my $lapart = 0;
 if (0){
     foreach (0..($nlasteps-1)) {
-
+	
 	my $pref = 0.5 * (1.0 + $lapart);
-
+	
 	my $pdat = $spvals [(.5 * $lc * ( 1+ $lapart)) + .5];
-
+	
 	my $cref =  Statistics::Distributions::chisqrdistr(1,$pref);
 	my $cdat =  Statistics::Distributions::chisqrdistr(1,$pdat);
 	my $la =  $cdat / $cref;
-
+	
 	my $n_lapa = $lc - $lc * $lapart;
 	printf "%.3f\t%.3f\t$pref\t%.3f\t%d\n", $lapart, $la, $pdat, ($n_lapa + .5);
 	$lapart += $lastep;
@@ -501,7 +501,7 @@ ylim1 = floor (min(lapa[,2],na.rm=T)*100)/100
 ylim2 = ceiling(max(lapa[,2],na.rm=T)*100)/100
 xlim1 = min(lapa[,1],na.rm=T)
 xlim2 = max(lapa[,1],na.rm=T)
-plot(lapa[,1],lapa[,2],col=colors()[100], type="b",ylim=c(ylim1,ylim2),yaxt="n", xlab=colnames(lapa)[1], ylab="",
+plot(lapa[,1],lapa[,2],col=colors()[100], type="b",ylim=c(ylim1,ylim2),yaxt="n", xlab=colnames(lapa)[1], ylab="", 
       main = paste ("PHEAD - 2D Lambda Plot - ",colnames(lapa)[1] ,sep=""), xlim = c(xlim1, xlim2),
       cex.sub=.6, cex.main=.8, cex.lab =.6, cex.axis=.6); axis(4, cex.axis=.6,col=colors()[100], col.axis=colors()[100])
 abline (h=1.0, col =colors()[100] )
@@ -597,10 +597,10 @@ if (title == "notitle") {
 
 p_log[,3] = 1 - pchisq(qchisq(1-p_log[,1],1)/LAMBDA,1)
 
-plot (0,0,type="n", xlim=c(0,biggest), ylim=c(0,biggest), xlab="Expected -log10 (P)",
-      main = title,
-#      main = "",
-#      main = "QQ-Plot - MAIN",
+plot (0,0,type="n", xlim=c(0,biggest), ylim=c(0,biggest), xlab="Expected -log10 (P)", 
+      main = title, 
+#      main = "", 
+#      main = "QQ-Plot - MAIN", 
       cex.lab =1.0, cex.axis=1.4,
       ylab = "Observed -log10 (P)", las=1 )
 
@@ -618,7 +618,7 @@ xp = -log10(expect);
 
 
 points (x=xp,y=-log10(p_log[,1]),pch=18, cex = 1.5*(xp/maxxp) + .5)
-
+ 
 
 
 if (NOCO == 0) {

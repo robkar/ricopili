@@ -233,10 +233,10 @@ sub shorten_fam (){
     my ($bfile,$ref_sw) = @_;
 
     move ("$bfile.fam","$bfile.fam.long") or die $!;
-
+    
     my $refpre = "ref";
     $refpre = "dat" if ($ref_sw == 0);
-
+    
 ## shorten ID-names and remember their prefix
     print "processing ",$bfile,".fam.long\n";
 
@@ -261,7 +261,7 @@ sub shorten_fam (){
     close (SHORT);
 
 
-if (0){
+if (0){    
     open INFILE, "< $bfile.fam.long" or die $!;
     open SHORT, "> $bfile.fam" or die $!;
     my $lc = 0;
@@ -278,7 +278,7 @@ if (0){
 	    @cells2 = &split_line($cells[2]);
 	    $prefix = $cells[0]."*".$cells[1]."*";
 	}
-
+	
 	print SHORT "ref" if ($ref_sw == 1);
 	print SHORT "$cells2[0]\t";
 	print SHORT "$cells2[1]\t";

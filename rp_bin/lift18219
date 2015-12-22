@@ -96,7 +96,7 @@ my $lilofile = "$liloc/hg18ToHg19.over.chain.gz";
 
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
 
     "help"=> \my $help,
     "lilofile=s"=> \$lilofile,
@@ -205,8 +205,8 @@ if ($ibdrep){
     }
     close BIM;
     close B2L;
-
-
+    
+    
     &mysystem("$liloc/liftOver $bim_2lift $lilofile $bim_lifted $bim_unmapped");
 
 
@@ -269,8 +269,8 @@ if ($posfile){
     close B2L;
 
 
-
-
+    
+    
     &mysystem("$liloc/liftOver $bim_2lift $lilofile $bim_lifted $bim_unmapped");
 
 ######### write update map
@@ -287,7 +287,7 @@ if ($posfile){
     close UP;
 
 
-
+    
     die $!."($bim_file).buigue.liftover" unless open BC, "> $bim_file.buigue.liftover";
     foreach (@cmd_collect) {
 	print BC "$_\n";
@@ -312,8 +312,8 @@ if ($markers){
     close B2L;
 
 
-
-
+    
+    
     &mysystem("$liloc/liftOver $bim_2lift $lilofile $bim_lifted $bim_unmapped");
 
 

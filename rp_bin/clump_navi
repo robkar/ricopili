@@ -64,7 +64,7 @@ GetOptions( "out=s"=> \$out,
 	    "hq_i=f"=> \$hq_info,
 	    "pfile=s"=> \$pfile,
 
-
+	    
 	    "clu_window=i"=> \$cwindow,
 	    "grange=i"=> \$gene_range,
 	    "refdir=s"=> \my $refdir,
@@ -77,13 +77,13 @@ GetOptions( "out=s"=> \$out,
 
 
 if ($help || $out eq ""){
-    print "usage: $progname
+    print "usage: $progname 
 
 version: $version
 
       options:
 
-        --refdir       reference dir, only one bed/bim/fam per chromosome in there, please
+        --refdir       reference dir, only one bed/bim/fam per chromosome in there, please 
 
         --out  STRING   outname
         --help          print this message then quit
@@ -109,7 +109,7 @@ version: $version
  --out is mandatory
 
 
-example of prekno:
+example of prekno: 
 SNP        Chr    start   end     Pmeta     meta
 rs6426833   1     19.93   20.18   3.93e-35  anderson
 rs11209026  1     67.30   67.54   5.12e-28  anderson
@@ -267,7 +267,7 @@ if ($pfile =~ /.gz$/){
 
 
 my %ccount ;
-#@fd = (*STDIN, *STDOUT, *STDERR);
+#@fd = (*STDIN, *STDOUT, *STDERR); 
 my @filehandles;
 push @filehandles, "nichts";
 foreach my $chr (1..22) {
@@ -304,7 +304,7 @@ if (@filehandles > 1) {
 	my $file_loc = $filehandles[$chr];
 	print $file_loc "$ps\t$a1\t$or\t$pp\n";
     }
-
+    
     while (my $line = <PFI>){
 	my @cells = @{&split_line_ref(\$line)};
 	my $pchr = $cells[$chrcol];
@@ -314,7 +314,7 @@ if (@filehandles > 1) {
 	next if ($pchr > 22 || $pchr < 1);
 	next if ($freq < $hq_freq || $freq > 1 - $hq_freq);
 	next if ($info < $hq_info);
-
+	
 	my $pp = $cells[$pvcol];
 	my $ps = $cells[$snpcol];
 	my $a1 = $cells[$a1col];
@@ -327,7 +327,7 @@ if (@filehandles > 1) {
 #	print $file_loc "$ps\t$pp\n";
 #	print "$pchr\n";
     }
-
+    
     foreach my $chr (1..22) {
 	my $file_loc = $filehandles[$chr];
 	close $file_loc;
@@ -359,7 +359,7 @@ if ($detformat == 2) {
 my @job_arr = ();
 my @clump_files;
 foreach my $chr (1..22) {
-
+    
     print "count.$chr: ".$ccount{$chr}."\n";
     next if ($ccount{$chr} <= 1);
 
@@ -380,8 +380,8 @@ foreach my $chr (1..22) {
 
 
 
-#awk '{if (($8>.9 && $7 > .02 && $7 < .98) || NR == 1)
-
+#awk '{if (($8>.9 && $7 > .02 && $7 < .98) || NR == 1) 
+    
     my $cmd;
 
     $cmd = "$ploc/plink --bfile $bfile_sc --extract $in_loc --clump $in_loc --clump-p1 $cp1 --clump-p2 $cp2 --clump-r2 $cr2 --clump-kb $cwindow --out $outname_loc";
@@ -419,7 +419,7 @@ if (@job_arr > 0 ) {
     &a2file_new ("joblist_pliclu",@job_arr);
     my $njobs = @job_arr;
 #    exit;
-
+    
 
     &mysystem ("cat joblist_pliclu | blueprint -b \"prefix\" --mem 5000 --wa $walltime -i 8,4 -j --na pliclu_$out");
     &reinvo_b ("pliclu-$njobs","blueprint_joblist_file-pliclu_$out");
@@ -428,7 +428,7 @@ if (@job_arr > 0 ) {
 
 
 #####################################
-# read out the original file
+# read out the original file 
 #####################################
 
 if (0) {
@@ -491,10 +491,10 @@ unless (-e "$out.sum.clumped"){
 
 
 #####################################
-# read out the original file
+# read out the original file 
 #####################################
 
-if ($detformat == 1) {
+if ($detformat == 1) { 
     unless (-e "$out.$pfile.clumped"){
 #	print "create $out.$pfile.chr$chr.clumped ";
 #	print "out of $out.chr$chr.clumped and  $pfile.chr$chr \n";
@@ -509,8 +509,8 @@ if ($detformat == 1) {
 	    $snp_coll{$snp_loc} = 1;
 	}
 	close LDI;
-
-
+	
+	
 	print "change $pfile\n";
 	die $! unless open LDI, "< $pfile";
 #	die $! unless open LDI, "< $pfile.chr$chr";
@@ -530,7 +530,7 @@ if ($detformat == 1) {
     }
 }
 
-elsif ($detformat == 2) {
+elsif ($detformat == 2) { 
     unless (-e "$out.$pfile.clumped"){
 	print "read $out.sum.clumped\n";
 	my %ind_coll = ();
@@ -598,7 +598,7 @@ elsif ($detformat == 2) {
 		    ###############################################
 		    ####  sort a hash by value!!!!
 		    ################################################
-		    my @sorted = sort { $loc_hash{$b} <=> $loc_hash{$a} } keys %loc_hash;
+		    my @sorted = sort { $loc_hash{$b} <=> $loc_hash{$a} } keys %loc_hash; 
 
 		    foreach my $friend (@sorted) {
 
@@ -621,7 +621,7 @@ elsif ($detformat == 2) {
 	close LDI;
 
 
-#	if (0) {
+#	if (0) {	
 	print "change $pfile\n";
 	die $! unless open LDI, "< $pfile";
 #	die $! unless open LDI, "< $pfile.chr$chr";
@@ -675,7 +675,7 @@ unless (-e "$out.$pfile.clumped.xmhc"){
     die $! unless open LDO, "> $out.$pfile.clumped.xmhc";
     my $best_mhc = 1;
     my $mhc_row ;
-
+    
     while (my $line = <LDI>){
 	chomp($line);
 	my @cells = @{&split_line_ref(\$line)};
@@ -690,7 +690,7 @@ unless (-e "$out.$pfile.clumped.xmhc"){
 	}
     }
     print LDO "$mhc_row\n";
-
+    
     close LDI;
     close LDO;
 
@@ -744,10 +744,10 @@ if ($reinvo_file) {
     my $recom = <FILE>;
     chomp($recom);
     close FILE;
-
+    
     chdir ($redir);
     &mysystem ($recom);
-
+    
 }
 
 
@@ -757,3 +757,5 @@ if ($reinvo_file) {
 #####################################
 # zip it up
 #####################################
+
+

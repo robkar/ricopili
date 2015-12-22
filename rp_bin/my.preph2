@@ -41,7 +41,7 @@ my $multi = 0;
 my $spliha = 0;
 
 use Getopt::Long;
-GetOptions(
+GetOptions( 
 
     "out=s"=> \ $outname,
     "in=s"=> \ $inname,
@@ -137,26 +137,32 @@ if (0) {
 }
 
 
-if ($sc == 0 ) {
+if ($sc == 0 ) { 
     system ("touch $outname.first.fini");
     my $sys_loc2 = "splithap_1 --nhaps $spliha $outname.haps";
 
 
-
+    
     die $!."$outname.split.cmd" unless open BC, "> $outname.split.cmd";
     print BC "$sys_loc2\n";
     close BC;
 
 
-
+    
     print "$sys_loc2\n";
 #    exit;
     my $sc2 = system ($sys_loc2);
-    if ($sc2 == 0 ) {
+    if ($sc2 == 0 ) { 
 	system ("touch $outname.fini");
     }
-
+    
 }
 else {
     print "job finished with error\n";
 }
+
+
+
+
+
+
