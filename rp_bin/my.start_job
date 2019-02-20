@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -22,8 +22,27 @@ GetOptions(
 use File::Basename;
 
 
+if ($jobfile eq ""){
+    print "Error: no entry for flag -jobfile in script $progname\n";
+    exit;
+}
 
-if ($help || $num eq "" || $jobfile eq ""){
+if ($num eq ""){
+    print "Error: no entry for flag -n in script $progname\n";
+    exit;
+}
+
+
+$num =~ s/n//;
+$num = $num * 1;
+if ($num == 0) {
+    print "flag --n in script $progname does not make sense\n";
+    print "most likely something is wrong with batch_array_task_id entry in your custom file during installation\n";
+    exit;
+}
+
+
+if ($help){
     print "usage: $progname FILES
 
 version: $version
@@ -31,7 +50,7 @@ version: $version
       options:
 
         --help           print this message then quit
-        --n INT          line to take as command (like this n100)
+        --n INT          line to take as command (like this 100)
         --jobfile STRING jobfile from which to read command
         --parn INT       number of parallel jobs (then multiplicated with n)
 
@@ -45,18 +64,13 @@ version: $version
     exit 2;
 }
 
-$num =~ s/n//;
-$num = $num * 1;
-if ($num == 0) {
-    print "--n doesn't make sense: $num after transformation\n";
-}
-
 
 if ($parn ne "") {
 
     $parn = $parn * 1;
     if ($parn == 0) {
-	print "--parn doesn't make sense: $num after transformation\n";
+	print "flag --parn in script $progname does not make sense\n";
+	exit;
     }
 
     my $first_n = ($num-1) * $parn;
@@ -68,7 +82,7 @@ if ($parn ne "") {
 
 #    my @job_array;
     die "$jobfile: ".$! unless open FILE, "< $jobfile";
-    die "$jobfile.sub$num: ".$! unless open OUT, "> $jobfile.sub$num";
+    die "$jobfile.sub$num.sh: ".$! unless open OUT, "> $jobfile.sub$num.sh";
     while (my $cmd  = <FILE>){
 	chomp ($cmd);
 
@@ -84,10 +98,10 @@ if ($parn ne "") {
     print OUT "wait\n";
     close OUT;
 
-    system ("chmod u+x $jobfile.sub$num");  
+    system ("chmod u+x $jobfile.sub$num.sh");  
 
 #    exit;
-    system ("./$jobfile.sub$num");
+    system ("./$jobfile.sub$num.sh");
 
     exit;
 

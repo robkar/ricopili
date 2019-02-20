@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 
 
@@ -25,31 +25,20 @@ use strict;
 ################################
 ## check multi-positions
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans $conf_file);
 
 #############################
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
 my $sloc = &trans("sloc");
-my $hmloc = &trans("hmloc");
+#my $hmloc = &trans("hmloc");
 #my $ploc = &trans("ploc");
 my $p2loc = &trans("p2loc");
 
@@ -59,10 +48,14 @@ my $p2loc = &trans("p2loc");
 my $scol = 2;  ## snp-col in bim-file
 my $ccol = 1;  ## chr-col in bim-file
 my $kcol = 4;  ## kb-col in bim-file
+my $a1col = 5;  ## kb-col in bim-file
+my $a2col = 6;  ## kb-col in bim-file
 
 my $dscol = 1;  ## snp-col in reference
 my $dccol = 2;  ## chr-col in reference
 my $dkcol = 3;  ## kb-col in reference
+my $da1col = 4;  ## kb-col in reference
+my $da2col = 5;  ## kb-col in reference
 
 my $version = "1.0.0";
 my $progname = $0;
@@ -74,7 +67,7 @@ my $cmd_line = "$progname @new_arg";
 
 my $subdir = "dbsnp_subdir";
 
-my $home_dir = "$ENV{HOME}";
+
 my $dbsnp_file = "/psych/genetics_data/ripke/references_from_debakkerscratch/ref_db/sorted_dbsnp_positions_129_b36";## created from this one  /humgen/gsa-hpprojects/GATK/data/dbsnp_129_b36.rod 
 my $dbsnp_file_lisa = "/home/gwas/1KG_reference/sorted_dbsnp_positions_129_b36";           ## including sed 's/\tY\t/\t24\t/' sorted_dbsnp_positions_129_b36 | sed 's/\tX\t/\t23\t/' | sed 's/MT/26/'
 
@@ -92,7 +85,7 @@ version: $version
   --ploc STRING       location of plink-binary (default is found at Broad)
                        default: $p2loc
   --col INT,INT,INT   snp-col,chr-col,kb-col in bim-file: default: $scol,$ccol,$kcol 
-  --dbcol INT,INT,INT snp-col,chr-col,kb-col in dbsnp-file: default: $dscol,$dccol,$dkcol 
+  --dbcol INT,INT,INT snp-col,chr-col,kb-col in dbsnp-file: default: $dscol,$dccol,$dkcol,$da1col,$da2col 
 
   --nocreate          do not create clean datasets, only analyse
   --exmulti           exclude all multiple annotated
@@ -122,12 +115,12 @@ GetOptions(
 die "$usage\n" if (@ARGV != 1 || $help);
 
 if ($colstr) {
-    ($scol,$ccol,$kcol) = split(/,/, $colstr);
-    die "*****\nwrong col-usage\n****\n$usage\n" if ($kcol eq "");
+    ($scol,$ccol,$kcol,$a1col,$a2col) = split(/,/, $colstr);
+    die "*****\nwrong col-usage\n****\n$usage\n" if ($a2col eq "");
 }
 if ($dcolstr) {
-    ($dscol,$dccol,$dkcol) = split(/,/, $dcolstr);
-    die "*****\nwrong col-usage\n****\n$usage\n" if ($dkcol eq "");
+    ($dscol,$dccol,$dkcol,$da1col,$da2col) = split(/,/, $dcolstr);
+    die "*****\nwrong col-usage\n****\n$usage\n" if ($da2col eq "");
 }
 
 unless (-e $dbsnp_file) {
@@ -158,6 +151,7 @@ my $bim_file=$ARGV[0];
 my $bim_sorted=$bim_file.".sorted";
 my $bim_joined=$bim_file.".joined";
 my $bim_addpos=$bim_file.".addpos";
+my $bim_transl=$bim_file.".translate";
 my $bim_xpos=$bim_file.".xpos";
 my $bim_xchr=$bim_file.".xchr";
 my $bim_xkb=$bim_file.".xkb";
@@ -166,6 +160,10 @@ my $bim_npos=$bim_file.".npos";
 my $bim_rpos=$bim_file.".rpos";
 my $bim_uchr=$bim_file.".uchr";
 my $bim_ukb=$bim_file.".ukb";
+my $bim_trans_indel=$bim_file.".tr.indel";
+my $bim_trans_snp=$bim_file.".tr.snp";
+my $bim_notrans_variant=$bim_file.".notr.variant";
+my $bim_trans_multi=$bim_file.".tr.multi";
 my $bim_extr=$bim_file.".extract";
 
 
@@ -275,21 +273,35 @@ print "read bim-file\n";
 ### read all snp names
 ########################################################
 
+&mysystem("mv $bfile.bim $bfile.bim.orig");
+
 my %bim_hash;
-die "$bfile.bim".$! unless open FI , "< $bfile.bim";
+die "$bfile.bim.orig".$! unless open FI , "< $bfile.bim.orig";
+die "$bfile.bim".$! unless open OUT , "> $bfile.bim";
+die "$bfile.bim.multidet".$! unless open MU , "> $bfile.bim.multidet";
+my $nmult = 0;
 while (my $line = <FI>){
 
     my @cells = @{&split_line_ref(\$line)};
     my $snp = $cells[$scol-1];
-    if (exists $bim_hash{$snp}) {
-	print "double snp name entry: $snp\n";
-	exit;
+    while (exists $bim_hash{$snp}) {
+	print MU "$snp -> $snp.s\n";
+	$snp = $snp.".s";
+	$nmult++;
     }
+    $cells[$scol-1] = $snp;
     $bim_hash{$snp} = 1;
 
+    print OUT "@cells\n";
+    
 }
 close FI;
+close OUT;
+close MU;
 
+print "number of multisnp renamings: $nmult\n";
+#print "debug\n";
+#exit;
 
 
 
@@ -310,6 +322,8 @@ while (my $line = <FI>){
     my $snp = $cells[$scol-1];
     my $chr = $cells[$ccol-1] ;
     my $pos = $cells[$kcol-1] ;
+    my $a1 = $cells[$a1col-1] ;
+    my $a2 = $cells[$a2col-1] ;
 
 
 
@@ -401,6 +415,8 @@ close FO;
 close FD;
 
 
+
+
 print "number of rs_name extractions: $name_rs\n";
 print "number of no rs_name extractions: $name_nrs\n";
 print "number of position extractions: $name_pos\n";
@@ -415,6 +431,9 @@ print "number of warning extractions: $name_war\n";
 #my @bim_lines;
 my %bim_info; # position for snp_name
 my %loc_info; # also read all positions, safes SNP name for position in bim-file
+my %gt_hash;
+my %a1_hash;
+my %a2_hash;
 
 die "$bfile.bim.ow".$! unless open FILE , "< $bfile.bim.ow";
 while (my $line = <FILE>){
@@ -430,11 +449,15 @@ while (my $line = <FILE>){
 
     if ($cells[$ccol-1] != 0 || $cells[$kcol-1] != 0) {
 	my $posloc = " $cells[$ccol-1] $cells[$kcol-1]";
+	my $gtloc = $cells[$a1col-1].$cells[$a2col-1];
 #	if (exists $loc_info{$posloc}){
 #	    print "double entry on position: $posloc\n";
 #	    exit;
 #	}
 	$loc_info{$posloc} = $cells[$scol-1];
+	$gt_hash{$posloc} = $gtloc;
+	$a1_hash{$posloc} = $cells[$a1col-1];
+	$a2_hash{$posloc} = $cells[$a2col-1];
     }
     else {
 	## check the presumably right positions
@@ -456,6 +479,240 @@ close FILE;
 #    print "rs493347 exists in bim file\n";
 #}
 
+#######################################################################
+## read dbsnp into hash
+#############################################################################
+my %dbsnp_hash_a1;
+my %dbsnp_hash_a2;
+my %dbsnp_hash_loc;
+my %dbsnp_hash_loc_indel;
+my %dbsnp_hash_loc_indel_multi;
+my %dbsnp_hash_multiloc;
+my %dbsnp_hash_name;
+print "read reference into hash\n";
+
+die "$dbsnp_file".$! unless open FILE , "< $dbsnp_file";
+
+while (my $line = <FILE>){
+    my @cells = @{&split_line_ref(\$line)};
+    my $info_loc = " $cells[$dccol-1] $cells[$dkcol-1]";
+
+    my $a1 = $cells[$da1col-1];
+    my $a2 = $cells[$da2col-1];
+    if (length ($a1) > 1 || length($a2) > 1 || $a1 eq "D" || $a2 eq "D"){
+	if (exists $dbsnp_hash_loc_indel{$info_loc}) {
+	    $dbsnp_hash_loc_indel_multi{$info_loc} = 1;
+	    
+#	    print "Error: multi indel at $info_loc\n";
+#	    exit;
+	}
+	$dbsnp_hash_loc_indel{$info_loc} = $cells[$dscol-1];
+    }
+#    $dbsnp_hash_a1{$cells[$dscol-1]} = $cells[$da1col-1];
+#    $dbsnp_hash_a2{$cells[$dscol-1]} = $cells[$da2col-1];
+
+    if (exists $dbsnp_hash_loc{$info_loc}) {
+	$dbsnp_hash_multiloc{$info_loc} = 1;
+#	print "has multiloc: $info_loc\n";
+    }
+    $dbsnp_hash_loc{$info_loc} = $cells[$dscol-1];
+    $dbsnp_hash_name{$cells[$dscol-1]} = 1;
+    
+
+}
+close FILE;
+
+#exit;
+
+#######################################################################
+## read and check bimfile
+#############################################################################
+
+#my $scol = 2;  ## snp-col in bim-file
+#my $ccol = 1;  ## chr-col in bim-file
+#my $kcol = 4;  ## kb-col in bim-file
+#my $a1col = 5;  ## kb-col in bim-file
+#my $a2col = 6;  ## kb-col in bim-file
+
+my %ta; ## strandflipped SNP
+$ta{"A"}= "T";
+$ta{"C"}= "G";
+$ta{"G"}= "C";
+$ta{"T"}= "A";
+
+my %addpos_hash;
+my @trans_indel;
+my @trans_snp;
+my @trans_multi;
+my @notrans_variant;
+
+my %bim_trans; ## new names for bim_snps
+    
+
+die "$bim_file.ow".$! unless open FILE , "< $bim_file.ow";
+die "$bim_transl".$! unless open OF , "> $bim_transl";
+
+my $nguess = 10;
+my $ccg = 0;
+while (my $line = <FILE>){
+    my @cells = @{&split_line_ref(\$line)};
+
+    my $snp =  $cells[$scol-1];
+    my $a1 =  $cells[$a1col-1];
+    my $a2 =  $cells[$a2col-1];
+    my $chr =  $cells[$ccol-1];
+    my $loc =  $cells[$kcol-1];
+
+    my $info_loc = " $chr $loc";
+    my $replace = 0;
+
+
+    my $found = 0;
+    my $found_snp = "";
+    my $guess = "";
+    
+
+    ### if same snp name is in reference, do nothing
+    ################################################    
+    unless (exists $dbsnp_hash_name{$snp}) {
+
+
+	# if its not a multiloc in the ref, just replace with ref
+	#########################################################
+	unless (exists $dbsnp_hash_multiloc{$info_loc}) {
+	    if (exists $dbsnp_hash_loc{$info_loc}) {
+		$found_snp = $dbsnp_hash_loc{$info_loc};		
+		$found = 1;
+		push @trans_snp,  "replacing variant with reference based on position: $snp $found_snp $info_loc\n";
+	    }	    
+	}
+
+	
+
+	#### for multiloc in reference
+	##################################
+		
+	else {
+#	    print "SNP with multiloc in reference: $loc_info{$info_loc} at $info_loc\n";
+
+
+	    my $gt = $a1.$a2;
+
+
+	    ## if its an indel
+	    ##########################
+	    if (length ($a1) > 1 || length($a2) > 1 || $a1 eq "D" || $a2 eq "D"){
+		if (exists $dbsnp_hash_loc_indel{$info_loc}) {
+
+		    
+		    ## replace with ref-indel if not a multi indel
+		    ##############################################
+		    unless (exists $dbsnp_hash_loc_indel_multi{$info_loc}){
+			$found = 1;
+			$found_snp = $dbsnp_hash_loc_indel{$info_loc};
+			push @trans_indel,  "replacing multi loc indel with reference based on single ref-indel: $snp $found_snp $info_loc\n";
+		    }
+
+		    ## try to guess the name if multi indel
+		    ############################################ 
+		    else {
+
+			$guess = "$chr:$loc"."_".$a1."_".$a2;
+			if (exists $dbsnp_hash_name{$guess}) {
+			    $found++;
+			    $found_snp = $guess;
+			    push @trans_indel,  "replacing multi loc indel with reference based on name guessing: $snp $found_snp $info_loc\n";
+			}
+			
+			$guess = "$chr:$loc"."_".$a2."_".$a1;
+			if (exists $dbsnp_hash_name{$guess}) {
+			    push @trans_indel,  "replacing multi loc indel with reference based on name guessing: $snp $found_snp $info_loc\n";
+			    $found++;
+			    $found_snp = $guess;
+			}
+			
+		    }
+		}
+		
+
+	    }
+
+	    ## if its a SNP try to guess name with alleles and position, also on the other strand
+	    ########################################################################################
+	    else {
+		$guess = "$chr:$loc"."_".$a1."_".$a2;
+		if (exists $dbsnp_hash_name{$guess}) {
+		    $found++;
+		    $found_snp = $guess;
+		    push @trans_snp,  "replacing multi loc snp with reference based on name guessing: $snp $found_snp $info_loc\n";
+		}
+		
+		$guess = "$chr:$loc"."_".$a2."_".$a1;
+		if (exists $dbsnp_hash_name{$guess}) {
+		    $found++;
+		    $found_snp = $guess;
+		    push @trans_snp,  "replacing multi loc snp with reference based on name guessing: $snp $found_snp$info_loc\n";
+		}
+
+		
+		## wont test other strand with strand ambiguous SNPs
+		##############################################################
+		if ($gt ne "AT" && $gt ne "TA" && $gt ne "CG"  && $gt ne "GC"){
+		    $guess = "$chr:$loc"."_".$ta{$a1}."_".$ta{$a2};
+		    if (exists $dbsnp_hash_name{$guess}) {
+			$found++;
+			$found_snp = $guess;
+			push @trans_snp,  "replacing multi loc snp with reference based on name guessing: $snp $found_snp $info_loc\n";
+		    }
+		    
+		    $guess = "$chr:$loc"."_".$ta{$a2}."_".$ta{$a1};
+		    if (exists $dbsnp_hash_name{$guess}) {
+			$found++;
+			$found_snp = $guess;
+			push @trans_snp,  "replacing multi loc snp with reference based on name guessing: $snp $found_snp $info_loc\n";
+		    }
+		}
+	    }
+	    
+	}
+
+	## write out if found
+	######################
+
+	if ($found == 1) {
+	    if (exists $bim_info{$found_snp}) {
+		push @notrans_variant,  "not_replacing variant with reference based on position (since replacement name exists already: $snp $found_snp $info_loc\n";
+	    }
+	    else {
+		if (exists $addpos_hash{$info_loc}) {
+		    print "Warning: multiple position translations on $chr:$loc:$a1:$a2\n";
+		    #		    exit;
+		    push @trans_multi, "Warning: double position at $info_loc\n";
+		}
+		
+		$addpos_hash{$info_loc}= $found_snp." ".$snp." ".$info_loc." $cells[$a1col-1] $cells[$a2col-1]";
+		$bim_trans{$found_snp} = $snp;
+	    }
+	    
+
+	}
+	elsif ($found > 1) {
+	    print "Error: multiple possibilities on $chr:$loc:$a1:$a2\n";
+	    exit
+	}
+	
+	
+	#	$ccg++;
+	#	if ($ccg == $nguess) {
+	#	    last;
+	#	}
+
+	
+    }
+}
+#exit;
+
+
 
 ######################################################################
 ## read reference file
@@ -464,56 +721,39 @@ print "read reference-file: $dbsnp_file\n";
 my %bim_in_ref;  ## safe snp names that are found in reference
 die "$dbsnp_file".$! unless open FILE , "< $dbsnp_file";
 die "$bim_joined".$! unless open OF , "> $bim_joined";
-die "$bim_addpos".$! unless open AP , "> $bim_addpos";
+
+
+
+
+
+
+
+
 while (my $line = <FILE>){
     my @cells = @{&split_line_ref(\$line)};
     my $info_loc = " $cells[$dccol-1] $cells[$dkcol-1]";
 
 
-#    if ($cells[$dscol-1] eq "rs493347") {
-#	print "found in ref: rs493347\n";
-#	sleep(10);
-#    }
-
     ###########################################
-    ### this is crucual:
-    ###  only if the SNP is not present on the bim file, there is a position lookup
+    
     ##############################################
 
     if (exists $bim_info{$cells[$dscol-1]}) {
-
-#	if ($cells[$dscol-1] eq "rs493347") {
-#	    print "found still in bim: rs493347\n";
-#	    sleep(10);
-#	}
-
+	
 	$bim_in_ref{$cells[$dscol-1]} = 1;
-
+	
 	print OF $cells[$dscol-1].$bim_info{$cells[$dscol-1]}.$info_loc."\n";
 	delete ($bim_info{$cells[$dscol-1]});
     }
-    elsif (exists $loc_info{$info_loc}) {
-
-	## loc_info: snp_name for position in bim fie
-	## $cells[$dscol-1]: snp name in reference
-	## $info_loc: position
-	## $bim_info{$cells[$dscol-1]}: position of reference SNP in bim-file
-
-#	if ($cells[$dscol-1] eq "chr10_116123724_D") {
-#	    print $cells[$dscol-1]."\n";
-#	    print $loc_info{$info_loc}."\n";
-#	    print $bim_info{$cells[$dscol-1]}."\n";
-#	    print $info_loc."\n";
-#	    print "all\n";
-#	}
-
-#if ()
-
-#	$bim_in_ref{$cells[$dscol-1]} = 1;
+    elsif (exists $bim_info{$bim_trans{$cells[$dscol-1]}}) {
 	
-	print AP $cells[$dscol-1]." ".$loc_info{$info_loc}." ".$info_loc."\n";
-#	delete ($bim_info{$loc_info{$info_loc}});
+	print OF $cells[$dscol-1].$bim_info{$bim_trans{$cells[$dscol-1]}}.$info_loc."\n";
+	delete ($bim_info{$bim_trans{$cells[$dscol-1]}});
     }
+	
+
+    
+
 }
 close FILE;
 
@@ -522,13 +762,24 @@ foreach my $snp_loc (keys %bim_info) {
     print OF $snp_loc.$bim_info{$snp_loc}."\n";
 }
 close OF;
+
+
+
+die "$bim_addpos".$! unless open AP , "> $bim_addpos";
+
+foreach (keys %addpos_hash) {
+    print AP $addpos_hash{$_}."\n";
+}
+
 close AP;
+
+
 
 #exit;
 
 
 
-
+ 
 
 ### read bim-file
 
@@ -559,7 +810,7 @@ my %usnp;  ## update snpname
 my $usnp;  ## count
 my $unsnp = 0;  ## non update snpname count
 
-print "analyse joined file\n";
+print "analyze joined file\n";
 die $!." <$bim_joined>" unless open POS, "< $bim_joined";
 my $cc = 0;
 my $old_snp = "";
@@ -628,6 +879,7 @@ foreach (keys %pos_count) {
 }
 
 
+## here it also makes sure that SNPs that are found in the database dont get translated
 
 print "read addpos file for translating SNP names\n";
 die $!." <$bim_addpos>" unless open AP, "< $bim_addpos";
@@ -642,12 +894,16 @@ while (my $line = <AP>) {
 	$usnp++;
     }
     else {
-	print AD "$cells[1] $cells[0] $cells[2] $cells[3] non_replace\n";
+	print AD "$cells[1] $cells[0] $cells[2] $cells[3] non_replace (because variant name exists at different location\n";
 	$unsnp++;
     }
 }
 close AP;
 close AD;
+
+print "$bim_addpos\n";
+print "$bim_addpos.det\n";
+#exit;
 
 ##########################################
 # exclude multiple SNPs from update lists.
@@ -673,6 +929,10 @@ print "write files...\n";
 &a2file($bim_xpos,@snp_xpos);
 &a2file($bim_xchr,@snp_xchr);
 &a2file($bim_xkb,@snp_xkb);
+&a2file($bim_trans_indel,@trans_indel);
+&a2file($bim_trans_snp,@trans_snp);
+&a2file($bim_trans_multi,@trans_multi);
+&a2file($bim_notrans_variant,@notrans_variant);
 
 
 &a2file($bim_rpos,@snp_rpos);
@@ -683,13 +943,20 @@ print "write files...\n";
 
 
 push @log_lines,  "\nsnp-name extractions:\n";
+push @log_lines,  "renamed multi SNP entries    :\t".$nmult."\t-> $bfile.bim.multidet\n";
 push @log_lines,  "rs_name extraction           :\t".$name_rs."\t-> $bfile.bim.ow.det\n";
 push @log_lines,  "rs_name extraction (not done):\t".$name_nrs."\t-> $bfile.bim.ow.det\n";
 push @log_lines,  "position extraction          :\t".$name_pos."\t-> $bfile.bim.ow.det\n";
 push @log_lines,  "warning extraction           :\t".$name_war."\t-> $bfile.bim.ow.det\n";
+
 push @log_lines,  "\nsnp-names taken from reference based on position:\n";
 push @log_lines,  "as noted above               :\t".$usnp."\t-> $bim_addpos.det\n";
 push @log_lines,  "not done since snpname exists:\t".$unsnp."\t-> $bim_addpos.det\n";
+push @log_lines,  "----a bit more detail--------:\n";
+push @log_lines,  "translated indels            :\t".@trans_indel."\t-> $bim_trans_indel\n";
+push @log_lines,  "translated snps              :\t".@trans_snp."\t-> $bim_trans_snp\n";
+push @log_lines,  "not translated indel/snp     :\t".@notrans_variant."\t-> $bim_notrans_variant\n";
+push @log_lines,  "warning multi positions      :\t".@trans_multi."\t-> $bim_trans_multi\n";
 push @log_lines,  "\npositions of rs-name in db-snp:\n";
 push @log_lines,  "wrong (chr and kb)           :\t".@snp_xpos."\t-> $bim_xpos\n";
 push @log_lines,  "wrong (chr), update possible :\t".@snp_xchr."\t-> $bim_xchr\n";
@@ -755,7 +1022,9 @@ push @log_lines, $cmd3;
 &mysystem ("mv $bfile_dbsnp.fam $rootdir/");
 
 
-&mysystem ("tar -cvzf $bfile_dbsnp.tar.gz $bim_xpos $bim_xchr $bim_xkb $bim_rpos $bim_npos $bim_xdup $bim_ukb $bim_uchr $bim_addpos.det $bfile.bim.ow.det");
+
+&mysystem ("tar -cvzf $bfile_dbsnp.tar.gz $bim_xpos $bim_xchr $bim_xkb $bim_rpos $bim_npos $bim_xdup $bim_ukb $bim_uchr $bim_addpos.det $bfile.bim.ow.det $bim_trans_indel $bim_trans_snp $bim_trans_multi $bim_notrans_variant $bfile.bim.multidet");
+
 
 &mysystem ("mv $bfile_dbsnp.tar.gz $rootdir/");
 &mysystem ("mv $bim_log $rootdir/");

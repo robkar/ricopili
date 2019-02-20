@@ -1,43 +1,19 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 #############################
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-my $ploc = "";
-my $rloc = "";
-
-
-if (-e "$conf_file") {
-    die $!."($conf_file)" unless open FILE, "< $conf_file";
-    while (my $line = <FILE>){
-	my @cells = split /\s+/, $line;
-	$conf{$cells[0]} = $cells[1];
-    }
-    close FILE;
-    
-    sub trans {
-	my ($expr)=@_;
-	unless (exists $conf{$expr}) {
-	    die "config file without entry: $expr\n";
-	}
-	$conf{$expr};
-    }
-    
-
-    $rloc = &trans("rloc");
-}
-else {
-    print "----------------------------------------------------------------------------------------------------\n";
-    print "$conf_file is not existing, you will need to specify the location of binaries for plink, R, pdflatex\n\n";
-#    sleep(2);
-}
-
+my $rloc = &trans("rloc");
 
 ###############################################
 
@@ -75,6 +51,8 @@ version: $version
   ############ for standalone users #####################
    
   --rloc STRING    directory containing R binary (default: $rloc)
+                      use term _SPACE_ if you need them:
+                        module load R; R as module_SPACE_load_SPACE_R;_SPACE_R)
                       download here: http://cran.r-project.org/
 
 
@@ -103,19 +81,14 @@ die "$usage\n" if $out eq "outname";
 
 
 
-my $r_sys = "$rloc/R";
-if ($rloc eq "broadinstitute") {
+my $r_sys = "$rloc";
+$r_sys =~ s/_SPACE_/ /g;
 
-    $r_sys = "source /broad/software/scripts/useuse; use R-2.14; R";
-}
-else {
-    unless (-x "$rloc/R") {
-	print "Error: R binary not found in assigned plink directory(--rloc)\n";
-	exit;
-    }
-    else {
-	print "R binary found\n";
-    }
+system("$r_sys RHOME");
+my $status = ($? >> 8);
+if ($status != 0) {
+    print "I could not start R, maybe you are using an old ricopili configuration?\ne.g. rloc does not need a path but a full starting command.\n";
+    exit;
 }
 
 
@@ -239,6 +212,9 @@ breaks_n = breaks_n * (range / range_plot);
 #print (range)
 #print (range_plot)
 #print (breaks_n)
+if (breaks_n < 10) {
+  breaks_n = 10
+}
 
 hist(dat[,1], main="TITLE", xlab=colnames(dat)[1], cex.sub =.6, ylab ="counts", col = "red", breaks = breaks_n,
  sub = paste ("mean =",mean_pr,", median =",median,", var =",variance_pr,", se =",se_pr),xlim = c(XLIM1,XLIM2) )

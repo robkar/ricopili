@@ -1,29 +1,18 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 my $out ="";
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 my $ploc = &trans("p2loc");
 my $eloc = &trans("eloc");
@@ -191,9 +180,16 @@ $long = $keep if ($keep);
 my $subdir_eigen="$sloc/eigen_pca.$dat_bfile.$ref_bfile.".$long;
 print "workdir: $subdir_eigen\n";
 
+
+
+while (-e $subdir_eigen) {
+    $subdir_eigen .= ".e";
+}
+
+
 use File::Path;
 
-&mysystem ("rm -rf $subdir_eigen");
+#&mysystem ("rm -rf $subdir_eigen");
 
 my @created = mkpath(
     "$subdir_eigen",
@@ -388,7 +384,7 @@ while (<INFAM>) {
     my @cells2 = &split_line($_);
     my $id_name = $cells2[0];
 
-    print OUT "$cells2[0]\t";
+    print OUT "$id_name\t";
     print OUT "$cells2[1]\t";
     print OUT "$cells2[2]\t";
     print OUT "$cells2[3]\t";
@@ -408,6 +404,12 @@ open OUTBIM, "> $merge_name.ow.bim" or die $!;
 while (<INBIM>) {
     my @cells2 = &split_line($_);
     $cells2[2] = 0;
+
+#    if (length ($cells2[1]) > 15) {
+#	print "$cells2[1]\n";
+#    }
+    $cells2[1]  = substr $cells2[1], 0, 19;
+    
     print OUTBIM "$cells2[0]\t";
     print OUTBIM "$cells2[1]\t";
     print OUTBIM "$cells2[2]\t";
@@ -420,6 +422,8 @@ close OUTBIM;
 
 print "rewrite bim ($merge_name.ow.bim) done\n";
 #exit;
+#sleep(3);
+
 ########################################
 ###   start eigensoft
 #####################################
@@ -448,9 +452,12 @@ $pop_list_txt
 &a2file("POPlist","REF");
 
 my $sys = "$eloc/smartpca -p $merge_name.par\n";
-if ($queue eq "slurm") {
-    $sys = "source /com/extra/lapack/3.5.0/load.sh; $eloc/smartpca -p $merge_name.par\n";
-}
+
+#if ($queue eq "slurm") {
+#    $sys = "source /com/extra/lapack/3.5.0/load.sh; $eloc/smartpca -p $merge_name.par\n";
+#}
+
+
 print "$sys\n";
 #exit;
 &mysystem ("$sys");
@@ -530,5 +537,8 @@ copy ("$dat_bfile.emds","$rootdir/$out_file") or print "no emds\n";
 copy ("$dat_bfile.full.emds","$rootdir/$outf_file") or print "no full_emds\n";
 copy ("$merge_name.eval","$rootdir/") or print "no eval\n";
 
+
+&mysystem("rm -rf $subdir_eigen");
+
+
 exit;
-#&mysystem("rm -rf $subdir_eigen");

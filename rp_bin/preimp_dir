@@ -1,7 +1,16 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 
-my $version = "1.0.0";
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans $conf_file);
+use Ricopili::Version;
+
+#my $version = "1.0.2";
 my $progname = $0;
 $progname =~ s!^.*/!!;
 my $command_line = "$progname @ARGV";
@@ -24,26 +33,7 @@ my $job_bn_th = 1000;
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
-my $ploc = &trans("ploc");
-my $homedir = &trans("home");
+#my $homedir = &trans("home");
 my $qloc = &trans("queue");
 my $init = &trans("init");
 my $email = &trans("email");
@@ -64,12 +54,13 @@ my $sexcheck_min = 10;
 
 my $withpna=0;
 my $noassoc = 0;
+my $sepa = 1;
 
 ##### help message
 my $usage = "
 Usage : $progname [options]
 
-version: $version
+version: $rp_version
 
 
  --help            print this text and exits
@@ -88,10 +79,16 @@ version: $version
 
   --serial          no sending jobs to queue all in one run
                            -> usually only used for testing 
+  --sepa INT        use INT number of parallel jobs during serial
+
 
   --sleep INT       sleep for INT seconds, try this if you think there is a race condition
                            (hints: stops a different steps, --serial works)
                            try using 5 seconds first.
+
+  --sjatime_inc INT    add INT hour to walltime of imputation jobs (also on top of minilong)
+  --sjamem_incr INT   increase all memore requests by INT Mb in steps of 1000 (1000 is 1Gb)
+
 
 default thresholds:
 
@@ -113,8 +110,8 @@ options to change these values:
 
   --mind NUM        include only IDs with missing-rate < NUM
   --geno NUM        include only SNPs with missing-rate < NUM
-  --maf  NUM        include only SNPs with missing-rate < NUM
-  --midi NUM        include only SNPs with missing-rate-difference < NUM
+  --maf  NUM        include only SNPs with MAF > NUM
+  --midi NUM        include only SNPs with case/control missing-rate-difference < NUM
   --pre_geno NUM    include only SNPs with missing-rate < NUM (before ID filter)
   --imend INT       number of mendelian errors per ID
   --lmend INT       max number of mendelian errors per SNP
@@ -135,16 +132,23 @@ options to change these values:
 
 
 my $prekno_file = "";
+my $sjamem_incr = 0;
+my $sjatime_incr = 0;
 
 use Getopt::Long;
 GetOptions( 
 
     "trio"=> \my $trio,
     "serial"=> \my $serial,
+    "sepa=i"=> \$sepa,
+
     "sleep=i"=> \my $sleep_sw,
     "help"=> \my $help,
     "disease=s"=> \$disname,
     "popname=s"=> \$popname,
+    
+    "sjamem_incr=i"=> \$sjamem_incr,
+    "sjatime_incr=i"=> \$sjatime_incr,
 
     "prekno=s"=> \$prekno_file,
     "force1"=> \my $force1,
@@ -173,6 +177,10 @@ if ($sleep_sw) {
   print "sleeping for $sleep_sw seconds (only use if suspect of race condition)\n";
   sleep ($sleep_sw);
 }
+
+
+### convert into MB
+#$sjamem_incr *= 1000;
 
 
 if ($hwe_th == 0 || $hwe_th_ca == 0) {
@@ -211,7 +219,14 @@ push @test_scripts,  $lahunt_script;
 push @test_scripts,  $pdflatex_script;
 push @test_scripts,  $mystart_script;
 
-my $mutt_script = "mutt";
+my $mutt_script = "mail";
+
+
+$rp_header =~ s/MODULE/preimp_dir   /;
+
+print "$rp_header\n";
+
+
 
 print ".......testing necessary binaries....\n";
 my @miss_scripts;
@@ -263,6 +278,7 @@ if (@miss_scripts > 0) {
 print ".......testing email program....\n";
 
 my $err_scr = 0;
+my $noti = 1;
 {
     my $scr_path = '';
     
@@ -275,9 +291,9 @@ my $err_scr = 0;
     }
     unless ( $scr_path ) {
 
-	print "!!Warning!! : No $mutt_script command available, trying mail\n" ;
+	print "!!Warning!! : No $mutt_script command available, trying mutt\n" ;
 
-	$mutt_script = "mail";
+	$mutt_script = "mutt";
 	for my $path ( split /:/, $ENV{PATH} ) {
 	    if ( -f "$path/$mutt_script" && -x _ ) {
 		print "$mutt_script\tfound in $path\n";
@@ -286,8 +302,10 @@ my $err_scr = 0;
 	    }
 	}
 	unless ( $scr_path ) {
-	    $err_scr = 1;
-	    print "!!Error!! : No $mutt_script command available\n" ;
+#	    $err_scr = 1;
+	    print "!!Warning!! : No $mutt_script command available, no email notifications\n" ;
+	    $noti = 0;
+	    sleep (3);
 	}
     }
  
@@ -488,6 +506,7 @@ my $sjaname = "";
 my $sjarow = "";
 my @sjaarray;
 my $sjamem = 0;
+
 my $sjatime = -1;
 my $sjamaxjobs = 30000;
 my $sjainfofile = "$loloc/preimp_dir_info";
@@ -532,8 +551,11 @@ sub send_jobarray {
 	print SUC $fini_message."\n";
 	close SUC;
 
-	&mysystem ('cat success_file | '.$mutt_script.' -s RP_preimp_finished '.$email) ;
-
+	if ($noti == 1) {
+	    
+	    &mysystem ('cat success_file | '.$mutt_script.' -s RP_preimp_finished '.$email) ;
+	    
+	}
 	my $sjarow      = $sjainfotxt."\t$sjaname\t$now";
 	&a2filenew_app("$sjainfofile",$sjarow);
 
@@ -576,18 +598,49 @@ sub send_jobarray {
 
 
     if ($serial) {
+
 	print "starting step $sjaname with ".@sjaarray." jobs\n";
-	print "please be patient.\n";
+	print "running up to $sepa parallel jobs.\n";
+
+
 	my $jc = 1;
+#	my $job_str = "";
+	my @job_sepa_arr;
+
 	foreach (@sjaarray) {
 	    print "running job $jc...\n";
-	    &mysystem($_);
+	    push @job_sepa_arr, "$_ &";
+#	    $job_str .= "$_ & \n";
+
+	    if ($jc % $sepa == 0) {
+		push @job_sepa_arr, "wait";
+		#		$job_str .= "wait\n";
+		my $sepa_file = "$sjaname.sepa.$jc";
+		&a2filenew ($sepa_file,@job_sepa_arr);
+		print "sepa_file: ".$sepa_file."\n";
+		&mysystem("chmod u+x $sepa_file");
+		&mysystem("./$sepa_file");
+		@job_sepa_arr = ();
+	    }
 	    $jc++;
 	    
 	}
+
+	if (@job_sepa_arr > 0) {
+	    $jc--;
+	    push @job_sepa_arr, "wait";
+	    
+	    my $sepa_file = "$sjaname.sepa.$jc";
+	    &a2filenew ($sepa_file,@job_sepa_arr);
+	    print "sepa_file: ".$sepa_file."\n";
+	    &mysystem("chmod u+x $sepa_file");
+	    &mysystem("./$sepa_file");
+	}
+
+	
     }
     else {    
-	my $sys_loc = "$blue_script $sja_week_str --noerr --njob $nsja_loc --array $jobfile --wa $sjatime --mem $sjamem --j --na $sjaname.$outname $multi_txt";
+	my $sys_loc = "$blue_script $sja_week_str --noerr --njob $nsja_loc --array $jobfile --wa $sjatime --mem $sjamem --j --na $jobfile $multi_txt";
 	print "$sys_loc\n";
 	#    sleep(3);
 	&mysystem ($sys_loc);
@@ -618,6 +671,7 @@ sub send_jobarray {
 	    $err_message .= "##### have a look at the wiki page\n"; 
 	    $err_message .= "##### https://sites.google.com/a/broadinstitute.org/ricopili/\n";
 	    $err_message .= "##### or contact the developers\n";
+	    $err_message .= "##### version: $rp_version\n";
 	    $err_message .= "##################################################################\n";
 	    print "$err_message\n";
 
@@ -626,7 +680,11 @@ sub send_jobarray {
 	    close ERR;
 
 
-	    &mysystem ('cat error_file | '.$mutt_script.' -s RP_preimp_error '.$email) ;
+	    if ($noti == 1) {
+
+		&mysystem ('cat error_file | '.$mutt_script.' -s RP_preimp_error '.$email) ;
+
+	    }
 
 	    unless ($serial) {
 		exit;
@@ -639,23 +697,27 @@ sub send_jobarray {
     $command_line =~ s/--force1//;
 
 
-    my $wt_file = "$sjadir/blueprint_joblist_file-$sjaname.$outname";
+    my $wt_file = "$sjadir/j.$jobfile.id";
     chdir "$rootdir" or die "something strange";
-    if ($qloc eq "bsub" || $qloc eq "msub") {
-	$wt_file =~ s/.*blueprint_joblist_file-//;
-    }
-    if ($qloc eq "slurm") {
-	$wt_file = "$sjadir/$jobfile.script.id";
-    }
-    if ($qloc eq "qsub") {
-	$wt_file = "$sjadir/j.$sjaname.$outname.id";
-    }
-    if ($qloc eq "qsub_c") {
-	$wt_file = "$sjadir/j.$sjaname.$outname.id";
-    }
-    if ($qloc eq "qsub_b") {
-	$wt_file = "$sjadir/j.$sjaname.$outname.id";
-    }
+
+    
+#	"$sjadir/blueprint_joblist_file-$sjaname.$outname";
+
+#    if ($qloc eq "bsub" || $qloc eq "msub") {
+#	$wt_file =~ s/.*blueprint_joblist_file-//;
+ #   }
+ #   if ($qloc eq "slurm" || $qloc eq "slurm_u") {#
+#	$wt_file = "$sjadir/$jobfile.script.id";
+#    }
+#    if ($qloc eq "qsub") {#
+#	$wt_file = "$sjadir/j.$jobfile.id";
+#    }
+#    if ($qloc eq "qsub_c") {
+#	$wt_file = "$sjadir/j.$jobfile.id";
+#    }
+#    if ($qloc eq "qsub_b") {
+#	$wt_file = "$sjadir/j.$jobfile.id";
+#    }
     
 
 
@@ -720,7 +782,7 @@ my $namefile = "$disname.names";
 
 ### read bim-files
 my @bim_files = grep {/bim$/} @files;
-my @bim_files = grep {!/-qc.bim$/} @bim_files;
+#my @bim_files = grep {!/-qc.bim$/} @bim_files;
 
 
 #print "bim: @files\n";
@@ -730,6 +792,7 @@ my @bim_files = grep {!/-qc.bim$/} @bim_files;
 
 
 my %name_hash;
+my %qcc_hash; ### QC cycle
 my @name_arr;
 #my @bim_tmp;
 
@@ -738,12 +801,19 @@ my @name_arr;
 ##############################
 unless (-e $namefile) {
     die $! unless open FILE, "> $namefile";
+    print FILE "###STUDYNAME: 5 alphanumeric characters, recommeded city or study abbreviation and wave, e.g. lond1, cloz2\n";
+    print FILE "###              please negotiate with PIs about this name\n";
+    print FILE "###BFILE:     bed-filename root, e.g. if you dataset is called YOURDATA.bed, then please use YOURDATA in this column\n";
+    print FILE "###QCCYCLE:   numeric indicating the rounds of quality controls you have already performed\n";
+    print FILE "###              this will be appended to the resulting files with -qc1 or -qc2\n";
+    print FILE "###EXCLUDE:   set 0 if you want this dataset being included in the preimp process\n";
+    print FILE "STUDYNAME\tBFILE\tQCCYCLE\tEXCLUDE\n";
     my @qc_arr;
     my $cc = 1;
     foreach (@bim_files) {
 	my $bprefix = $_;
 	$bprefix =~ s/.bim$//;
-	print FILE "$disname$cc $bprefix\n";
+	print FILE "$disname$cc\t$bprefix\t1\t0\n";
 	$cc++;
     }
     close FILE;
@@ -753,12 +823,27 @@ unless (-e $namefile) {
 else {
     die "$!:$namefile" unless open NF, "< $namefile";   
     while (<NF>) {
+	next if ($_ =~ /^###/);
+	next if ($_ =~ /^STUDYNAME/);
 	my @cells = &split_line($_);
-	$name_hash{$cells[1]} = $cells[0];
-	push @name_arr, $cells[0];
+	my $qccycle = 1;
+	my $exclude = 0;
+	if (@cells>3) {
+	    $qccycle = $cells[2];
+	    $exclude = $cells[3];
+	}
+	if ($exclude == 0) {
+	    $name_hash{$cells[1]} = $cells[0];
+	    $qcc_hash{$cells[0]} = $qccycle;
+	    push @name_arr, $cells[0];
+	    print "included: $cells[1]\t$qccycle\n";
+	}
     }
     close NF;
 }
+
+
+
 #exit;
 #print "bim: @bim_files\n";
 #exit;
@@ -774,7 +859,7 @@ foreach my $bf (@bim_files) {
     my $bprefix = $bf;
     $bprefix =~ s/.bim$//;
     unless (exists $name_hash{$bprefix}){
-	print "$bprefix does not have a name and will not go on further\n"; 
+	print "$bprefix is not or as excluded defined in $namefile and will not go into pipeline\n"; 
     }
     else {
 	push @bim_files_clean, $bimprefix ;
@@ -923,7 +1008,13 @@ unless (-e "$disname.tag.done") {
 	$sjaname = "plague";
 	$sjatime = 1;
 	$sjamem = 2000;
+
+	$sjamem += $sjamem_incr;
+	$sjatime += $sjatime_incr;
+	
 	@sjaarray = @pla_arr;
+
+
 	
 	&send_jobarray;
 
@@ -985,6 +1076,7 @@ chdir ($qc_dir);
 
 
 my @bfiles_pi = ();
+my %bfiles_qcc_hash; # qccylcle
 foreach my $name (@name_arr) {
 
     my $nn = "$disname";
@@ -995,6 +1087,11 @@ foreach my $name (@name_arr) {
 #    print $cname."\n";
     die "$cname.bim is not existing, maybe remove $disname.tag.done" unless (-e $cname.".bim");
     push @bfiles_pi, $cname;
+    $bfiles_qcc_hash {$cname} = $qcc_hash{$name};
+#    print "name: $name\n";
+#    print "QCC: $qcc_hash{$name}\n";
+
+#    exit;
 #    $nn .= "_".$platform_hash{$bprefix};
 #    push @it_arr, "id_tager --create --nn $nn --cn $cname $bprefix.fam" unless (-e "$cname.bim");
 }
@@ -1043,12 +1140,23 @@ foreach my $bprefix (@bfiles_pi) {
     $option_txt .= " --withpna $withpna";
     $option_txt .= " --sexmin $sexcheck_min";
 
+    my $qcc_loc = $bfiles_qcc_hash{$bprefix};
+    $option_txt .= " --qcc ".$qcc_loc;
+    unless (exists $bfiles_qcc_hash{$bprefix}) {
+	print "Error: QC cycle for $bprefix not set, please look at $namefile\n";
+	exit;
+    }
 
-    unless (-e "$bprefix-qc.fini") {
+#    print "$bprefix\n";
+#    print "$option_txt\n";
+    
+#    exit;
+
+    unless (-e "$bprefix-qc".$qcc_loc.".fini") {
 	push @qc_arr, "$qc_script $option_txt $tdt_txt $prekno_txt $bprefix" ;
     }
     else {
-	push @meta_files, "$bprefix-qc.meta" ;
+	push @meta_files, "$bprefix-qc".$qcc_loc.".meta" ;
 	$qc_fini++;
     }
    # }
@@ -1064,6 +1172,11 @@ if (@qc_arr > 0) {
     $sjatime = 2;
     $sjatime = 4 if ($qc_fini > 0);
     $sjamem = 2000;
+
+    $sjamem += $sjamem_incr;
+    $sjatime += $sjatime_incr;
+	
+    
     @sjaarray = @qc_arr;
     
     &send_jobarray;
@@ -1092,15 +1205,19 @@ chdir ($imp_dir);
 
 
 foreach my $bprefix (@bfiles_pi) {
-    &mysystem ("$link_script ../$bprefix-qc.bed") unless (-e "$bprefix-qc.bed");
-    &mysystem ("$link_script ../$bprefix-qc.bim") unless (-e "$bprefix-qc.bim");
-    &mysystem ("$link_script ../$bprefix-qc.fam") unless (-e "$bprefix-qc.fam");
+    my $qcc_loc = $bfiles_qcc_hash{$bprefix};
+    my $bfile_loc_qc = "$bprefix-qc".$qcc_loc;
+    &mysystem ("$link_script ../$bfile_loc_qc.bed") unless (-e "$bfile_loc_qc.bed");
+    &mysystem ("$link_script ../$bfile_loc_qc.bim") unless (-e "$bfile_loc_qc.bim");
+    &mysystem ("$link_script ../$bfile_loc_qc.fam") unless (-e "$bfile_loc_qc.fam");
 }
 
 unless (-e "README") {
     die $!." <README>" unless open RD, "> README";
+    print RD "---------------------------------------------------------------------------------\n";
     print RD "standard imputation start:\n";
-    print RD "impute_dirsub_[VERSION] --phase 91 --out OUTNAME\n";
+    print RD "checkout https://sites.google.com/a/broadinstitute.org/ricopili/imputation\n";
+    print RD "---------------------------------------------------------------------------------\n";
     close RD;
 }
 

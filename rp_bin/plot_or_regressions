@@ -1,0 +1,305 @@
+#!/usr/bin/env perl
+use strict;
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
+#############################
+# read config file
+#############################
+
+my $rloc = &trans("rloc");
+
+###############################################
+
+my $version = "1.0.0";
+my $progname = $0;
+$progname =~ s!^.*/!!;
+
+
+my $pcol=9;
+my $orcol_disc=10;
+my $secol_disc=11;
+my $orcol_repl=15;
+my $secol_repl=16;
+my $out="outname";
+
+
+##### help message
+my $usage = "
+Usage : $progname [options] [p-file] 
+
+version: $version
+
+  --pcol INT          column containing pvals (starts with 1), default = $pcol
+  --orcol_disc INT    column containing OR from discovery (starts with 1), default = $orcol_disc
+  --orcol_repl INT    column containing OR from replication (starts with 1), default = $orcol_repl
+#  --thresh     plot two vertical lines in addition to 4 SEs. format: VAL,VAL
+
+  --help        print this message and exit
+
+  --out STRING  for outfile
+
+
+
+  ############ for standalone users #####################
+   
+  --rloc STRING    command to start R (default: $rloc)
+                      use term _SPACE_ if you need them:
+                        module load R; R as module_SPACE_load_SPACE_R;_SPACE_R)
+                      download here: http://cran.r-project.org/
+
+
+ --out is mandatory
+
+ created by Stephan Ripke 2008 at MGH, Boston, MA
+ 
+";
+
+
+use Getopt::Long;
+GetOptions( 
+    "pcol=i"=> \$pcol,
+    "orcol_disc=i"=> \$orcol_disc,
+    "orcol_repl=i"=> \$orcol_repl,
+    "help"=> \my $help,
+    "out=s"=> \$out,
+    "rloc=s"=> \$rloc,
+
+    );
+
+die "$usage\n" if $help;
+
+my $file = $ARGV[0];
+
+if ($out eq "outname") {
+    $out = "$file";
+}
+
+
+
+my $r_sys = "$rloc";
+$r_sys =~ s/_SPACE_/ /g;
+
+system("$r_sys RHOME");
+my $status = ($? >> 8);
+if ($status != 0) {
+    print "I could not start R, maybe you are using an old ricopili configuration?\ne.g. rloc does not need a path but a full starting command.\n";
+    exit;
+}
+
+
+
+##########################################
+# subroutine to split a plink-output-line with references
+##########################################
+
+sub split_line_ref {
+    my ($line)=${$_[0]};
+    chomp($line);
+    $line =~ s/^[\s]+//g;
+    my @cols=  split /\s+/, $line;
+    \@cols;
+}
+
+#####################################
+# print array to file
+####################################
+
+sub a2file {
+    my ($file, @lines)=@_;
+    die $! unless open FILE, "> $file";
+    foreach (@lines){
+	print FILE $_;
+    }
+    close FILE;
+}
+
+###################################################
+###  system call with test if successfull
+###################################################
+sub mysystem(){
+    my ($systemstr)="@_";
+    system($systemstr);
+    my $status = ($? >> 8);
+    die "$systemstr\n->system call failed: $status" if ($status != 0);
+}
+
+
+
+
+
+
+
+die "file not existing" unless (-e $file);
+
+
+my $lc = 0;
+my $mind;
+my $maxd;
+die "$file: ".$! unless open FILE, "< $file";
+die "$file.ors: ".$! unless open HP, "> $file.ors";
+
+while (my $line = <FILE>){
+    my @cells = @{&split_line_ref(\$line)};
+    my $p=$cells[$pcol-1];
+    my $or_disc=$cells[$orcol_disc-1];
+    my $se_disc=$cells[$secol_disc-1];
+    my $or_repl=$cells[$orcol_repl-1];
+    my $se_repl=$cells[$secol_repl-1];
+    print HP "$p $or_disc $se_disc $or_repl $se_repl\n";
+
+    $lc++;
+}
+close FILE;
+close HP;
+
+#exit;
+
+
+
+## template with IMISS and PDFNAME to be changed
+my $R_hist_templ='
+
+##### from vassily Trubetskoy 2017
+library(data.table)
+library(readr)
+library(broom)
+library(ggplot2)
+library(gridExtra)
+library(scales)
+
+comparison_grid <- function(file_path,
+                            p_ranges = list(c(-Inf, 1e-06), c(-Inf, 5e-08), c(-Inf, 1e-08), c(-Inf, 5e-09), c(5e-08, 1e-06), c(1e-8, 5e-08)),
+                            regression_method = \'wls\',
+                            sample_size = 65205) {
+  # read in the data
+  dat <- read_delim(file = file_path,
+                  delim = \' \',
+                  col_names = c(\'P\', \'OR\', \'SE\', \'OR_rep\', \'SE_rep\'),
+                  skip = 1,
+                  col_types = cols(P = col_double(), OR = col_double(), SE = col_double(), OR_rep = col_double(), SE_rep = col_double()))
+
+  # flip OR
+  or_is_flipped <- dat$OR < 1.0
+  dat[which(or_is_flipped), c(\'OR\')] <- sapply(dat[which(or_is_flipped), c(\'OR\')], function(x) 1.0/x)
+  dat[which(or_is_flipped), c(\'OR_rep\')] <- sapply(dat[which(or_is_flipped), c(\'OR_rep\')], function(x) 1.0/x)
+
+  # add OR variance
+  # the variance of the log(OR) is the second order taylor approximation of the log transform of the OR
+  dat[,c(\'var_rep\')] <- sapply(dat[,c(\'SE_rep\')], function(se) sample_size * se * se)
+  dat[,c(\'weights\')] <- 1.0/(dat$var_rep/(dat$OR_rep^2))
+
+  plots <- list()
+  tables <- list()
+
+  max_threshold <- max(unlist(lapply(p_ranges, max)))
+  max_log_OR <- max(log(dat[dat$P < max_threshold, c(\'OR\')]))
+
+  for (p_i in seq_along(p_ranges)) {
+    # subset using p-value threshold
+    dat_p <- dat[dat$P>p_ranges[[p_i]][1] & dat$P<p_ranges[[p_i]][2],]
+
+    # fit our model
+    if (regression_method == \'ols\') {
+      fit <- lm(log(OR_rep) ~ log(OR), dat_p)
+      plt <- ggplot(dat_p, aes(OR, OR_rep)) + geom_point(alpha=0.5)
+    } else if (regression_method == \'wls\') {
+      # weight by inverse variance
+      fit <- lm(log(OR_rep) ~ log(OR), dat_p, weights=weights)
+      plt <- ggplot(dat_p, aes(OR, OR_rep)) + geom_point(alpha=0.5, aes(color=weights)) + scale_colour_gradient(low=\'steelblue\', high=\'darkred\')
+    } else {
+      stop(\'Please enter a valid valid for regression method: ols, wls\')
+    }
+    tidy_fit <- tidy(fit)
+
+
+    # pull the slope for annotation on the plot
+    slope_data <- data.frame(label=paste0(\'slope: \', prettyNum(tidy_fit$estimate[2], digits=3),
+                                         \'(\', prettyNum(tidy_fit$std.error[2], digits=2), \')\'),
+                             x=exp(0.01),
+                             y=exp(max(log(dat_p$OR_rep))))
+
+
+    if (p_ranges[[p_i]][1] == -Inf) {
+      title <- paste0(\'p-vals < \', p_ranges[[p_i]][2], \'; N=\', nrow(dat_p), \'; \', regression_method,\' regression\')
+    } else{
+      title <- paste0(p_ranges[[p_i]][1], \' < p-vals < \', p_ranges[[p_i]][2], \'; N=\', nrow(dat_p), \'; \', regression_method,\' regression\')
+    }
+
+    # put together plot
+    plt <- plt +
+      geom_abline(intercept = coef(fit)[1], slope = coef(fit)[2], col=\'red\') +
+      geom_hline(yintercept = 1, linetype=\'dotted\') +
+      geom_vline(xintercept = 1, linetype=\'dotted\') +
+      scale_x_continuous(trans="log", breaks = trans_breaks("log", function(x) exp(x)), labels = trans_format("log", function(x) as.character(round(x, 3))),limits = c(exp(0.01), exp(max_log_OR))) +
+      scale_y_continuous(trans="log", breaks = trans_breaks("log", function(x) exp(x)), labels = trans_format("log", function(x) as.character(round(x, 3)))) +
+      xlab(\'log(OR)\') + ylab(\'log(OR_rep)\') +
+      geom_text(data=slope_data, mapping=aes(label=label, x=x, y=y), col=\'red\', size=3, hjust=\'inward\', vjust=\'inward\') +
+      geom_abline(intercept = 0, slope = 1, linetype=\'dashed\', color=\'gray\') +
+      ggtitle(title) +
+      theme_bw() +
+      theme(aspect.ratio=1,
+            panel.grid.minor = element_blank(),
+            plot.title = element_text(size = 6),
+            axis.title.x = element_text(size=5, margin = margin(t = 0, r = 0, b = 0, l = 0)),
+            axis.text.x = element_text(size=5, angle=45),
+            axis.text.y = element_text(size=5),
+            axis.title.y = element_text(size=5, margin = margin(t = 0, r = 0, b = 0, l = 0)),
+            plot.margin = unit(c(1,1,1,1), "mm"))
+
+    plots[[p_i]] <- ggplotGrob(plt)
+
+    # record table entries
+    pretty_fit <- tidy_fit[,c(\'term\', \'estimate\', \'std.error\', \'p.value\')]
+    pretty_fit[,2:ncol(pretty_fit)] <- sapply(pretty_fit[,2:ncol(pretty_fit)], function(x) prettyNum(x, digits=3, format=\'G\'))
+    pretty_fit$p_range <-rep(paste(p_ranges[[p_i]], collapse = \':\'), 2)
+
+    tables[[p_i]] <- pretty_fit
+  }
+
+  # put together final table
+  all_fits <- rbindlist(tables)
+  print(all_fits)
+  tbl <- tableGrob(all_fits, rows = NULL)
+
+  # display table + plot together into a grid
+  grid.arrange(grobs = plots, nrow = 3, ncol=2)
+  grid.arrange(tbl, newpage = T)
+}
+
+
+pdf("OUTNAME.pdf",7.8,6)
+comparison_grid("INNAME")
+dev.off()
+
+
+' ;
+
+
+## rework template
+my $R_hist_in = $R_hist_templ;
+$R_hist_in=~ s/OUTNAME/$out/g;
+$R_hist_in=~ s/INNAME/$file.ors/g;
+
+
+&a2file ("$file.hisplo.Rin", $R_hist_in);
+
+my $system="$r_sys --quiet --vanilla < $file.hisplo.Rin 2>/dev/null >/dev/null";
+#my $system="source /broad/software/scripts/useuse; use R-2.14; R --vanilla < $file.hisplo.Rin";
+&mysystem($system);
+
+
+print "success: $out.pdf\n";
+
+
+#exit;
+
+
+
+

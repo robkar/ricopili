@@ -1,47 +1,35 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 my $rloc = &trans("rloc");
 my $sloc = &trans("sloc");
 
 ########################
 
-my $r_sys = "$rloc/R";
-if ($rloc eq "broadinstitute") {
-    $r_sys = "source /broad/software/scripts/useuse; use R-2.14; R";
-}
-else {
-    
-    unless (-e "$rloc/R" ){
-	print "\n***** Error: couldn't find the following:\n";
-	print "$rloc/R\n";
-	exit;
-    }
 
+my $r_sys = "$rloc";
+$r_sys =~ s/_SPACE_/ /g;
+
+system("$r_sys RHOME");
+my $status = ($? >> 8);
+if ($status != 0) {
+    print "I could not start R, maybe you are using an old ricopili configuration?\ne.g. rloc does not need a path but a full starting command.\n";
+    exit;
 }
+
+
 
 
 
@@ -138,8 +126,6 @@ my $host = hostname();
 #$lisa=1 if ($host =~ m/sara/) ;
 #my $broad = 1 if ($ENV{"DOMAINNAME"} =~ /broadinstitute/);
 
-#my $rloc = "/home/radon01/sripke/bakker_ripke/R-base";
-#my $rloc_lisa = "/home/gwas/bin/R-base";
 
 
 #####################################

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 
 my $version = "1.0.0";
@@ -10,7 +10,8 @@ my $progname = $0;
 ######################################################
 
 my $colp = 10;
-my $colhp = 16;
+my $colhp = -1;
+my $coldf = -1;
 #my $th = 3;
 
 
@@ -101,7 +102,40 @@ my $inz = gzopen("$in_file", "rb")  or die "Cannot open $in_file\n" ;
 my $ouz = gzopen("$out_file_tmp", "wb")  or die "Cannot open $out_file_tmp\n" ;
 
 $inz->gzreadline(my $head);
-$ouz->gzwrite($head) ;
+
+
+
+
+my $ouz_head;
+my @cells = @{&split_line_ref(\$head)};
+#print "head for hetP: ".$cells[$colhp]."\n";
+foreach my $cc (0..$#cells) {
+    if ($cells[$cc] eq "HetPVa") {
+	$colhp = $cc;
+    }
+    if ($cells[$cc] eq "HetDf") {
+	$coldf = $cc;
+    }
+#    print "cell: ".$cells[$cc]."\n";
+}
+
+if ($colhp == -1) {
+    print "Error: no HetPVa found in header\n";
+    exit;
+}
+
+if ($coldf == -1) {
+    print "Error: no HetDf found in header\n";
+    exit;
+}
+
+$cells[$colp] = "HetPVa";
+$cells[$colhp] = "P";
+
+
+
+$ouz->gzwrite("@cells\n") ;
+#print "end hed\n";
 
 my $nin = 0;
 my $nout = 0;
@@ -115,6 +149,9 @@ while ($inz->gzreadline($line)){
 	next;
 
 #	exit;
+    }
+    if ($cells[$coldf] == 0) {
+	next;
     }
     my $tmp_p = $cells[$colp];
     $cells[$colp] = $cells[$colhp];

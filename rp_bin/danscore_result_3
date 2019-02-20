@@ -1,38 +1,39 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+use Cwd;
+use File::Path;
 
 
 #############################
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
 my $rloc = &trans("rloc");
+my $sloc = &trans("sloc");
 #my $r3loc = &trans("r3loc");
 
 
 #############################
-my $r_sys = "$rloc/R";
-if ($rloc eq "broadinstitute") {
-    $r_sys = "source /broad/software/scripts/useuse; use R-2.14; R";
+
+
+my $r_sys = "$rloc";
+$r_sys =~ s/_SPACE_/ /g;
+
+system("$r_sys RHOME");
+my $status = ($? >> 8);
+if ($status != 0) {
+    print "I could not start R, maybe you are using an old ricopili configuration?\ne.g. rloc does not need a path but a full starting command.\n";
+    exit;
 }
+
 
 
 my $version = "1.0.0";
@@ -53,6 +54,8 @@ Usage : $progname [options] mds_file
 
    --quan            quantitative pt
 
+   --tarball STRING  directly from tarball, does not need profiles files.
+
   mdsfile and out is mandatory
 
 version: $version
@@ -62,21 +65,24 @@ version: $version
 ";
 
 my $nref = 288;
+my $prevalence = 0.01;
 #### evaluate options
 use Getopt::Long;
 GetOptions(     
-  "help" => \my $help,
-  "mds=s" => \my $mdsfile,
-  "trio" => \my $trio,
-  "covall" => \my $covall,
-  "out=s" => \my $out,
-  "quan" => \my $quan,
-  "nref=i" => \$nref,
+    "help" => \my $help,
+    "mds=s" => \my $mdsfile,
+    "trio" => \my $trio,
+    "covall" => \my $covall,
+    "out=s" => \my $out,
+    "quan" => \my $quan,
+    "tarball=s" => \my $tarball,
+    "nref=i" => \$nref,
+    "prev=f" => \$prevalence,
 );
 
 
 die "$usage" if ($help);
-die "$usage" unless ($out);
+die "$usage\n!!! please specify --out !!!!" unless ($out);
 
 
 
@@ -166,35 +172,46 @@ my @p_th;
 my @dosfiles;
 my $famfile;
 
+
+
+## only used with --tarball
+my $rootdir = &Cwd::cwd();
+my $workdir = "$sloc/mPRS_$out";
+my @created = mkpath(   ## $created ?
+			$workdir,
+			{verbose => 0, mode => 0750},
+    );
+#print "workdir: $workdir\n";
+
 #####################################
 # read mds-file
 #####################################
+unless ($tarball) {
 
 
-
-my %amds = ();
-my %apt = ();
-
-if ($mdsfile) {
-    print "before\n";
-    unless ($trio) {
-	die "$mdsfile: ".$! unless open MDI, "< $mdsfile";
-	
-	while (my $line = <MDI>) {
-	    chomp($line);
-	    my @cells = &split_line ($line);
-	    foreach (2..$#cells) {
-		$amds{"$cells[0]\t$cells[1]"} .= "\t".$cells[$_];
+    my %amds = ();
+    my %apt = ();
+    
+    if ($mdsfile) {
+	print "before\n";
+	unless ($trio) {
+	    die "$mdsfile: ".$! unless open MDI, "< $mdsfile";
+	    
+	    while (my $line = <MDI>) {
+		chomp($line);
+		my @cells = &split_line ($line);
+		foreach (2..$#cells) {
+		    $amds{"$cells[0]\t$cells[1]"} .= "\t".$cells[$_];
+		}
 	    }
+	    close MDI;
+	    print "after: ".keys (%amds)."\n";
 	}
-	close MDI;
-	print "after: ".keys (%amds)."\n";
     }
-}
-#print "sleep\n";
-#sleep(5);
-#exit;
 
+
+
+    
 
 my @outfile_coll ;
 
@@ -320,8 +337,11 @@ foreach my $st (1..10) {
 	    }
 	}
 	if (keys %prof_count_collect > 1) {
-	    print "Error: different profile-counts for different individuals, something is seriously wrong\n";
-	    exit;
+	    print "Warning: different profile-counts for different individuals, please check if this happens only for distinct datasets\n";
+	    foreach my $key (keys %prof_count_collect) {
+		print $key." ".$prof_count_collect{$key}."\n";
+	    }
+#	    exit;
 	}
 	close FILE;
 	&mysystem ("mds2cov $infile");
@@ -366,6 +386,33 @@ foreach my $st (1..10) {
 
 }
 
+
+}
+else {
+    
+
+    chdir ($workdir);
+
+    &mysystem("cp $rootdir/$tarball .");
+    &mysystem("tar -xvf $tarball");
+    my $intempl = $tarball;
+
+    $intempl =~ s/^danscore_//;
+    $intempl =~ s/.cov.tar.gz$//;
+    $intempl =~ s/.tar.gz$//;
+
+    $out = $intempl;
+#    print "INTEMPL: $intempl\n";
+#    print "debug\n";
+#    exit;
+}
+
+
+
+
+
+
+### from here if tarball
 
 	my $R_rido = '
 
@@ -455,7 +502,7 @@ h2l_CS <-  function(k,cs,p) {
 #main program
 library(rms)
 library(pROC)
-library(MBESS)
+#library(MBESS) ## only neede in some testing environment.
 library(MASS)
 
 ### light edits of s.ripke
@@ -486,17 +533,22 @@ pdf(paste(FILE,"pdf",sep=""))
 for (j in (1:nj)){
 file=paste(FILE,j,".target.S",j,".sumprofile_cov",sep="")
 
+
+if (!(file.exists(file))) {
+#  N=length(ri$PHENO1)
+
+  ## if variance of score is zero then write differnt values
+  O=data.frame("INTEMPL",Pd[j],0,0,0.0,1.0,0,0,0,0.5,1,0,0,0,0,0)
+  write.table(O,"INTEMPL.poly.out.txt",row.names=F,col.names=F,sep=" ",append=T)
+
+
+} else {
+
+
 read.table(file,head=T)->ri
 
-K=0.01 # baseline disorder risk for schizophrenia
 
-
-
-
-
-
-
-
+K=PREVALENCE # baseline disorder risk for schizophrenia
 
 ### normalize the score
 (ri$SCORE-mean(ri$SCORE))/sd(ri$SCORE)->ri$NSCORE
@@ -507,7 +559,12 @@ print (vars)
 
 P=sum(ri$PHENO1)/length(ri$PHENO1) # proportion of target sample that are cases
 
-    if (vars > 0) {
+
+
+########################################
+if (vars > 0 ) {
+######################################
+
 
 
 
@@ -678,7 +735,11 @@ ORDchkH=exp(tstchk$coefficients[2]+1.96*summary(tstchk)$coefficients[2,2])
 
 O=data.frame("INTEMPL",Pd[j],N,P,NKv,pval,K,h2l_r2n,se_h2l_r2,aucvS,ORD,ORDL,ORDH,NCA,NCO,coeff_w_cov)
 write.table(O,"INTEMPL.poly.out.txt",row.names=F,col.names=F,sep=" ",append=T)
+
+###############################################
 } else {
+#######################################################
+
 
 N=length(ri$PHENO1)
 
@@ -753,6 +814,8 @@ plot(d2,col="red",xlim=c(minx,maxx), ylim=c(0,maxy),xlab="",main="")
 
 }
 }
+}
+
 
 dev.off()
 
@@ -769,7 +832,8 @@ dev.off()
 my $cov_str;
 my $cov_str_a;
 
-	die "$out.1.target.S1.sumprofile_cov: ".$! unless open FILE, "< $out.1.target.S1.sumprofile_cov";
+
+	die "$out.6.target.S6.sumprofile_cov: ".$! unless open FILE, "< $out.6.target.S6.sumprofile_cov";
 	my $header = <FILE>;
 	close FILE;
 	my @cells = &split_line($header);
@@ -828,6 +892,7 @@ if ($trio){
 
 
 	$R_rido =~ s/D10COV/$d10_cov/g;
+	$R_rido =~ s/PREVALENCE/$prevalence/g;
 
 
 #	$R_rido =~ s/COVSTR2/$cov_str_a/g;
@@ -862,6 +927,15 @@ $trio_sw = 1 if ($trio);
 	   &mysystem("touch $out.poly.success");
 
 print "end of danscore_result_3\n";
+
+if ($tarball) {
+    &mysystem("cp $out.pdf $rootdir");
+    &mysystem("cp $out.poly.out.txt $rootdir");
+    &mysystem("cp R.$out.hl_nw.Rin $rootdir");
+    chdir ($rootdir);
+    &mysystem("rm -r $workdir");
+
+}
 
 
 #my $sys = "danscore_plot2  --out plot.$out @outfile_coll";

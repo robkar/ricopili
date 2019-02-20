@@ -1,0 +1,291 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+my $version = "1.0.0";
+my $progname = $0;
+$progname =~ s!^.*/!!;
+
+my $out = "jobperformance";
+
+use Getopt::Long;
+GetOptions( 
+    "help"=> \my $help,
+    "takeold"=> \my $takeold_sw,
+    "out=s"=> \$out,
+    );
+
+use File::Basename;
+
+if ($help){
+    print "usage: $progname DIR1 DIR2
+
+version: $version
+
+
+SYNOPSIS
+        searches directories in argumentlist for files j.*.id, and reads out hardwareusage for jobs
+
+
+      options:
+
+        --help          print this message then quit
+        --takeold       take old qacct files if possible
+        --out STRING    outname
+
+
+ created by Stephan Ripke 2016 at MGH, Boston, MA
+ in the frame of the PGC
+\n";
+    exit 2;
+}
+
+
+
+
+##############################################
+## compare times
+######################################
+
+    
+
+    
+sub date2sec {
+   my ($date) = @_;
+   my ($m,$d,$y,$H,$M,$S,$MS) = $date =~ m{^([0-9]{2})/([0-9]{2})/([0-9]{4})_([0-9]{2}):([0-9]{2}):([0-9]{2}).([0-9]{3})\z}
+   or die;
+   my $nday = $y*365+$m*12+$d;
+   my $nhour = $nday*24 + $H;
+   my $nmins = $nhour*60 + $M;
+   my $nsecs = $nmins*60 + $S;
+   
+   return $nsecs;
+
+}
+
+
+
+sub time2sec {
+    my ($time) = @_;
+    my @cells = split ':', $time;
+    
+    my $secs = $cells[0]*3600 + $cells[1] * 60 + $cells[2];
+    return $secs;
+
+}
+
+
+
+
+sub sec2time {
+   my ($sec) = @_;
+   my $nhours = sprintf "%d",$sec/3600;
+   my $secs_rest = $sec % 3600;
+   my $nmins = sprintf "%d",$secs_rest/60;
+   $secs_rest = $secs_rest % 60;
+
+   my $min_txt = sprintf "%02d", $nmins;
+   my $sec_txt = sprintf "%02d", $secs_rest;
+
+   
+   return $nhours.":".$min_txt.":".$sec_txt;
+
+}
+
+
+
+##########################################
+# subroutine to split a plink-output-line with references
+##########################################
+
+sub split_line_ref {
+    my ($line)=${$_[0]};
+    chomp($line);
+    $line =~ s/^[\s]+//g;
+    my @cols=  split /\s+/, $line;
+    \@cols;
+}
+
+
+###################################################
+###  system call with test if successfull
+###################################################
+sub mysystem(){
+    my ($systemstr)="@_";
+    system($systemstr);
+    my $status = ($? >> 8);
+    die "$systemstr\n->system call failed: $status" if ($status != 0);
+}
+
+
+###################################################
+###### BEGIN  ###########################################
+##########################################################
+
+my @searchdirs = @ARGV;
+if (@ARGV == 0){
+    @searchdirs = "./";
+}
+
+###############################################
+## find jobfiles
+###########################################
+
+
+
+my @ids = ();
+my %filename;
+foreach my $locdir (@searchdirs){
+    opendir(DIR, "$locdir") || die "can't opendir $locdir: $!";
+    my $idloc = "NA";
+    foreach my $jfile (readdir (DIR)) {
+	next unless ($jfile =~ /.id$/);
+	next unless ($jfile =~ /^j./);
+	die $!." <$locdir/$jfile>" unless open IN, "< $locdir/$jfile";
+	my $line = <IN>;
+	my @cells = @{&split_line_ref(\$line)};
+	my @jarr=  split /\./, $cells[2];
+	$idloc = $jarr[0];
+	push @ids, $idloc;
+	$filename{$idloc} = $jfile;
+#	print "$idloc\n";
+	close IN;
+    }
+
+    closedir DIR;
+}
+#exit;
+
+if (@ids == 0) {
+    print "Error: no jobids found in this directory.\n";
+    die $!." <$out.README>" unless open OUT, "> $out.README";
+    print OUT "---------------------------------------------------\n";
+    print OUT "perfomance report on all jobs started here\n";
+    print OUT "---------------------------------------------------\n";
+    print OUT "Error: no jobids found in this directories: @searchdirs\n";
+
+    close OUT;
+    exit;
+}
+#print "number of jobs in this directory: ".@ids."\n";
+#sleep (10);
+
+
+#################################################
+# use my.qacct in each of these
+################################################
+
+my $takeold_txt = "";
+if ($takeold_sw){
+    $takeold_txt = "--takeold";
+}
+
+
+
+
+my @out_collections;
+foreach my $jid (@ids) {
+    print ("my.qacct of $jid\n");
+    my $filename_loc = $filename{$jid};
+    &mysystem ("my.qacct $takeold_txt $jid > perf.$jid.$filename_loc.qacct");
+
+    push @out_collections, "perf.$jid.$filename_loc.qacct";
+    close IN;
+}
+
+&mysystem ("grep SUMMARY-HEADER $out_collections[0] > $out.head") ;
+&mysystem ("grep SUMMARY-Data @out_collections > $out.data");
+&mysystem ("cat $out.head $out.data | column -t > $out.table");
+&mysystem ("rm $out.data $out.head");
+
+
+
+my $min_submit_time;
+my $min_submit_time_sec=&date2sec("08/07/8017_04:55:06.274");
+my $max_end_time;
+my $max_end_time_sec=0;
+my $cpuhours_dir=0;
+my $runtime_sec=0;
+my $waittime_sec=0;
+
+die $!." <$out.table>" unless open IN, "< $out.table";
+my $line = <IN>;
+while (my $line = <IN>){
+
+    my @cells = @{&split_line_ref(\$line)};
+    my $submit_time = $cells[8];
+    my $end_time = $cells[11];
+    $cpuhours_dir += $cells[15];
+    
+
+    next if ($submit_time eq "-1" || $end_time eq "-1");
+
+    $runtime_sec += &time2sec($cells[12]);
+
+    $waittime_sec += &time2sec($cells[13]);
+
+    
+    my $submit_time_sec = &date2sec($submit_time);
+    my $end_time_sec = &date2sec($end_time);
+
+#    print "submit_time_sec: $submit_time_sec\n";
+    #    print "end_time_sec: $end_time_sec\n";
+
+    
+    if ($submit_time_sec < $min_submit_time_sec) {
+	$min_submit_time_sec  = $submit_time_sec;
+	$min_submit_time = $submit_time;
+    }
+    
+    if ($end_time_sec > $max_end_time_sec) {
+	$max_end_time_sec  = $end_time_sec;
+	$max_end_time = $end_time;
+    }
+
+}
+
+
+die $!." <$out.README>" unless open OUT, "> $out.README";
+print OUT "---------------------------------------------------\n";
+print OUT "perfomance report on all jobs started here\n";
+foreach my $locdir (@searchdirs){
+    print OUT "    $locdir\n";
+}
+print OUT "---------------------------------------------------\n";
+print OUT "earliest starting time: $min_submit_time\n";
+print OUT " latest finishing time: $max_end_time\n";
+
+
+my $time_txt = &sec2time ($max_end_time_sec - $min_submit_time_sec);
+printf OUT " this is (h:m:s): $time_txt\n" ;
+
+
+
+#print "runtimesec: $runtime_sec\n";
+
+printf OUT "total active runtime, excluding manual and technical queue pauses (h:m:s): %s\n", &sec2time($runtime_sec) ;
+printf OUT "total waiting time - submission till start (h:m:s): %s\n", &sec2time($waittime_sec) ;
+my $cpuhours_txt = &sec2time ($cpuhours_dir * 3600);
+printf OUT "Total CPU time (h:m:s): %s\n", $cpuhours_txt ;
+
+print OUT "---------------------------------------------\n";
+print OUT "to sort by submit-time:\n";
+print OUT "sort -k10,10n $out.table\n";
+close OUT;
+
+
+
+print "--------------finished-------------------------\n";
+print "have a look here: $out.README\n";
+
+
+
+
+
+
+
+
+
+
+exit;

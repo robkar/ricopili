@@ -1,28 +1,17 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 #############################
 # read config file
 #############################
-
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
 
 my $hmloc = &trans("hmloc");
 
@@ -37,6 +26,7 @@ COMAND DIR1 DIR2 DIR3 .....
   --help              print help massage and exits
 #  --clean             clean directory
   --dirfile STRING       file containing merge directories
+  --force              do not exit if references do not match
 #  --out               name of imputation run
  
 
@@ -53,7 +43,9 @@ start within new (empty directory)
 ";
 
 
-
+print "please only full paths (no relative links)\n";
+sleep (2);
+#exit;
 
 print "replace reference_info\n";
 print "look for triset\n";
@@ -108,6 +100,7 @@ GetOptions(
     "dirfile=s"=> \my $dirfile,
 #    "out=s"=> \$outname,
     "clean"=> \my $cleandir,
+    "force"=> \my $force,
     "help"=> \my $help );
 
 
@@ -252,7 +245,14 @@ foreach my $sd (@sourcedirs) {
 		print "Warning: directories seem to be from different reference sets....?\n";
 		print "compare ./reference_info with $sd/reference_info\n";
 		print "----------------------------------------------\n";
-		sleep (3);
+		if ($force) {
+		    print "since --force is on, I wont exit, but you probably run into problems soon\n";
+		    print "----------------------------------------------\n";
+		    sleep (3);
+		}
+		else {
+		    exit;
+		}
 	    }
 	}
 	

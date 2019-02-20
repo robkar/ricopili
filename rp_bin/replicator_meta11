@@ -1,6 +1,13 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 my $out_name = "repmeta";
 
@@ -16,12 +23,6 @@ my $progname = $0;
 $progname =~ s!^.*/!!;
 my $command_line = "$progname @ARGV";
 
-my $past_file = $ENV{HOME}."/replicator_info";
-my $pwd_loc = $ENV{PWD};
-
-die $! unless open FILE, ">> $past_file";
-print FILE "$pwd_loc\t$command_line\n";
-close FILE;
 
 
 
@@ -36,32 +37,28 @@ close FILE;
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
-my $ploc = &trans("ploc");
+my $ploc = &trans("p2loc");
 my $rloc = &trans("rloc");
 my $sloc = &trans("sloc");
+my $loloc = &trans("loloc");
 
-my $r_sys = "$rloc/R";
+my $past_file = "$loloc/replicator_info";
+my $pwd_loc = $ENV{PWD};
 
-if ($rloc eq "broadinstitute") {
-    $r_sys = "source /broad/software/scripts/useuse; use R-2.14; R";
+die $! unless open FILE, ">> $past_file";
+print FILE "$pwd_loc\t$command_line\n";
+close FILE;
+
+
+
+my $r_sys = "$rloc";
+$r_sys =~ s/_SPACE_/ /g;
+
+system("$r_sys RHOME");
+my $status = ($? >> 8);
+if ($status != 0) {
+    print "I could not start R, maybe you are using an old ricopili configuration?\ne.g. rloc does not need a path but a full starting command.\n";
+    exit;
 }
 
 ####################################################
@@ -203,16 +200,19 @@ sub qqplot {
 	print FILE $_."\n";
     }
     close FILE;
-    if (@parr == 0) {
+    my $nsnps_loc = @parr;
+    if ($nsnps_loc == 0) {
 	print "no snps in $file\n";
-	exit;
     }
-    my $sys_str = "qqplot_5 --out $file -p 2 $file";
-#    print $sys_str."\n";
-#    exit;
-    unless (-e "$file"."-qq.pdf"){
-	&mysystem($sys_str);
+    else {
+	my $sys_str = "qqplot_5 --out $file -p 2 $file";
+	#    print $sys_str."\n";
+	#    exit;
+	unless (-e "$file"."-qq.pdf"){
+	    &mysystem($sys_str);
+	}
     }
+    $nsnps_loc;
 
 }
 
@@ -337,6 +337,7 @@ my %area_rico_name;
 
 my %area_gwc;
 my %area_genes;
+my %area_ngenes;
 my $genes_header = "genes_within_0.1_cm";
 
 
@@ -344,6 +345,7 @@ if ($areator) {
     my $snp_col = 0;
     my $gene_col1 = 13;
     my $gene_col2 = 14;
+    my $ngenes = 22;
     my $left = 13;
     my $right = 14;
    my $left2 = 13;
@@ -372,15 +374,17 @@ if ($areator) {
 	$snp_col = 0;
 	$gene_col1 = 21;
 	$gene_col2 = 21;
+	$ngenes = 22;
 	$left = 13;
 	$right = 14;
 	$left2 = 17;
 	$right2 = 18;
 	$nhgri = 20;
 	$gwc = 21;
+
 	$ldf6 = 16;
 	$chrom = 1;
-	$genes_header = "genes.6.50kb(dist2index)";
+	$genes_header = "N:genes.6.50kb(dist2index)";
     }
     die $!."($areator)" unless open FILE, "< $areator";
     while (my $line = <FILE>){
@@ -391,6 +395,7 @@ if ($areator) {
 	$snp_loc =~ s/\*//g;
 	if ($cells[$gene_col1] ne "") {
 	    $area_genes{$snp_loc} = "$cells[$gene_col1]\t$cells[$gene_col2]";
+	    $area_ngenes{$snp_loc} = "$cells[$ngenes]";
 	    $area_left{$snp_loc} = "$cells[$left]";
 	    $area_right{$snp_loc} = "$cells[$right]";
 	    $area_left2{$snp_loc} = "$cells[$left2]";
@@ -398,6 +403,7 @@ if ($areator) {
 #	    $area_span{$snp_loc} = "$cells[$span]";
 	    $area_nhgri{$snp_loc} = "$cells[$nhgri]";
 	    $area_gwc{$snp_loc} = "$cells[$gwc]";
+
 	    $area_ldf6{$snp_loc} = "$cells[$ldf6]";
 	    $area_chr{$snp_loc} = "$cells[$chrom]";
 
@@ -654,12 +660,12 @@ if (0) {
 ### perform meta, so we see, which SNPs come out of it.
 #####################################
 
-my $tmp_sys = "metaber5 --nofilter --out $out_name.comb $disc_name @dfile_arr";
+my $tmp_sys = "metaber7 --nofilter --out $out_name.comb $disc_name @dfile_arr";
 print "$tmp_sys\n";
 #exit;
-sleep(3);
+#sleep(3);
 &mysystem ($tmp_sys);
-$tmp_sys = "metaber5 --nofilter --out $out_name.rep @dfile_arr";
+$tmp_sys = "metaber7 --nofilter --out $out_name.rep @dfile_arr";
 print "$tmp_sys\n";
 #sleep(3);
 &mysystem ($tmp_sys);
@@ -687,7 +693,7 @@ else {
     die "$!" unless open GENE, "> $out_name.comb.meta.gene"; 
     my $head = <META>;
     chomp($head);
-    print GENE "$head\tGene\tGene_range(300Kb)\n";
+    print GENE "$head\tGene\tN:Gene_range(300Kb)\n";
     while (my $line = <META>){
 	chomp($line);
 	$line =~ s/^[\s]+//g;
@@ -695,7 +701,7 @@ else {
 	my $snp_loc = $cells[1];
 
 	if (exists $area_genes{$snp_loc}) {
-	    print GENE "$line\t$area_genes{$snp_loc}\n";
+	    print GENE "$line\t$area_ngenes{$snp_loc}:$area_genes{$snp_loc}\n";
 	}
 	else {
 	    print GENE "$line\tno_lookup\tno_lookup\n";
@@ -792,10 +798,10 @@ if (1) {
     $prcol = 10;
     $ocol = 8;
     $orcol = 8;
-    $qcol = 16;
+    $qcol = 15;
     $icol = 13;
     $secol = 9;
-    $gcol = 17;
+    $gcol = 19;
 
 }
 
@@ -1135,7 +1141,7 @@ while (<DISC>){
 	$cells[$or_col] = 1 / $cells[$or_col];
     }
     else {
-	$out_str .= "\t".$cells[$a1_col].$cells[$a2_col];
+	$out_str .= "\t".$cells[$a1_col]."/".$cells[$a2_col];
     }
     $out_str .= "\t".$comb_gene{$snp_name};
     $out_str .= "\t".$cells[$fca_col];
@@ -1202,11 +1208,19 @@ foreach my $repout (@dfile_arr) {
     my $possum_p6 = 0;
     my $nsum_p6 = 0;
     my @p_coll_p6;
+
+    
     my $possum_gws = 0;
     my $nsum_gws = 0;
     my @p_coll_gws;
 
+    my $possum_p8 = 0;
+    my $nsum_p8 = 0;
+    my @p_coll_p8;    
 
+    my $possum_p9h = 0;
+    my $nsum_p9h = 0;
+    my @p_coll_p9h;
 
     my $fill = "";
     $fill = "\t" if ($rep_count > 0);
@@ -1333,11 +1347,23 @@ foreach my $repout (@dfile_arr) {
 	    push @p_coll_p6, $cells[$snp_col]." $p_2_loc";
 	}
 	if ($disc_p_hash{$snp_name} <= 0.00000005) {
-
 	    $possum_gws++ if ($sumdir eq "+");
 	    $nsum_gws++ if ($sumdir eq "+" || $sumdir eq "0");
 	    push @p_coll_gws, $cells[$snp_col]." $p_2_loc";
 	}
+	if ($disc_p_hash{$snp_name} <= 0.00000001) {
+	    $possum_p8++ if ($sumdir eq "+");
+	    $nsum_p8++ if ($sumdir eq "+" || $sumdir eq "0");
+	    push @p_coll_p8, $cells[$snp_col]." $p_2_loc";
+	}
+	if ($disc_p_hash{$snp_name} <= 0.000000005) {
+	    $possum_p9h++ if ($sumdir eq "+");
+	    $nsum_p9h++ if ($sumdir eq "+" || $sumdir eq "0");
+	    push @p_coll_p9h, $cells[$snp_col]." $p_2_loc";
+	}
+
+	
+	
 
 
 	if ($disc_p_hash{$snp_name} == 0) {
@@ -1408,6 +1434,15 @@ foreach my $repout (@dfile_arr) {
     if ($nsum_gws > 0){
 	$ratio_gws = sprintf "%.2f",$possum_gws/$nsum_gws;
     }
+    my $ratio_p8 = "NA";
+    if ($nsum_p8 > 0){
+	$ratio_p8 = sprintf "%.2f",$possum_p8/$nsum_p8;
+    }
+    my $ratio_p9h = "NA";
+    if ($nsum_p9h > 0){
+	$ratio_p9h = sprintf "%.2f",$possum_p9h/$nsum_p9h;
+    }
+    
     
     my $nca_loc = $dfile_arr_cas{$repout};
     my $nco_loc = $dfile_arr_con{$repout};
@@ -1416,62 +1451,90 @@ foreach my $repout (@dfile_arr) {
 
     my $info_repname = $repname;
     $info_repname =~ s/SCZ52_0513.sh2_nodenmaarhirwtgrasswe6caticou3lie2mgs2.//;
-#    $info_repname =~ s///;
+    #    $info_repname =~ s///;
+    print "ninf:".@inf_coll_all."\n";
     &info_comp ("info.all.$info_repname",@inf_coll_all);
     push @info_pdf_collection, "info.all.$info_repname.pdf";
     
 #    print "phi: $phi\n";
 #    exit;
 
+
+
+
     if ($phi >1.0e-03) {
 	$rc++;    
 	push @repsum,"$repname\tall\t$possum\t$nsum\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio\t$nca_loc\t$nco_loc" ;
-	&qqplot ("qq.all.$repname",@p_coll_all);
-	push @pdf_collection, "qq.all.$repname"."-qq.pdf";
-
+	my $nsnps = &qqplot ("qq.all.$repname",@p_coll_all);
+	if ($nsnps > 0 ) {
+	    push @pdf_collection, "qq.all.$repname"."-qq.pdf";
+	}
     }
+
 
 
     if ($phi >1.0e-04) {
 	$rc++;
 	push @repsum,"$repname\t1.0e-03\t$possum_p3\t$nsum_p3\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p3\t$nca_loc\t$nco_loc";
-	&qqplot ("qq.p3.$repname",@p_coll_p3);
-	push @pdf_collection, "qq.p3.$repname"."-qq.pdf";
+	if (0) {
+	    my $nsnps = &qqplot ("qq.p3.$repname",@p_coll_p3);
+	    if ($nsnps > 0 ) {
+		push @pdf_collection, "qq.p3.$repname"."-qq.pdf";
+	    }
+	}
     }
     if ($phi >1.0e-05) {
 	$rc++;
 	push @repsum,"$repname\t1.0e-04\t$possum_p4\t$nsum_p4\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p4\t$nca_loc\t$nco_loc";
-	&qqplot ("qq.p4.$repname",@p_coll_p4);
-	push @pdf_collection, "qq.p4.$repname"."-qq.pdf";
+	if (0) {
+	    my $nsnps = &qqplot ("qq.p4.$repname",@p_coll_p4);
+	    if ($nsnps > 0 ) {
+		push @pdf_collection, "qq.p4.$repname"."-qq.pdf";
+	    }
+	}
     }
     if ($phi >1.0e-06) {
 	$rc++;
 	push @repsum,"$repname\t1.0e-05\t$possum_p5\t$nsum_p5\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p5\t$nca_loc\t$nco_loc";
-	&qqplot ("qq.p5.$repname",@p_coll_p5);
-	push @pdf_collection, "qq.p5.$repname"."-qq.pdf";
+	if (0) {
+	    my $nsnps = &qqplot ("qq.p5.$repname",@p_coll_p5);
+	    if ($nsnps > 0 ) {
+		#	    print "p5: $nsnps\n";
+		push @pdf_collection, "qq.p5.$repname"."-qq.pdf";
+		#	    print "debug\n";
+		#	    exit;
+	    }
+	}
     }
-    
+
     if ($phi >5.0e-08) {
 	$rc++;
 	push @repsum,"$repname\t1.0e-06\t$possum_p6\t$nsum_p6\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p6\t$nca_loc\t$nco_loc";
-	&qqplot ("qq.p6.$repname",@p_coll_p6);
-	push @pdf_collection, "qq.p6.$repname"."-qq.pdf";
+	if (0) {
+	    my $nsnps = &qqplot ("qq.p6.$repname",@p_coll_p6);
+	    if ($nsnps > 0 ) {
+		push @pdf_collection, "qq.p6.$repname"."-qq.pdf";
+	    }
+	}
     }
     $rc++;
     push @repsum,"$repname\t5.0e-08\t$possum_gws\t$nsum_gws\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_gws\t$nca_loc\t$nco_loc";
-
-    if (@p_coll_gws > 0 ) {
-	&qqplot ("qq.gws.$repname",@p_coll_gws);
-	push @pdf_collection, "qq.gws.$repname"."-qq.pdf";
+    if (0) {
+	if (@p_coll_gws > 0 ) {
+	    my $nsnps = &qqplot ("qq.gws.$repname",@p_coll_gws);
+	    if ($nsnps > 0 ) {
+		push @pdf_collection, "qq.gws.$repname"."-qq.pdf";
+	    }
+	}
     }
-
+}
 #    print "$repname\t$possum_gws\t$nsum_gws\n";
-    
+
 #    }
 
 
 
-}
+
 
 #print "phi: $phi\n";
 #print "debug\n";
@@ -1488,12 +1551,16 @@ print "starting excel file\n";
 
 
 
-use lib '/home/gwas/bin/Spreadsheet-WriteExcel-2.25/blib/lib';
-use lib '/home/unix/sripke/perl_modules/Spreadsheet-WriteExcel-2.25/blib/lib';
+#use lib '/home/gwas/bin/Spreadsheet-WriteExcel-2.25/blib/lib';
+#use lib '/home/unix/sripke/perl_modules/Spreadsheet-WriteExcel-2.25/blib/lib';
 
 
-use lib '/home/gwas/bin/Parse-RecDescent-1.965001/lib/'; ## for formulas
-use lib '/home/unix/sripke/perl_modules/Parse-RecDescent-1.965001/lib'; ## for formulas
+#use lib '/home/gwas/bin/Parse-RecDescent-1.965001/lib/'; ## for formulas
+#use lib '/home/unix/sripke/perl_modules/Parse-RecDescent-1.965001/lib'; ## for formulas
+
+
+use lib $ENV{rp_perlpackages}.'/Spreadsheet-WriteExcel-2.40/lib';
+use lib $ENV{rp_perlpackages}.'/Parse-RecDescent-1.965001/lib';
 
 die $! unless open NOREP, "> $out_name.norep.txt";
 die $! unless open REP, "> $out_name.rep.txt";
@@ -1896,7 +1963,15 @@ my $nsum_p6 = 0;
 my @p_coll_p6;  
 my $possum_gws = 0;
 my $nsum_gws = 0;
-my @p_coll_gws;  
+my @p_coll_gws; 
+
+my $possum_p8 = 0;
+my $nsum_p8 = 0;
+my @p_coll_p8;    
+
+my $possum_p9h = 0;
+my $nsum_p9h = 0;
+my @p_coll_p9h; 
 
 my $counts = 0 ;
 
@@ -2007,11 +2082,27 @@ foreach my $snp_name (keys %comb_snps) {
 		$nsum_p6++ if ($sumdir eq "+" || $sumdir eq "0");
 		push @p_coll_p6, $cells[$snp_col]." $p_2_loc";
 	    }
+
+
+	    
 	    if ($disc_p_hash{$snp_name} <= 0.00000005) {
 		$possum_gws++ if ($sumdir eq "+");
 		$nsum_gws++ if ($sumdir eq "+" || $sumdir eq "0");
 		push @p_coll_gws, $cells[$snp_col]." $p_2_loc";
 	    }
+
+	    if ($disc_p_hash{$snp_name} <= 0.00000001) {
+		$possum_p8++ if ($sumdir eq "+");
+		$nsum_p8++ if ($sumdir eq "+" || $sumdir eq "0");
+		push @p_coll_p8, $cells[$snp_col]." $p_2_loc";
+	    }
+	    if ($disc_p_hash{$snp_name} <= 0.000000005) {
+		$possum_p9h++ if ($sumdir eq "+");
+		$nsum_p9h++ if ($sumdir eq "+" || $sumdir eq "0");
+		push @p_coll_p9h, $cells[$snp_col]." $p_2_loc";
+	    }
+
+	    
 
 #	}
     }
@@ -2353,7 +2444,7 @@ foreach my $snp_name (keys %comb_snps) {
 	print REP "@cells\n";
 
 
-	if ($counts < 3000) {	
+	if ($counts < 3500) {	
 	    $worksheet_repl->write_row($lc, 0, \@cells,);
 	    
 	    $worksheet_repl->write($lc,8,$disc_p_hash{$snp_name} , $formatred) if ($disc_p_hash{$snp_name} < .05);
@@ -2455,9 +2546,24 @@ close REP;
 
 
 my $ratio = sprintf "%.2f",$possum/$nsum;
-my $ratio_p3 = sprintf "%.2f",$possum_p3/$nsum_p3;
-my $ratio_p4 = sprintf "%.2f",$possum_p4/$nsum_p4;
-my $ratio_p5 = sprintf "%.2f",$possum_p5/$nsum_p5;
+
+
+my $ratio_p3 = "NA";
+if ($nsum_p3 > 0){
+    $ratio_p3 = sprintf "%.2f",$possum_p3/$nsum_p3;
+}
+
+my $ratio_p4 = "NA";
+if ($nsum_p4 > 0){
+    $ratio_p4 = sprintf "%.2f",$possum_p4/$nsum_p4;
+}
+
+my $ratio_p5 = "NA";
+if ($nsum_p5 > 0){
+    $ratio_p5 = sprintf "%.2f",$possum_p5/$nsum_p5;
+}
+
+
 my $ratio_p6 = "NA";
 if ($nsum_p6 > 0){
     $ratio_p6 = sprintf "%.2f",$possum_p6/$nsum_p6;
@@ -2467,46 +2573,122 @@ my $ratio_gws = "NA";
 if ($nsum_gws > 0){
     $ratio_gws = sprintf "%.2f",$possum_gws/$nsum_gws;
 }
+my $ratio_p8 = "NA";
+if ($nsum_p8 > 0){
+    $ratio_p8 = sprintf "%.2f",$possum_p8/$nsum_p8;
+}
+my $ratio_p9h = "NA";
+if ($nsum_p9h > 0){
+    $ratio_p9h = sprintf "%.2f",$possum_p9h/$nsum_p9h;
+}
+
 
 #my $rc = $rep_count +2 ;
+
+
 if ($phi >1.0e-03) {
     $rc++;
     push @repsum,"REPLICATION\tall\t$possum\t$nsum\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio\t$nca_glob\t$nco_glob" ;
-    &qqplot ("qq.all.comb.$out_name",@p_coll_all);
-    push @pdf_collection, "qq.all.comb.$out_name"."-qq.pdf";
+    if (0) {
+	my $nsnps = &qqplot ("qq.all.comb.$out_name",@p_coll_all);
+	if ($nsnps > 0) {
+	    push @pdf_collection, "qq.all.comb.$out_name"."-qq.pdf";
+	}
+    }
 }
 if ($phi >1.0e-04) {
     $rc++;
     push @repsum,"REPLICATION\t1.0e-03\t$possum_p3\t$nsum_p3\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p3\t$nca_glob\t$nco_glob" ;
-   &qqplot ("qq.p3.comb.$out_name",@p_coll_p3);
-    push @pdf_collection, "qq.p3.comb.$out_name"."-qq.pdf";
+    if (0) {
+	my $nsnps = &qqplot ("qq.p3.comb.$out_name",@p_coll_p3);
+	if ($nsnps > 0) {
+	    push @pdf_collection, "qq.p3.comb.$out_name"."-qq.pdf";
+	}
+    }
 }
 if ($phi >1.0e-05) {
     $rc++;
     push @repsum,"REPLICATION\t1.0e-04\t$possum_p4\t$nsum_p4\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p4\t$nca_glob\t$nco_glob" ;
-   &qqplot ("qq.p4.comb.$out_name",@p_coll_p4);
-    push @pdf_collection, "qq.p4.comb.$out_name"."-qq.pdf";
+    if (0) {
+	my $nsnps = &qqplot ("qq.p4.comb.$out_name",@p_coll_p4);
+	if ($nsnps > 0) {
+	    push @pdf_collection, "qq.p4.comb.$out_name"."-qq.pdf";
+	}
+    }
 }
 if ($phi >1.0e-06) {
     $rc++;
     push @repsum,"REPLICATION\t1.0e-05\t$possum_p5\t$nsum_p5\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p5\t$nca_glob\t$nco_glob" ;
-   &qqplot ("qq.p5.comb.$out_name",@p_coll_p5);
-    push @pdf_collection, "qq.p5.comb.$out_name"."-qq.pdf";
+    
+    #	print "debug: $phi, qq.p5.comb.$out_name\n";
+    if (0) {
+	my $nsnps = &qqplot ("qq.p5.comb.$out_name",@p_coll_p5);
+	if ($nsnps > 0) {
+	    push @pdf_collection, "qq.p5.comb.$out_name"."-qq.pdf";
+	}
+    }
 }
 if ($phi >5.0e-08) {
     $rc++;
     push @repsum,"REPLICATION\t1.0e-06\t$possum_p6\t$nsum_p6\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p6\t$nca_glob\t$nco_glob" ;
-   &qqplot ("qq.p6.comb.$out_name",@p_coll_p6);
-    push @pdf_collection, "qq.p6.comb.$out_name"."-qq.pdf";
+    if (0) {
+	my $nsnps = &qqplot ("qq.p6.comb.$out_name",@p_coll_p6);
+	if ($nsnps > 0) {
+	    push @pdf_collection, "qq.p6.comb.$out_name"."-qq.pdf";
+	}
+    }
 }
 
 
 $rc++;
 push @repsum,"REPLICATION\t5.0e-08\t$possum_gws\t$nsum_gws\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_gws\t$nca_glob\t$nco_glob";
-if (@p_coll_gws > 0 ) {
-    &qqplot ("qq.gws.comb.$out_name",@p_coll_gws);
-    push @pdf_collection, "qq.gws.comb.$out_name"."-qq.pdf";
+
+
+
+   
+$rc++;
+push @repsum,"REPLICATION\t1.0e-08\t$possum_p8\t$nsum_p8\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p8\t$nca_glob\t$nco_glob";
+$rc++;
+push @repsum,"REPLICATION\t5.0e-09\t$possum_p9h\t$nsum_p9h\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p9h\t$nca_glob\t$nco_glob";
+
+
+$rc++;
+my $possum_gws_p8 = $possum_gws-$possum_p8;
+my $nsum_gws_p8 = $nsum_gws-$nsum_p8;
+my $ratio_gws_p8 = "NA";
+if ($nsum_gws_p8 > 0){
+    $ratio_gws_p8 = sprintf "%.2f",$possum_gws_p8/$nsum_gws_p8;
 }
+push @repsum,"REPLICATION\t5.0e-08_to_1.0e-08\t$possum_gws_p8\t$nsum_gws_p8\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_gws_p8\t$nca_glob\t$nco_glob";
+
+$rc++;
+my $possum_p6_gws = $possum_p6-$possum_gws;
+my $nsum_p6_gws = $nsum_p6-$nsum_gws;
+my $ratio_p6_gws = "NA";
+if ($nsum_p6_gws > 0){
+    $ratio_p6_gws = sprintf "%.2f",$possum_p6_gws/$nsum_p6_gws;
+}
+push @repsum,"REPLICATION\t1.0e-06_to_5.0e-08\t$possum_p6_gws\t$nsum_p6_gws\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p6_gws\t$nca_glob\t$nco_glob";
+
+$rc++;
+my $possum_p5_p6 = $possum_p5-$possum_p6;
+my $nsum_p5_p6 = $nsum_p5-$nsum_p6;
+my $ratio_p5_p6 = "NA";
+if ($nsum_p5_p6 > 0){
+    $ratio_p5_p6 = sprintf "%.2f",$possum_p5_p6/$nsum_p5_p6;
+}
+push @repsum,"REPLICATION\t1.0e-05_to_1.0e-06\t$possum_p5_p6\t$nsum_p5_p6\t=BINOMDIST(D$rc-C$rc,D$rc,0.5,TRUE)\t$ratio_p5_p6\t$nca_glob\t$nco_glob";
+
+
+if (0) {
+    if (@p_coll_gws > 0 ) {
+	my $nsnps = &qqplot ("qq.gws.comb.$out_name",@p_coll_gws);
+	if ($nsnps > 0) {
+	    push @pdf_collection, "qq.gws.comb.$out_name"."-qq.pdf";
+	}
+    }
+}
+
 
 #if ($nreps > 1) {
 
@@ -2629,34 +2811,46 @@ close IN;
 
 
 $workbook->close();
-print "$out_name.xls\n";
+
+
 #&mysystem("send_dropbox $out_name.xls");
-&mysystem("send_dropbox $out_name.xls");
-print "check common AT/CG SNPs!!!\n";
-print "check sign_test_expectation_v2.xls!!!\n";
 
 
 
 
-unless (-e "$out_name.qq.pdf") {
-    &mysystem ("pdfjoin --rotateoversize false --outfile $out_name.qq.pdf @pdf_collection");
-}
 
-unless (-e "$out_name.info.pdf") {
-    &mysystem ("pdfjoin --rotateoversize false --outfile $out_name.info.pdf @info_pdf_collection");
+if (0) {
+    unless (-e "$out_name.qq.pdf") {
+	&mysystem ("pdfjoin --rotateoversize false --outfile $out_name.qq.pdf @pdf_collection");
+    }
+    
+    unless (-e "$out_name.info.pdf") {
+	&mysystem ("pdfjoin --rotateoversize false --outfile $out_name.info.pdf @info_pdf_collection");
+    }
 }
 
 
 &mysystem("sort -k5,5g $out_name.missing.txt > $out_name.missing.txt.sorted");
 &mysystem("txt2xls --txt $out_name.missing.txt.sorted --xls  $out_name.missing.txt.sorted.xls --pcol 4 --cogr 5,13,14,18");
 
-print "missing: $out_name.missing.txt.sorted.xls\n";
+print "check sign_test_expectation_v2.xls!!!\n";
+print "check common AT/CG SNPs!!!\n";
+print "---------------------------------------------------\n";
+print "check if you have too many entries here:\n$out_name.missing.txt.sorted.xls\n";
+print "this is the final output file:\n$out_name.xls\n";
+print "---------------------------------------------------\n";
 
 
 
 
 
-print "missing: $out_name.missing.txt.sorted.xls\n";
+print "main replicator finished\n";
+
+
+print ("trying this commmand: \nplot_or_regressions $out_name.rep.txt\n");
+&mysystem ("plot_or_regressions $out_name.rep.txt");
+
+
 
 exit;
 
@@ -2715,6 +2909,7 @@ foreach my $snp_name (keys %comb_snps) {
    &mysystem ("forest_plot2  --short --out $snp_name  --snp $snp_name --nhead 3 @forest_files");
 #   exit;
 }
+
 
 
 
@@ -3484,6 +3679,8 @@ $lc = 0;
 
 
 $workbook->close();
+
+
 
 
 

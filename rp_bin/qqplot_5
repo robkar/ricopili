@@ -1,5 +1,13 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 my $version = "2.3.0";
 my $progname = $0;
@@ -11,41 +19,24 @@ my $title = "";
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
 my $rloc = &trans("rloc");
 my $sloc = &trans("sloc");
 my $home = &trans("home");
 
 
 
-my $r_sys = "$rloc/R";
-if ($rloc eq "broadinstitute") {
-    $r_sys = "source /broad/software/scripts/useuse; use R-2.14; R";
+my $r_sys = "$rloc";
+$r_sys =~ s/_SPACE_/ /g;
+
+system("$r_sys RHOME");
+my $status = ($? >> 8);
+if ($status != 0) {
+    print "I could not start R, maybe you are using an old ricopili configuration?\ne.g. rloc does not need a path but a full starting command.\n";
+    exit;
 }
-else {
-    unless (-e "$rloc/R" ){
-	print "\n***** Error: couldn't find the following:\n";
-	print "$rloc/R\n";
-	exit;
-    }
-}
+
+#print "$r_sys\n";
+#sleep (10);
 
 
 ########################
@@ -190,6 +181,7 @@ my @created = mkpath(   ## $created ?
 
 
 chdir ($workdir);
+print "workdir: $workdir\n";
 
 my $pfile = $ARGV[0];
 
@@ -324,7 +316,7 @@ if ($pcol==0){
 	print "$cc\t$cellx\n";
 	$cc++;
     }
-    die "please chose now\n";
+    die "please choose now\n";
 }
 
 if ($cacohead) {
@@ -333,6 +325,7 @@ if ($cacohead) {
 }
 
 
+my $nwarni=0;
 
 my $opfile = $pfile."o";
 die "$! ($opfile)" unless open OFILE, "> $opfile";
@@ -343,8 +336,16 @@ while (<FILE>){
 #    my @cells = &split_line($_);
 #    print "$cells[$pcol-1]\n";
     my $single_pval = $cells[$pcol-1];
+
+    if ($cells[$pcol-1] eq "NA" || $cells[$pcol-1] == 0){
+	if ($nwarni < 5) {
+	    print "very strange: $cells[1] $cells[$pcol-1]\n";
+	    $nwarni++;
+	}
+	next;
+    }
+    
     $single_pval = $exp_ceiling if ($single_pval < $exp_ceiling);
-    next if ($cells[$pcol-1] eq "NA" || $cells[$pcol-1] == 0);
 
     if ($maf_th < 1.00) {
 	next if $cells[$frcol-1] < $maf_th;
@@ -720,4 +721,7 @@ print "tar -cvzf $outname.tar.gz $pfile.qq.Rwork_tmp $pfile.forQQ_tmp\n";
 print "$outname\n";
 
 chdir ($rootdir);
+
 &mysystem ("rm -rf  $workdir");
+
+exit;

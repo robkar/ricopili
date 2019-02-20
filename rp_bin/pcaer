@@ -1,29 +1,21 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 
 srand(0);
 
 #############################
-# read config file
+# load utility functions
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans $conf_file);
+use Ricopili::Version;
 
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
 
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
+#############################
+# read config file
+#############################
 
 my $ploc = &trans("p2loc");
 #my $p1loc = &trans("ploc");
@@ -128,14 +120,14 @@ my $cc =0;
 my $rel_th =.2;
 my $ov_count_max =25;
 
-my $version = "2.7.2";
+#my $version = "2.0.1";
 my $progname = $0;
 $progname =~ s!^.*/!!;
 my $command_line = "$progname @ARGV";
 
 my $rootdir = "";
 my $info_txt = "";
-my $homedir = $ENV{"HOME"};
+
 
 my $job_bn_th = 1000;
 
@@ -169,6 +161,8 @@ my $nref = 4000;  ## number IDs in reference PCA set (random subgroup)
 
 my $reffile = "NOFILE";
 
+my $sepa = 1;
+
 
 
 use Getopt::Long;
@@ -196,8 +190,12 @@ GetOptions( "out=s"=> \$outname,
 	    "ldsubgr=i"=> \$ld_subgr,
             "force1"=> \my $force1,
 	    "ref=s"=> \$reffile,
-	    "noproject"=> \my $noproject,
+	    "projection"=> \my $projection,
     "dfile=s"=> \my $dfile,
+	    "longq"=> \my $longq,
+	    "sepa=i"=> \$sepa,
+
+
 
     );
 
@@ -230,7 +228,7 @@ my $transfuse_script = "transfuse_pca_3";   ### my.pipeline_tar
 my $mystart_script = "my.start_job";        ### my.pipeline_tar
 my $blue_script = "blueprint";         ### my.pipeline_tar
 
-my $mutt_script = "mutt";
+my $mutt_script = "mail";
 
 
 push @test_scripts, $pdflatex_script ;
@@ -254,11 +252,53 @@ push @test_scripts,  $blue_script;
 #print ".......search for DEBUGG in script to clean up again....\n";
 #sleep(1);
 
+
+$rp_header =~ s/MODULE/pcaer        /;
+
+print "$rp_header\n";
+
+
 print ".......testing necessary binaries....\n";
 
+my @miss_scripts;
 my $err_scr = 0;
 
-if (1) { ### DEBUGG
+foreach my $scr_name (@test_scripts) {
+    my $scr_path = '';
+    
+    for my $path ( split /:/, $ENV{PATH} ) {
+	if ( -f "$path/$scr_name" && -x _ ) {
+	    print "$scr_name\tfound in $path\n";
+	    $scr_path = "$path/$scr_name";
+	    last;
+	}
+    }
+    if ( $scr_path eq  '') {
+#	push @miss_scripts, "cp /home/unix/sripke/bin/$scr_name ./\n";
+	print "!!Error!! : No $scr_name command available\n" ;
+    }
+ 
+}
+
+
+
+
+if (@miss_scripts > 0) {
+  if (-e "get_scripts_on_broad.txt") {
+    print "please remove this file and restart: get_scripts_on_broad.txt\n";
+  }
+  die $! unless open FILE1, "> get_scripts_on_broad.txt";
+  foreach (@miss_scripts) {
+    print FILE1 "$_";
+  }
+  close FILE1;
+  print "exiting now -> have a look at get_scripts_on_broad.txt\n";
+  exit;
+
+}
+
+
+if (0) { ### DEBUGG
 die $! unless open FILE1, "> get_scripts_on_broad.txt";
 foreach my $scr_name (@test_scripts) {
     my $scr_path = '';
@@ -272,7 +312,7 @@ foreach my $scr_name (@test_scripts) {
     }
     unless ( $scr_path ) {
 	$err_scr = 1;
-	print FILE1 "cp /home/unix/sripke/bin/$scr_name ./\n";
+#	print FILE1 "cp /home/unix/sripke/bin/$scr_name ./\n";
 	print "!!Error!! : No $scr_name command available\n" ;
     }
  
@@ -462,18 +502,49 @@ sub send_jobarray {
 
 
     if ($serial) {
+	
 	print "starting step $sjaname with ".@sjaarray." jobs\n";
-	print "please be patient.\n";
+	print "running up to $sepa parallel jobs.\n";
+
+
 	my $jc = 1;
+#	my $job_str = "";
+	my @job_sepa_arr;
+
 	foreach (@sjaarray) {
 	    print "running job $jc...\n";
-	    &mysystem($_);
+	    push @job_sepa_arr, "$_ &";
+#	    $job_str .= "$_ & \n";
+
+	    if ($jc % $sepa == 0) {
+		push @job_sepa_arr, "wait";
+		#		$job_str .= "wait\n";
+		my $sepa_file = "$sjaname.sepa.$jc";
+		&a2filenew ($sepa_file,@job_sepa_arr);
+		print "sepa_file: ".$sepa_file."\n";
+		&mysystem("chmod u+x $sepa_file");
+		&mysystem("./$sepa_file");
+		@job_sepa_arr = ();
+	    }
 	    $jc++;
 	    
 	}
+
+	if (@job_sepa_arr > 0) {
+	    $jc--;
+	    push @job_sepa_arr, "wait";
+	    
+	    my $sepa_file = "$sjaname.sepa.$jc";
+	    &a2filenew ($sepa_file,@job_sepa_arr);
+	    print "sepa_file: ".$sepa_file."\n";
+	    &mysystem("chmod u+x $sepa_file");
+	    &mysystem("./$sepa_file");
+	}
+
+
     }
     else { 
-	my $sys_loc = "$blue_script $sja_week_str --noerr --njob $nsja_loc --array $jobfile --wa $sjatime --mem $sjamem --j --na $sjaname.$outname $multi_txt";
+	my $sys_loc = "$blue_script $sja_week_str --noerr --njob $nsja_loc --array $jobfile --wa $sjatime --mem $sjamem --j --na $jobfile $multi_txt";
 	&mysystem ($sys_loc);
     }
 
@@ -508,6 +579,7 @@ sub send_jobarray {
 	    $err_message .= "##### have a look at the wiki paged\n"; 
 	    $err_message .= "##### https://sites.google.com/a/broadinstitute.org/ricopili/\n";
 	    $err_message .= "##### or contact the developers\n";
+	    $err_message .= "##### version: $rp_version\n";
 	    $err_message .= "##################################################################\n";
 	    print "$err_message\n";
 
@@ -518,9 +590,9 @@ sub send_jobarray {
 
 	    &mysystem ('cat error_file | '.$mutt_script.' -s RP_pcaer_pipeline_error '.$email) ;
 
-	    unless ($serial) {
+#	    unless ($serial) {
 		exit;
-	    }
+#	    }
 
 	}
 
@@ -529,28 +601,8 @@ sub send_jobarray {
     $command_line =~ s/--force1//;
 
 
-
-
-    my $wt_file = "$sjadir/blueprint_joblist_file-$sjaname.$outname";
+    my $wt_file = "$sjadir/j.$jobfile.id";
     chdir "$rootdir" or die "something strange";
-    if ($qloc eq "bsub") {
-	$wt_file =~ s/.*blueprint_joblist_file-//;
-    }
-
-    if ($qloc eq "slurm") {
-	$wt_file = "$sjadir/$jobfile.script.id";
-    }
-
-    if ($qloc eq "qsub") {
-	$wt_file = "$sjadir/j.$sjaname.$outname.id";
-    }
-
-    if ($qloc eq "qsub_c") {
-	$wt_file = "$sjadir/j.$sjaname.$outname.id";
-    }
-    if ($qloc eq "qsub_b") {
-	$wt_file = "$sjadir/j.$sjaname.$outname.id";
-    }
 
 
     
@@ -612,7 +664,7 @@ if ($dfile) {
 if ($help || $outname eq "" || @bimfiles == 0){
     print "usage: $progname bim1 bim2
 
-version: $version
+version: $rp_version
 
       options:
 
@@ -635,9 +687,8 @@ version: $version
         --nref INT      size of reference set, if dataset is bigger, PCA in subgroups
                                 default $nref
 
-        --noproject     do not project but create PCA on complete set 
-                              (can take very long for big datasets)
-                              (pca will go automoatically into week queue)
+        --projection     do project (outdated, maybe try out on very big datasets
+
 
         --ldsubgr INT   number of random subset, used for LD calculation for LD pruning
 
@@ -656,24 +707,43 @@ version: $version
 
         --serial          no sending jobs to queue all in one run
                                -> usually only used for testing 
+        --sepa INT      use INT number of parallel jobs during serial
 
-   lisa: /home/gwas/pgc-samples/hapmap_ref/subchr/infosum_pos.sorted
-   broad: /psych/genetics_data/ripke/references_outdated/hapmap_ref/subchr/infosum_pos.sorted
+        --longq          forces long queue for some jobs (bcomb)
+                                  bfile merges: me300, mepr
+                                  eigenstrat: epca
+
 
 
  --out is mandatory
 
 
-you can use this as reference
- $hm3_ceu
+
+to include reference datasets from 1000Genomes
+
+## world wide 1KG populations:
+################################
+# at BROAD
+ln -s /psych/genetics_data/ripke/references_outdated/hapmap_ref/impute2_ref/1KG_Aug12/ALL_1000G_phase1integrated_v3_impute_macGT1/4pops/qc/pop_4pop_mix_SEQ.* .
+# at LISA
+ln -s /home/gwas/pgc-samples/hapmap_ref/pop/1KG/pop_4pop_mix_SEQ.* .
 
 
-even better four 1KG populations:
-ln -s /psych/genetics_data/ripke/references_outdated/hapmap_ref/impute2_ref/1KG_Aug12/ALL_1000G_phase1integrated_v3_impute_macGT1/4pops/qc/pop_4pop_mix_SEQ.bed/bim/fam .
 
-
-only euros:
+## european 1KG countries:
+##########################
+# at BROAD
 ln -s /psych/genetics_data/ripke/references_outdated/hapmap_ref/impute2_ref/1KG_Aug12/ALL_1000G_phase1integrated_v3_impute_macGT1/4pops/qc/pop_euro_eur_SEQ.det.* .
+# at LISA
+ln -s /home/gwas/pgc-samples/hapmap_ref/pop/1KG/pop_euro_eur_SEQ.det.* .
+
+
+
+
+### outdated information  ################################################################################
+##   lisa: /home/gwas/pgc-samples/hapmap_ref/subchr/infosum_pos.sorted
+##   broad: /psych/genetics_data/ripke/references_outdated/hapmap_ref/subchr/infosum_pos.sorted
+#########################################################################################################
 
 
 
@@ -1093,6 +1163,9 @@ unless (-e "$bfile_me300.bim") {
     $sjadir = $pcaer_dir;
     $sjaname = "me300";
     $sjatime = 1;
+    if ($longq) {
+	$sjatime = 24;
+    }
     $sjamem = 3000;
     push @sjaarray, $cmd_str;
     
@@ -1318,6 +1391,9 @@ unless (-e "$bfile_mepr.bim") {
     $sjadir = "$pcaer_dir";
     $sjaname = "mepr";
     $sjatime = 2;
+    if ($longq) {
+	$sjatime = 24;
+    }
     $sjamem = 3000;
     push @sjaarray, $cmd_str;
 
@@ -1988,6 +2064,30 @@ unless (-e "$bfile_menv.mds") {
 	&mysystem ("ln -sf $pcaer_dir/$bfile_menv.bim .");
     }
 
+    
+    unless (-e "bim_nolong") {
+	print "remove long SNP ID names\n";
+	die "$bfile_menv.bim: ".$! unless open IN, "< $bfile_menv.bim";
+	die "$bfile_menv.bim.nolong: ".$! unless open OUT, "> $bfile_menv.bim.nolong";
+	my $cc = 0;
+	while (my $line = <IN>){
+	    my @cells = &split_line ($line);
+	    if (length ($cells[1]) > 30) {
+		$cells[1] = "rs_short.".$cc;
+	    }
+	    print OUT "@cells\n";
+	    $cc++;
+	}
+	close IN;
+	close OUT;
+	&mysystem ("mv $bfile_menv.bim.nolong $bfile_menv.bim");
+        &mysystem ("touch bim_nolong");
+    }
+    
+#    print "debug\n";
+#    exit;
+
+    
     if ($refpop){
 	unless (-e "$refpop.bim") {
 	    &mysystem ("ln -sf $pcaer_dir/$refpop.fam .");
@@ -2003,7 +2103,7 @@ unless (-e "$bfile_menv.mds") {
     my $n_noov = &count_lines ("$bfile_menv.fam");
     my $n_bim = &count_lines ("$bfile_menv.bim");
     ##### create a 1 percent reference dataset
-    if ($noproject) {
+    unless ($projection) {
 	$nref = $n_noov + 1;
     }
     my $rand_th = $nref / $n_noov;
@@ -2053,10 +2153,13 @@ unless (-e "$bfile_menv.mds") {
 	    $sjadir = "$pcaer_dir/$subdir_mds";
 	    $sjaname = "epca";
 	    $sjatime = 2;
+	    if ($longq) {
+		$sjatime = 24;
+	    }
 	    $sjamem = 2000;
 	    @sjaarray = @job_arr;
 
-	    if ($noproject) {
+	    unless ($projection) {
 		if ($n_bim > 40000 && $n_noov > 5000) {
 		    $sjaweek = 1;
 		}
@@ -2088,6 +2191,19 @@ unless (-e "$bfile_menv.mds") {
 	unshift (@emds, $emds_header);
 	&a2file ("$bfile_menv.emds",@emds);
 
+
+	####  DEBUGG
+#	print "debug\n";
+#	exit;
+	my @wl_mds = `wc -l $bfile_menv.emds`;
+	my @split = split " ",$wl_mds[0];
+	if ($split[0] < 2) {
+	    print "something didn't go right in MDS (epca)\n";
+	}
+	copy ("$bfile_menv.emds", "$pcaer_dir/$bfile_menv.mds");
+
+
+	
 	copy ("$bfile_menv.emds", "$pcaer_dir/$bfile_menv.mds");
     }
     else {
@@ -2233,8 +2349,7 @@ unless (-e "$bfile_menv.mds") {
 					    $flip_arr[$cc] = 1;
 					}
 					else {
-					    print "Error: no match, not at all: $cells[$cc], $ref_id_arr[$cc], $cells[0], $cells[1], $bfile_menv.chuids$count_chunk.full.emds\n";
-					    exit;
+					    print "Warning: no match, not at all: $cells[$cc], $ref_id_arr[$cc], $cells[0], $cells[1], $bfile_menv.chuids$count_chunk.full.emds\n";
 					}
 #					print $count_chunk."\t".$cells[$cc]."\t".$ref_id_arr[$cc]."\t".$flip_arr[$cc]."\n";
 				    }
@@ -2275,26 +2390,26 @@ unless (-e "$bfile_menv.mds") {
 				foreach (@s1) {
 				    if ($_ ne $s2[$c]) {
 					my $diff = $_ - $s2[$c];
-					if ($diff < -0.01 || $diff > 0.01) {
+					if ($diff < -0.02 || $diff > 0.02) {
 					    $sigdiff = 1;
-					    $sigdiff_txt .= "different: $c\n";
-					    $sigdiff_txt .= "amount: $diff\n";
-					    $sigdiff_txt .= "1: $_\n";
+					    $sigdiff_txt .= "different: $c\t";
+					    $sigdiff_txt .= "amount: $diff\t";
+					    $sigdiff_txt .= "1: $_\t";
 					    $sigdiff_txt .= "2: $s2[$c]\n";
 					}
 				    }
 				    $c++;
 				}
 				if ($sigdiff) {
-				    print "Error: different mds outcomes for $id_tmp in $bfile_menv.chuids$count_chunk.full.emds\n";
+				    print "Warning: different mds outcomes for $id_tmp in $bfile_menv.chuids$count_chunk.full.emds\n";
 				    print "$emds_hash{$id_tmp}";
 				    print "@cells\n";
-				    print "-------------------------------------\n";
-				    print "$sigdiff_txt\n";
+#				    print "-------------------------------------\n";
+				    print "$sigdiff_txt";
 				    print "-------------------------------------\n";
 				    
 
-				    exit;
+#				    exit;
 
 				}
 				else {
@@ -2382,14 +2497,13 @@ unless (-e "$bfile_menv.mds") {
 	    &a2file ("$bfile_menv.emds",@emds) if (@emds > 1);
 	}
 	
-	####  DEBUGG
-	copy ("$bfile_menv.emds", "$pcaer_dir/$bfile_menv.mds");
-	
+
 	
     }
     print "$warn warnings\n";
     #    exit;
 }
+
 
 #print "debug\n";
 #exit;
@@ -2799,6 +2913,7 @@ my $pseudo_txt = "";
 if ($trio) {
 $pseudo_txt = "--pseudo";
 }
+
  &mysystem ("$mds2cov_script $pseudo_txt $bfile_menv.mds");
 # &mysystem ("rm -fr $workdir");
 
@@ -2844,7 +2959,7 @@ print META "pca_qc_inv_8_7_13(hardcoded)\texcluded\n";
 print META "nwind(independent-pairwise)\t$nwind\n";
 print META "r2(hardcoded)\t0.2\n";
 
-if ($noproject) {
+unless ($projection) {
 print META "projection\toff\n";
 }
 else {

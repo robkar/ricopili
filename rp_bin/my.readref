@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 
 my $version = "1.0.0";
@@ -37,7 +37,7 @@ GetOptions(
 #    "col=i"=> \ $coln,
 #    "th=i"=> \ $th,
     "ref=s"=> \my $reffile,
-    "chr=i"=> \my $chrstr,
+    "chr=s"=> \my $chrstr,
     );
 
 die $usage if $help;
@@ -55,6 +55,11 @@ unless ($chrstr) {
     print "ERROR: please specify chromosome --chr\n";
     exit;
 }
+
+if ($chrstr == "X") {
+    $chrstr = 23;
+}
+
 my $outfile = $bimfile.".ref.chr$chrstr"; 
 
 print "$bimfile\n$reffile\t$chrstr\n";
@@ -219,14 +224,14 @@ while ($inz->gzreadline($line)){
     my $pos = "$cells[1]\t$cells[2]";
     my $in = 0;
     if (exists $snphash{$sname}) {
-	$in = 1;
+	$in = 1;#
 	delete $snphash{$sname};
 #	delete $lochash{$pos};
     } 
     if  (exists $lochash{$pos}) {
 	$in = 1;
-	delete $lochash{$pos};
-    }
+#	delete $lochash{$pos};
+    } 
     if ($in) {
 #	$snpin{$sname} = 1;
 	print OF "$line";

@@ -1,5 +1,13 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 my $version = "3.1.0";
 my $progname = $0;
@@ -15,25 +23,57 @@ my $command_line = "$progname @ARGV";
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
 my $qloc = &trans("queue");
+
+
+my $batch_walltime;
+my $batch_maxpar;
+my $batch_taskid;
+my $batch_name;
+my $batch_bin;
+my $batch_jobfile;
+my $batch_stdout;
+my $batch_stderr;
+my $batch_array;
+my $batch_mem;
+my $batch_other = "NONE";
+my $batch_depend;
+my $batch_jid;
+my $batch_ncores_per_node = "NA";
+my $batch_mem_per_node = "NA";
+
+if ($qloc eq "custom") {
+    $batch_walltime = &trans("batch_walltime");
+    $batch_maxpar = &trans("batch_max_parallel_jobs_per_one_array");
+    $batch_taskid = &trans("batch_array_task_id");
+    $batch_name = &trans("batch_name");
+    $batch_bin = &trans("batch_jobcommand");
+    $batch_jobfile = &trans("batch_jobfile");
+    $batch_stdout = &trans("batch_stdout");
+    $batch_stderr = &trans("batch_stderr");
+    $batch_array = &trans("batch_array");
+    $batch_mem = &trans("batch_memory_request");
+    $batch_other = &trans("batch_other_job_flags");
+    $batch_depend = &trans("batch_job_dependency");
+    $batch_jid = &trans("batch_job_output_jid");
+    $batch_ncores_per_node = &trans("batch_ncores_per_node");
+    $batch_mem_per_node = &trans("batch_mem_per_node");
+}
+else {
+    print "Error: pipeline only runs in custom mode meanwhile\n";
+    print "       please reinstall\n";
+    exit;
+}
+
+
+if (uc($batch_bin) eq "SERIAL") {
+    print "Error, it seems that you used SERIAL in your configuration file\n";
+    print "then you need to start the modules with flag --serial as well\n";
+}
+
+
+
+
 
 my $qsub =0;
 my $qsub_computerome =0;
@@ -48,9 +88,13 @@ if ($qloc eq "qsub_b"){
     $qsub_broad =1;
 }
 
-my $bsub =1 if ($qloc eq "bsub");
+my $bsub =1 if ($qloc eq "bsub"); ## not existing in rp_config
 my $msub =1 if ($qloc eq "msub");
 my $slurm =1 if ($qloc eq "slurm");
+my $slurm_u = 1 if ($qloc eq "slurm_u");
+my $unc_slurm = 1 if ($qloc eq "unc_slurm");
+my $bih_qsub = 1 if ($qloc eq "bih_qsub");
+my $custom = 1 if ($qloc eq "custom");
 
 
 ##########################################
@@ -60,7 +104,7 @@ my $sample="plink --bfile prefix --out QC2/prefix-qc2 --geno 0.1 --mind 0.1 --ma
 
 my $prefix="prefix";
 
-my $jl_file="blueprint_joblist_file";
+
 
 my $core=12;
 my $inst=11;
@@ -70,7 +114,7 @@ my $name_of_job="";
 
 my $week = -1;
 my $multi = -1;
-my $threads = 4;
+my $threads = 1;
 my $multi_str = "";
 my $errname="errandout";
 my $jmem = 2000;
@@ -91,7 +135,7 @@ Usage : $progname [options] -b \"blueprint\"
 version: $version
 
 ##  --inst INT,INT           2 or 8 core, 16,24 gb number of instancies in one job, default=$core,$inst
-  --cores INT              on LISA, how many cores per node (default $16)
+  --cores INT              on LISA, how many cores per node (default 16)
   --walltime               walltime per job, default=$walltime
   --week INT               the first N jobs go to the week queue
   --multi INT,INT          the first N jobs getting multithreading frame, second number the number of threads, default 4
@@ -137,7 +181,7 @@ outdated {
 new: changes between 8 and 12 cores, instancies always one less
 
 
- writes output to a specific file $jl_file
+
 
  created by Stephan Ripke 2008 at MGH, Boston, MA
  
@@ -425,7 +469,7 @@ if ($job){
     } 
 
 ########################################
-### BROAD (bsub)
+### BROAD (bsub)  -> oudated
 ##########################################
 
 
@@ -661,7 +705,7 @@ if ($job){
 ##########################################
 
     if ($msub) {
-#	print "entering bsub\n";
+
 	($multi,$threads) = split ',', $multi_str if ($multi_str ne "");
 #	print "multi: $multi\n";
 #	print "threads: $threads\n";
@@ -881,7 +925,13 @@ if ($job){
 ### SLURM 
 ##########################################
 
-    if ($slurm) {
+    if ($slurm || $slurm_u) {
+
+    # get uppmax account identifier
+    my $uppmax_project;
+    if ($slurm_u) {
+        $uppmax_project = &trans("uppmax_project");
+    }
 
 #	my $job_n=0;
 	my $sum=0;
@@ -945,7 +995,13 @@ if ($job){
 	    print JOB "#SBATCH --mem-per-cpu $mem_str"."g\n";
 	    print JOB "#SBATCH --time $wallstr\n";
 	    print JOB "#SBATCH --dependency afterany:$idn\n";
-	    
+
+        # Uppmax specials
+        if ($slurm_u) {
+            print JOB "#SBATCH --account $uppmax_project\n";
+            print JOB "#SBATCH --partition core\n";
+        }
+
 	    print JOB "$bp\n";
 	    close (JOB);
 
@@ -976,6 +1032,11 @@ if ($job){
 	    print JOB "#SBATCH --job-name $NOJ\n";
 	    print JOB "#SBATCH --output errandout/$NOJ.-%j.out\n";
 
+        # Uppmax specials
+        if ($slurm_u) {
+            print JOB "#SBATCH --account $uppmax_project\n";
+            print JOB "#SBATCH --partition core\n";
+        }
 
 #	    print JOB "#SBATCH --ntasks $job_bn_th\n";
 	    my $aend = $job_bn_th;
@@ -1014,13 +1075,619 @@ if ($job){
 #	exit;	    
 
 
-#	&a2file ($jl_file."-".$NOJ, @blueprint_out);
-
 
 	exit;	
 
     }
 
+
+########################################################
+### CUSTOM 
+#########################################################
+
+    if ($custom) {
+
+
+	my $inst_n=0;
+	my $job_n=0;
+	my $sum=0;
+	my $jobname;
+
+	my $mem_str = ($jmem / 1000) * 1;
+	$mem_str = 1 if ($mem_str < 1);
+
+	
+	$jobname="j.$NOJ";
+
+
+	unless ($wait_fi_file){
+	    if ($jobarray eq "") {
+		
+		if (@job_arr > 0) {
+		    
+		    die "$! ($jobname.scripts)" unless open SCR, "> $jobname.scripts";
+		    foreach (@job_arr) {
+			
+			print SCR "$_\n";   
+			
+		    }
+		    close SCR;
+		    $jobarray = "$jobname.scripts";
+		}
+		else {
+		    print "Exit: no jobs to process\n";
+		    exit;
+		}
+		
+		print "wrote $jobname.scripts\n";
+		$job_bn_th = @job_arr;
+		#	    print "sleep\n";
+		#	    sleep (3);
+		
+	    }
+	}
+
+
+	### walltime
+	$batch_walltime =~ s/_SPACE_/ /g;
+	$batch_walltime =~ s/HH/$walltime/g;
+	$batch_walltime =~ s/:MM/:00/;
+	$batch_walltime =~ s/:SS/:00/;
+
+	### batch memory request
+	if ($batch_mem eq "NONE") {
+	    $batch_mem = "";
+	}
+	else {
+	    $batch_mem =~ s/_SPACE_/ /g;
+	    $batch_mem =~ s/XXX/$mem_str/g;
+	}
+	
+	### name of job
+	$batch_name =~ s/_SPACE_/ /g;
+	$batch_name =~ s/XXX/$NOJ/g;
+	
+	### jobfile
+	$batch_jobfile =~ s/_SPACE_/ /g;
+	$batch_jobfile =~ s/XXX/$jobname/g;
+	
+	### job_outputs
+	$batch_stdout =~ s/_SPACE_/ /g;
+	$batch_stdout =~ s/XXX/$rootdir\/$errname/g;
+	$batch_stdout =~ s/YYY/$NOJ/g;
+	$batch_stderr =~ s/_SPACE_/ /g;
+	$batch_stderr =~ s/XXX/$rootdir\/$errname/g;	    	
+	$batch_stderr =~ s/YYY/$NOJ/g;
+	
+	### batch other
+	$batch_other =~ s/_SPACE_/ /g;
+	$batch_other =~ s/NONE/ /g;
+
+
+	if ($jobarray ne "") {
+
+	    print "starting job_array, $jobname\n";
+	    
+
+
+	    #################################################################
+	    ## multi is not implemented as of now, not necessary right now, it's more efficient to run parallel jobs
+	    ############################################################################
+	    
+#	    my $multi_txt = "";
+#	    my $threads_half = int ($threads / 2);
+#	    my $threads_half = $threads;  ## don't know why this was just half
+#	    if ($threads > 1) {
+#		$multi_txt = "-pe smp $threads_half -binding linear:$threads_half ";
+#	    }
+#	    if ($threads > 8) {
+#		$multi_txt .= "-R y ";
+#	    }
+
+	    $batch_taskid =~ s/_DOLLAR_/\$/;
+	    $batch_taskid =~ s/ //g;
+	    print "batch_taskid: $batch_taskid\n";
+	    if ($batch_taskid eq "") {
+		print "Error: batch_array_task_id not set, please contact the programmers\n";
+		exit;
+	    }
+#	    sleep (10);
+
+
+
+	    
+	    ####################################
+	    ### if full node access (like LISA)
+	    ####################################
+	    
+	    my $parn_txt = "";  ## stays empty if not full node access is switched
+
+	    if ($batch_ncores_per_node ne "NA") {
+		#### first test if settings make sense
+		unless ($batch_ncores_per_node * 1 == $batch_ncores_per_node) {
+		    print "Error: batch_ncores_per_node in ricopili.conf must be an integer\n";
+		    die;
+		}
+		unless ($batch_mem_per_node * 1 == $batch_mem_per_node) {
+		    print "Error: batch_mem_per_node in ricopili.conf must be an integer\n";
+		    die;
+		}
+
+		### set the number per node down if mem does not suffice
+		my $batch_ncores_per_node_max = sprintf "%d", $batch_mem_per_node / $mem_str;
+		if ($batch_ncores_per_node_max < $batch_ncores_per_node) {
+		    $batch_ncores_per_node = $batch_ncores_per_node_max;
+		}
+		
+		## very complicated to get the number of nodes to request (ceiling of the job-N)
+		my $numnode = ($job_bn_th-0.000001)/$batch_ncores_per_node;
+		$numnode=sprintf "%d",$numnode;
+		$numnode++;
+
+		## set as maximim of 1000 nodes
+		if ($numnode > 1000){
+		    $numnode = 1000;
+		}
+
+		## gets into the starting script
+		$parn_txt = "--parn $batch_ncores_per_node";
+
+		### batch array requesting number of nodes and not jobs
+		$batch_array =~ s/_SPACE_/ /g;
+		$batch_array =~ s/XXX/$numnode/g;  ## this is different than the others
+
+		## maxpar needs to be adjusted
+		$maxpar = sprintf "%d", $maxpar/$batch_ncores_per_node
+
+
+
+		
+	    }
+	    else {
+		### batch array
+		$batch_array =~ s/_SPACE_/ /g;
+		$batch_array =~ s/XXX/$job_bn_th/g;
+	    }
+
+
+	    
+	    
+	    ## slurm format for max parallel jobs
+	    if ($batch_array =~ /YYY/) {
+		if ($maxpar > 0) {
+		    $batch_array =~ s/YYY/$maxpar/;
+		}
+		else {
+		    $batch_array =~ s/YYY/50000/;
+		}
+	    }
+	    
+	    ## jobname in the array spec
+	    if ($batch_array =~ /JOBNAME/) {
+		$batch_array =~ s/JOBNAME/$NOJ/;
+	    }	    
+	    
+	    ### max parallel jobs in array
+	    
+	    $batch_maxpar =~ s/_SPACE_/ /g;
+	    unless ($batch_maxpar =~ "YYY") {
+		$batch_maxpar = "";
+	    }
+	    else {
+		$batch_maxpar =~ s/YYY/$maxpar/g;
+	    }
+
+
+
+
+	    
+	    ## this small script take job number X from the array collection file
+	    ## $parn_txt is empty if not full node access is switched on
+
+	    die "$! ($jobname)" unless open JOB, "> $jobname";
+	    print JOB '#!/bin/sh'."\n";
+	    print JOB "cd $rootdir\n";
+	    print JOB "my.start_job $parn_txt -n ".$batch_taskid." --jobfile $jobarray\n";
+	    print "this is the job_array sent: my.start_job $parn_txt -n ".$batch_taskid." --jobfile $jobarray\n";
+	    close JOB;
+
+	    
+
+	    
+
+#	    print "batch_other: $batch_other\n";
+#	    sleep (10);
+	    
+	    my $batch_cmd = "$batch_bin $batch_other $batch_mem $batch_walltime $batch_maxpar $batch_array $batch_stdout $batch_stderr $batch_name $batch_jobfile";
+
+	    
+	    my $batch_sys = "$batch_cmd > $jobname.id";
+	    my $batch_log = "echo $batch_cmd > $jobname.log";
+
+#	    print "$batch_sys\n";
+#	    sleep(10);
+
+
+	    
+	    &mysystem ($batch_log);
+	    &mysystem ($batch_sys);
+	    exit;
+	}
+	
+	
+
+
+	if ($wait_fi_file){
+	    die "$! <$wait_fi_file>" unless open WF, "< $wait_fi_file";
+	    my $id_str = <WF>;
+	    chomp($id_str);
+	    close WF;
+
+	    print "stdout from array submission: $id_str\n";
+
+	    ## for debugging
+		#$batch_depend = "-hold_jid_SPACE_XXX";
+		#$batch_jid = "Submitted_SPACE_batch_SPACE_job_SPACE_XXX";
+		#$id_str = "Submitted batch job 5364";
+	    #
+	    # for slurm
+		#$batch_depend = "--dependency=afterok:XXX";
+		#$batch_jid = "Your_SPACE_job-array_SPACE_XXX.1-YYY:1_SPACE(\"ZZZ\")_SPACE_has_SPACE_been_SPACE_submitted";
+		#$id_str = "Your job-array 243654.1-200:1 (\"ANYNAME\") has been submitted";
+
+	    #print "---------------------- originals ------------------------\n";
+	    #print "depend: ".$batch_depend."\n";
+	    #print "jid:    ".$batch_jid."\n";
+	    #print "id:     ".$id_str."\n";
+	    
+	    my $id_str_orig = $id_str;
+	    $batch_depend =~ s/_SPACE_/ /g;
+	    $batch_jid =~ s/_SPACE_/ /g;
+	    my @batch_jid_array = split "XXX", $batch_jid;
+	    
+	    $id_str =~ s/$batch_jid_array[0]//; ### remove the stuff from before XXX
+#	    print "id_str: $id_str, $batch_jid_array[0]\n";
+
+	    #	    $id_str =~ s/([0123456789]*).*/$1/; ### take the first numbered ID and remove everything else
+	    $id_str =~ s/[^0-9]*([0-9]*).*/$1/; ### small change in order to safe some wrongly typed batch_job_output_jid
+	    print "dependent job ID:$id_str\n";
+
+	    if ($id_str eq ''){
+		print "********************************************************************************\n";
+		print "Error: something seems wrong with entry batch_job_output_jid in your custom file\n";
+		print "please revisit installation process\n";
+		if ($id_str_orig eq '') {
+		    print "Something is very strange since the array submission output is empty as well\n";
+		}
+		exit;
+	    }
+
+	    #	    sleep (10);
+
+	    $batch_depend =~ s/XXX/$id_str/g; ### put ID into dependency string
+
+
+	    ### for debugging
+		#print "---------------------- result ------------------------\n";
+		#print "jid:    ".$batch_jid_array[0]."\n";
+		#print "id:     ".$id_str."\n";
+		#print "depend: ".$batch_depend."\n";
+
+	    print "starting motherscript, depending on $id_str\n";
+	    
+	    $jobname="j.$NOJ";
+	    die "$! ($jobname)" unless open JOB, "> $jobname";
+	    print JOB '#!/bin/sh'."\n";
+	    print JOB "cd $rootdir\n";
+	    print JOB "$bp\n";
+	    close JOB;
+
+	    $batch_stdout =~ s/.%a$//g;
+	    $batch_stderr =~ s/.%a$//g;
+	    
+
+	    my $batch_cmd = "$batch_bin $batch_other $batch_mem $batch_walltime $batch_depend $batch_stdout $batch_stderr $batch_name  $jobname";
+
+	    my $batch_sys = "$batch_cmd > $jobname.id";
+	    my $batch_log = "echo $batch_cmd > $jobname.log";
+
+	    &mysystem ($batch_log);
+	    &mysystem ($batch_sys);
+	    exit;
+	}
+
+    }
+########################################
+### BIH
+##########################################
+
+    if ($bih_qsub) {
+
+
+	my $inst_n=0;
+	my $job_n=0;
+	my $sum=0;
+	($multi,$threads) = split ',', $multi_str if ($multi_str ne "");  #multi is outdated not used any more
+	my $jobname;
+
+	my $mem_str = ($jmem / 1000) * 1;
+	$mem_str = 1 if ($mem_str < 1);
+
+	
+	$jobname="j.$NOJ";
+
+
+	unless ($wait_fi_file){
+	    if ($jobarray eq "") {
+		
+		if (@job_arr > 0) {
+		    
+		    die "$! ($jobname.scripts)" unless open SCR, "> $jobname.scripts";
+		    foreach (@job_arr) {
+			
+			print SCR "$_\n";   
+			
+		    }
+		    close SCR;
+		    $jobarray = "$jobname.scripts";
+		}
+		else {
+		    print "Exit: no jobs to process\n";
+		    exit;
+		}
+		
+		print "wrote $jobname.scripts\n";
+		$job_bn_th = @job_arr;
+		#	    print "sleep\n";
+		#	    sleep (3);
+		
+	    }
+	}
+
+	
+	if ($jobarray ne "") {
+
+	    ### walltime format
+	    my $wallstr = "$walltime:00:00";
+	    if ($walltime ==0){
+		$wallstr = "0:10:00";
+	    }
+
+
+	    my $maxpar_txt = "";
+
+	    ### need to know the flag for that
+	    if ($maxpar > 0) {
+		$maxpar_txt = "-tc $maxpar";
+	    }
+	    
+	    print "starting job_array, $jobname\n";
+
+
+	    my $multi_txt = "";
+#	    my $threads_half = int ($threads / 2);
+
+
+	    ## I dont think this is used somewhere.
+#	    my $threads_half = $threads;  ## don't know why this was just half
+#	    if ($threads > 1) {
+#		$multi_txt = "-pe smp $threads_half -binding linear:$threads_half ";
+#	    }
+#	    if ($threads > 8) {
+#		$multi_txt .= "-R y ";
+#	    }
+	    
+
+	    
+	    die "$! ($jobname)" unless open JOB, "> $jobname";
+	    print JOB "cd $rootdir\n";
+	    ### #SGE_TASK_ID need to be specified from the user
+	    
+	    print JOB "my.start_job -n ".'$SGE_TASK_ID'." --jobfile $jobarray\n";
+	    close JOB;
+
+	    $name_of_job = "-N $NOJ";
+	    
+	    my $qsub_cmd = "qsub -v PATH  -l h_vmem=".$mem_str."g -l h_rt=$wallstr  -t 1-$job_bn_th -e $rootdir/$errname/ -o $rootdir/$errname/ $name_of_job  $jobname";
+
+	    my $qsub_txt = "$qsub_cmd > $jobname.id";
+	    my $qsub_log = "echo $qsub_cmd > $jobname.log";
+	    
+	    &mysystem ($qsub_log);
+	    &mysystem ($qsub_txt);
+	    exit;
+	}
+	
+	
+
+
+	if ($wait_fi_file){
+	    die "$! <$wait_fi_file>" unless open WF, "< $wait_fi_file";
+	    my $id_str = <WF>;
+	    chomp($id_str);
+	    ### this output needs to be specified by the user
+	    $id_str =~ s/Your job-array //;
+	    $id_str =~ s/\..*//;
+
+
+
+	    close WF;
+
+	    my $wallstr = "$walltime:00:00";
+	    
+	    print "starting motherscript, depending on $id_str\n";
+	    
+	    $jobname="j.$NOJ";
+	    die "$! ($jobname)" unless open JOB, "> $jobname";
+#	    print JOB "#PBS -lnodes=1\n";
+#	    print JOB "#PBS -lwalltime=$wallstr\n";
+	    print JOB "cd $ENV{PWD}\n";
+	    print JOB "$bp\n";
+	    close JOB;
+
+	    my $wallstr_0917 = "-l h_rt=$wallstr";
+
+	    $name_of_job = "-N $NOJ";
+	    my $qsub_cmd = "qsub -v PATH -l h_vmem=".$mem_str."g $wallstr_0917  -hold_jid $id_str -e $ENV{PWD}/$errname/ -o $ENV{PWD}/$errname/ $name_of_job  $jobname";
+
+	    my $qsub_txt = "$qsub_cmd > $jobname.id";
+	    my $qsub_log = "echo $qsub_cmd > $jobname.log";
+
+	    &mysystem ($qsub_log);
+	    &mysystem ($qsub_txt);
+	    exit;
+	}
+
+
+
+
+	
+    }
+
+########################################
+### UNCSLURM 
+##########################################
+
+    if ($unc_slurm) {
+
+
+	my $inst_n=0;
+	my $job_n=0;
+	my $sum=0;
+	($multi,$threads) = split ',', $multi_str if ($multi_str ne "");  #multi is outdated not used any more
+	my $jobname;
+
+	my $mem_str = ($jmem / 1000) * 1;
+	$mem_str = 1 if ($mem_str < 1);
+
+
+	$jobname="j.$NOJ";
+
+
+	unless ($wait_fi_file){
+	    if ($jobarray eq "") {
+		
+		if (@job_arr > 0) {
+		    
+		    die "$! ($jobname.scripts)" unless open SCR, "> $jobname.scripts";
+		    foreach (@job_arr) {
+			
+			print SCR "$_\n";   
+			
+		    }
+		    close SCR;
+		    $jobarray = "$jobname.scripts";
+		}
+		else {
+		    print "Exit: no jobs to process\n";
+		    exit;
+		}
+		
+		print "wrote $jobname.scripts\n";
+		$job_bn_th = @job_arr;
+		#	    print "sleep\n";
+		#	    sleep (3);
+		
+	    }
+	}
+
+	
+	if ($jobarray ne "") {
+
+
+	    my $wallstr = "$walltime:00:00";
+	    if ($walltime ==0){
+		$wallstr = "0:10:00";
+	    }
+
+
+	    my $maxpar_txt = "";
+
+	    ### need to know the flag for that
+#	    if ($maxpar > 0) {
+#		$maxpar_txt = "-tc $maxpar";
+#	    }
+	    
+	    print "starting job_array, $jobname\n";
+
+
+	    my $multi_txt = "";
+#	    my $threads_half = int ($threads / 2);
+
+
+	    ## I dont think this is used somewhere.
+#	    my $threads_half = $threads;  ## don't know why this was just half
+#	    if ($threads > 1) {
+#		$multi_txt = "-pe smp $threads_half -binding linear:$threads_half ";
+#	    }
+#	    if ($threads > 8) {
+#		$multi_txt .= "-R y ";
+#	    }
+	    
+
+	    
+	    die "$! ($jobname)" unless open JOB, "> $jobname";
+	    print JOB "cd $rootdir\n";
+	    ### #SGE_TASK_ID need to be specified from the user
+	    print JOB "my.start_job -n ".'$SLURM_ARRAY_TASK_ID'." --jobfile $jobarray\n";
+	    close JOB;
+
+	    $name_of_job = "--job_name $NOJ";
+	    
+	    my $qsub_cmd = "sbatch --mem-per-cpu=$mem_str"."G -t $wallstr --array=1-$job_bn_th -e $rootdir/$errname/ -o $rootdir/$errname/ $name_of_job -N 1 $jobname";
+
+
+	    my $qsub_txt = "$qsub_cmd > $jobname.id";
+	    my $qsub_log = "echo $qsub_cmd > $jobname.log";
+	    
+	    &mysystem ($qsub_log);
+	    &mysystem ($qsub_txt);
+	    exit;
+	}
+	
+	
+
+
+	if ($wait_fi_file){
+	    die "$! <$wait_fi_file>" unless open WF, "< $wait_fi_file";
+	    my $id_str = <WF>;
+	    chomp($id_str);
+	    ### this output needs to be specified by the user
+	    $id_str =~ s/Submitted batch job //;
+
+
+
+	    close WF;
+
+	    my $wallstr = "$walltime:00:00";
+	    
+	    print "starting motherscript, depending on $id_str\n";
+	    
+	    $jobname="j.$NOJ";
+	    die "$! ($jobname)" unless open JOB, "> $jobname";
+#	    print JOB "#PBS -lnodes=1\n";
+#	    print JOB "#PBS -lwalltime=$wallstr\n";
+	    print JOB "cd $ENV{PWD}\n";
+	    print JOB "$bp\n";
+	    close JOB;
+
+
+	    $name_of_job = "--job_name $NOJ";
+	    my $qsub_cmd = "sbatch --mem-per-cpu=$mem_str"."G -t $wallstr -e $rootdir/$errname/ -o $rootdir/$errname/ $name_of_job -N 1 --dependency=afterok:$id_str $jobname";
+
+	    my $qsub_txt = "$qsub_cmd > $jobname.id";
+	    my $qsub_log = "echo $qsub_cmd > $jobname.log";
+
+	    &mysystem ($qsub_log);
+	    &mysystem ($qsub_txt);
+	    exit;
+	}
+
+
+
+
+	
+    }
     
 ########################################
 ### BROAD UGER
@@ -1032,17 +1699,19 @@ if ($job){
 	my $inst_n=0;
 	my $job_n=0;
 	my $sum=0;
-	
+	($multi,$threads) = split ',', $multi_str if ($multi_str ne "");  #multi is outdated not used any more
 	#    my $cores=$inst;
 	#    $cores=2 if ($cores < 2);
 	
 	my $jobname;
+	
 
 	my $mem_str = ($jmem / 1000) * 1;
 	$mem_str = 1 if ($mem_str < 1);
 
 
 	$jobname="j.$NOJ";
+
 
 
 	unless ($wait_fi_file){
@@ -1084,26 +1753,52 @@ if ($job){
 	    }
 
 #	    $cores = 28;
-	    
+	    my $maxpar_txt = "";
+	    if ($maxpar > 0) {
+		$maxpar_txt = "-tc $maxpar";
+	    }
 	    
 	    print "starting job_array, $jobname\n";
 
 
+	    my $multi_txt = "";
+#	    my $threads_half = int ($threads / 2);
+	    my $threads_half = $threads;  ## don't know why this was just half
+	    if ($threads > 1) {
+		$multi_txt = "-pe smp $threads_half -binding linear:$threads_half ";
+	    }
+	    if ($threads > 8) {
+		$multi_txt .= "-R y ";
+	    }
+	    
+
+	    
+
 	    my $qlong_str = "";
-	    if ($walltime > 2) {
+
+	    
+	    if ($walltime > 2 || $week > 0) {
 		$qlong_str = "-q long";
 #		$qlong_str = "-P sanctioned -q sanctioned";
 	    }
+	    else {
+		$qlong_str = "-q short";
+	    }
+
+	    my $wallstr_0917 = "-l h_rt=$wallstr";
+
+	    
 	    die "$! ($jobname)" unless open JOB, "> $jobname";
 
-
-	    print JOB "#PBS -lnodes=1:ppn=1\n";
-	    print JOB "#PBS -lwalltime=$wallstr\n";
+#	    print JOB "#PBS -lwalltime=$wallstr\n";
 	    print JOB "cd $rootdir\n";
 	    print JOB "my.start_job -n ".'$SGE_TASK_ID'." --jobfile $jobarray\n";
 	    close JOB;
+
 	    
-	    my $qsub_cmd = "qsub -l m_mem_free=".$mem_str."g $qlong_str -v PATH,rp_perlpackages -t 1-$job_bn_th -e $rootdir/$errname/ -o $rootdir/$errname/ $name_of_job $hhmm $jobname";
+	    my $qsub_cmd = "qsub -l h=\'!hw-uger-*\' $multi_txt $maxpar_txt -l h_vmem=".$mem_str."g $wallstr_0917 -v PATH,rp_perlpackages -t 1-$job_bn_th -e $rootdir/$errname/ -o $rootdir/$errname/ $name_of_job $hhmm $jobname";
+#	    	    my $qsub_cmd = "qsub $multi_txt $maxpar_txt -l h_vmem=".$mem_str."g $qlong_str -v PATH,rp_perlpackages -t 1-$job_bn_th -e $rootdir/$errname/ -o $rootdir/$errname/ $name_of_job $hhmm $jobname";
+
 	    my $qsub_txt = "$qsub_cmd > $jobname.id";
 	    my $qsub_log = "echo $qsub_cmd > $jobname.log";
 	    
@@ -1131,13 +1826,17 @@ if ($job){
 	    
 	    $jobname="j.$NOJ";
 	    die "$! ($jobname)" unless open JOB, "> $jobname";
-	    print JOB "#PBS -lnodes=1\n";
-	    print JOB "#PBS -lwalltime=$wallstr\n";
+#	    print JOB "#PBS -lnodes=1\n";
+#	    print JOB "#PBS -lwalltime=$wallstr\n";
 	    print JOB "cd $ENV{PWD}\n";
 	    print JOB "$bp\n";
 	    close JOB;
+
+	    my $wallstr_0917 = "-l h_rt=$wallstr";
+
 	    
-	    my $qsub_cmd = "qsub -v PATH,rp_perlpackages -l m_mem_free=".$mem_str."g  -hold_jid $id_str -e $ENV{PWD}/$errname/ -o $ENV{PWD}/$errname/ $name_of_job $hhmm $jobname";
+	    my $qsub_cmd = "qsub -v PATH,rp_perlpackages -l h=\'!hw-uger-*\' -l h_vmem=".$mem_str."g $wallstr_0917  -hold_jid $id_str -e $ENV{PWD}/$errname/ -o $ENV{PWD}/$errname/ $name_of_job $hhmm $jobname";
+
 	    my $qsub_txt = "$qsub_cmd > $jobname.id";
 	    my $qsub_log = "echo $qsub_cmd > $jobname.log";
 
@@ -1256,16 +1955,52 @@ if ($job){
     my $jobname;
 
 
+    ###### see different kinds of nodes
+    #####  https://userinfo.surfsara.nl/systems/lisa/description
+    ($multi,$threads) = split ',', $multi_str if ($multi_str ne "");  #multi is outdated not used any more
+    my $cores_multi = sprintf "%d",16/$threads;
+    
+    
     my $mem_str = ($jmem / 1000) * 1;
-    if ($mem_str < 8){
-	$mem_str = 32;
-    }
-    else {
-	$mem_str = 64;
-	$cores =6;
-	
+    $mem_str = $mem_str * $cores;
+
+
+    ###
+    ### this was only necessary when different mem options, but will concentrate on 32 GB machines
+    if (0) {
+	if ($mem_str <= 32){
+	    $mem_str = 32;
+	}
+	elsif ($mem_str <= 64) {
+	    $mem_str = 64;
+	    if ($cores == 16) {
+		$cores = 8;
+	    }
+	}
+	else {
+	    $mem_str = 64;
+	    if ($cores == 16) {
+		$cores = 1;  ## may 31st 2017: didn't get jobs started so I switched to cores =1 instead
+	    }
+	}
     }
 
+    #### this is the replacement;
+    $cores = sprintf "%d", 32000 / $jmem;
+#    print "debug, cores: $cores, $jmem, $jobarray\n";
+#    exit;
+
+
+
+    
+    if ($cores_multi < $cores) {
+	$cores = $cores_multi;
+    }
+    if ($cores < 1){
+	$cores = 1;
+    }
+
+#    print "debug, cores: $cores, $jmem, $jobarray\n";
 
     if ($jobarray ne "") {
 
@@ -1297,16 +2032,14 @@ if ($job){
 
 
 
-	if ($mem_str == 64) {
-#	    print JOB "#PBS -lnodes=1:cores$cores:ppn=$cores:mem64gb\n";
-	    print JOB "#PBS -lnodes=1:mem64gb\n";
-	}
-	else {
-#	    print JOB "#PBS -lnodes=1:cores$cores:ppn=$cores\n";
+	if ($mem_str != 64) {
 	    print JOB "#PBS -lnodes=1\n";
 	}
-#	print JOB "#PBS -lmem=".$mem_str."gb\n";
-#	}
+	else {
+	    print JOB "#PBS -lnodes=1\n";
+#	    print JOB "#PBS -lnodes=1:mem64gb\n";  ## may 31st 2017: didn't get jobs started so I switched to cores =1 instead
+	}
+	
 	print JOB "#PBS -lwalltime=$wallstr\n";
 	print JOB "cd $rootdir\n";
 	print JOB "my.start_job --parn $cores -n ".'$PBS_ARRAYID'." --jobfile $jobarray\n";
@@ -1446,120 +2179,7 @@ if ($job){
     
     
 
-    
-    
-
-
-
-    
-    if (0) {
-	foreach my $cmd (@job_arr){
-
-	my $wallstr = "$walltime:00:00";
-
-	if ($walltime == 0) {
-	    $wallstr = "00:10:00";
-	}
-
-	if ($start) {
-	    &mysystem($cmd);
-	    next;
-	}
-
-
-	if ($week > 0){
-	    my $walltime_loc = $walltime * 6;
-	    $wallstr = "$walltime_loc:00:00";
-	    $week = $week - 1;
-	}
-
-
-
-	if ($inst_n == 0){
-
-	    my $rn = int(rand(2));
-#	    if ($rn == 0){
-
-#	    $core = 8;
-#	    $inst = 7 unless ($inst == 1);
-
-#	    }
-#	    else {
-#		$core = 12;
-#		$inst = 11;
-#	    }
-
-	    $jobname="j.$job_n.$NOJ";
-#	    print " $jobname\n";
-	    if ($qsub){
-		die "$! ($jobname)" unless open JOB, "> $jobname";
-#		print JOB "#PBS -lnodes=1:cores$core\n";
-		print JOB "#PBS -lnodes=1\n";
-
-		if (0) {
-		    print JOB "#PBS -lnodes=1:cores$core\n" if ($core == 2);
-		    print JOB "#PBS -lnodes=1:cores8\n" if ($core == 8);
-		    print JOB "#PBS -lnodes=1:cores8:mem8gb\n" if ($core == 12);
-		    print JOB "#PBS -lnodes=1:cores8:mem16gb\n" if ($core == 16);
-		    print JOB "#PBS -lnodes=1:cores8:mem24gb\n" if ($core == 24);
-		}
-
-		print JOB "#PBS -lwalltime=$wallstr\n";
-
-
-		##### as long as dependencies don't work
-		if (0) {
-		    print JOB "$wait_str\n";
-		}
-
-		print JOB "$module\n";
-		print JOB "cd $ENV{PWD}\n";
-	    }
-	}
-	if ($qsub){
-	    
-	    if ($wait_fi_file){
-		die $! unless open CMD, "> $NOJ.cmd";
-		print CMD "$bp\n";
-		close CMD;
-#		print "blueprint_addon --cmd $NOJ.cmd --fwt $wait_fi_file --out $NOJ\n";
-		print JOB "blueprint_addon --cmd $NOJ.cmd --fwt $wait_fi_file --out $NOJ\n";
-
-	    }
-	    else {
-		print JOB $cmd;
-#		print JOB " &" unless ($serial);
-		print JOB " &" ;
-#		print JOB " &" unless ($cmd =~ /;$/);
-		print JOB "\n";
-	    }
-
-
-
-
-	    $inst_n++;
-	    $sum++;
-	    if ($inst_n == $inst || $sum == @job_arr || $week > 0){
-		print JOB "wait\n";
-		close JOB;
-		$inst_n=0;
-		$job_n++;
-
-		my $qsub_txt = "qsub -e $errname/ -o $errname/ $name_of_job $hhmm $jobname";
-#		print "$qsub_txt\n";
-#		&mysystem ("qsub $wait_str -e $errname/ -o $errname/ $name_of_job $jobname") if $lisa;
-		&mysystem ($qsub_txt) if $qsub;
-		last if ($job_n > 200);
-
-	    }
-	}
-	else {
-	    &mysystem ($cmd);
-	}
-    }
-	
-	&a2file ($jl_file."-".$NOJ, @blueprint_out);
-    }
+   
 }
 
 else {

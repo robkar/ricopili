@@ -1,0 +1,234 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
+#############################
+# read config file
+#############################
+
+my $i2loc = &trans("i2loc");
+my $i4loc = &trans("i4loc");
+my $m3loc = &trans("minimac3loc");
+
+
+my $buff = 1000;
+my $chr = "";
+
+###########################################
+##### help message
+my $usage = "
+Usage : my.imp.3 --out OUTNAME --in INNAME --ref REFFILE --gema GEMAFILE --multi INT
+
+ --out STRING      name of out file, or output prefix for Minimac3
+ --in STRING       name of haps file, or vcf file for Minimac3
+ --gema STRING     gema-file
+ --reffile STRING  name of ref file, for Minimac3, a processed (m3vcf) version is recommended
+ --refstart INT    Mb of start
+ --refend INT      Mb of end
+ --chrX STRING     for X chromosome, noting sample-file
+ --buff INT        buffer, default $buff
+ --imp4            use impute4 instead of impute2
+
+ --minimac         perform the imputation using Minimac3
+ --multi INT       use multithreading in minimac3
+ --chr             chromosome number; required for Minimac3
+";
+
+my $outname = "";
+my $inname = "";
+my $gemafile = "";
+my $reffile = "";
+my $refstart = "";
+my $refend = "";
+my $multi = 1;
+
+use Getopt::Long;
+GetOptions( 
+
+    "out=s"=> \ $outname,
+    "in=s"=> \ $inname,
+    "gema=s"=> \ $gemafile,
+    "reffile=s"=> \ $reffile,
+    "refstart=s"=> \ $refstart,
+    "refend=s"=> \ $refend,
+    "buff=i"=> \ $buff,
+    "multi=i"=> \ $multi,
+    "chrX=s"=> \my $chrx,
+    "imp4"=> \my $imp4,
+    "minimac"=> \my $minimac,
+    "chrind=s"=> \$chr,
+    );
+
+
+
+
+if (0) {
+if ($outname eq "" || $inname eq ""  || (!$minimac && $gemafile eq "") || $reffile eq "" || $refstart eq ""|| $refend eq ""  || ($minimac)){
+    print "$usage\n";
+    print "$outname\n";
+    print "$inname\n";
+    print "$gemafile\n";
+    print "$reffile\n";
+    print "$refstart\n";
+    print "$refend\n";
+    print "$minimac\n";
+    print "$chr\n";
+    print "und?\n";
+    die;
+}
+}
+
+if ($minimac and $reffile !~ /m3vcf/) {
+    warn "$0: using an un-processed reference file. This will be much slower than using a processed one (.m3vcf.gz)\n";
+}
+
+
+unless (-e "$inname") {
+    if (-e "$inname.gz"){
+	$inname = "$inname.gz";
+	print "changed inname to $inname\n";
+    }
+    else {
+	print "Error: no $inname and no $inname.gz found\n";
+	exit;
+    }
+}
+
+my $xtxt = "";
+if ($chr eq "X") {
+#    $xtxt = "-chrX -sample_known_haps_g $chrx";
+    $xtxt = "-chrX -sample_known_haps_g";
+}
+if ($chrx) {
+    $xtxt = "-chrX -s $chrx";
+}
+
+my $imp2_bin = "impute2";
+my $imp4_bin = "impute4.r265.2";
+
+system ("touch $outname.hour");
+if (-e "$outname.fini") {
+    system ("rm $outname.fini");
+}
+
+######################
+# BEGIN
+##############################
+
+my $allow_str = "";
+my $start_loc = $refstart *1.0e06;
+my $end_loc =  $refend *1.0e06;
+my $buff_mm =  $buff *1.0e03;
+
+
+# Minimac3 doesn't accept 0 for --start
+if ($start_loc ==0 ){
+    $start_loc =1;
+}
+
+#print "$start_loc\n";
+#print "$end_loc\n";
+#exit;
+
+#if ($phas == 15) {
+if (0) {
+    $start_loc = 25 *1.0e06; 
+    $end_loc = 35 *1.0e06; 
+    $allow_str = "-allow_large_regions";
+}
+
+if ($refend - $refstart > 6) {
+    $allow_str = "-allow_large_regions";
+}
+
+
+my $sys_loc;
+
+
+
+
+
+if ($minimac) {
+  $sys_loc = qq{
+    $m3loc/Minimac3-omp \\
+    --refHaps "$reffile" \\
+    --format DS,GT,GP \\
+    --haps "$inname" \\
+    --prefix "$outname" \\
+    --start "$start_loc" \\
+    --end "$end_loc" \\
+    --window "$buff_mm" \\
+    --chr "$chr" \\
+    --cpus $multi \\
+    > "$outname.dose.vcf.log"
+  };
+  
+
+}
+elsif ($imp4) {
+    $sys_loc = "$i4loc/$imp4_bin -o_gz -seed 1234567 $xtxt -m $gemafile -h $reffile.hap.gz -l $reffile.legend.gz -g $inname -int $start_loc $end_loc -Ne 20000 -buffer $buff -o $outname $allow_str -no_maf_align -snp_blocks";
+#    $sys_loc .= "; gunzip -c $reffile.legend.gz > $outname.map";
+
+    
+}
+
+else {
+
+    
+    $sys_loc = "$i2loc/$imp2_bin -o_gz -seed 1234567 $xtxt -m $gemafile -h $reffile.hap.gz -l $reffile.legend.gz -known_haps_g $inname -int $start_loc $end_loc -Ne 20000 -buffer $buff -o $outname $allow_str";
+
+}
+
+print "$sys_loc\n";
+#exit;
+
+
+
+
+#print "$sys_loc\n";
+#exit;
+
+
+## for now without best guess
+#my $sys_loc = "$i2loc/$imp2_bin -phase -seed 1234567 $xtxt -m $gemafile -h $reffile.hap.gz -l $reffile.legend.gz -known_haps_g $inname -int $start_loc $end_loc -Ne 20000 -buffer 1000 -o $outname $allow_str";
+
+## add -phase for phased best buess!!!!!!!!!!!!!!
+
+
+#print "$sys_loc\n";
+#sleep(2);
+
+die $!."$outname.cmd" unless open BC, "> $outname.cmd";
+print BC "$sys_loc\n";
+close BC;
+
+
+
+my  $sc = system ($sys_loc) ;
+
+
+if ($imp4) {
+    system ("mv $outname.gen.gz $outname.gz");
+
+}
+
+
+
+
+if ($sc == 0 ) { 
+    system ("touch $outname.fini");
+}
+else {
+    print "job finished with error\n";
+}
+
+

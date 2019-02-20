@@ -1,5 +1,13 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 use lib $ENV{rp_perlpackages};
 use Compress::Zlib ;
@@ -13,34 +21,24 @@ my $info_th = "0.1";
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
 #my $ploc = &trans("ploc");
 my $sloc = &trans("sloc");
 my $meloc = &trans("meloc");
 my $rloc = &trans("rloc");
 
 #################################################
-my $r_sys = "$rloc/R";
-if ($rloc eq "broadinstitute") {
-    $r_sys = "source /broad/software/scripts/useuse; use R-2.14; R";
+
+
+my $r_sys = "$rloc";
+$r_sys =~ s/_SPACE_/ /g;
+
+system("$r_sys RHOME");
+my $status = ($? >> 8);
+if ($status != 0) {
+    print "I could not start R, maybe you are using an old ricopili configuration?\ne.g. rloc does not need a path but a full starting command.\n";
+    exit;
 }
+
 
 
 use Getopt::Long;
@@ -51,7 +49,8 @@ GetOptions(
 
    "help"=> \my $help,
    "nofilter"=> \my $nofilter,
-   "detout"=> \my $detout,
+    "detout"=> \my $detout,
+
    "xdf"=> \my $xdf,
 
  );
@@ -66,6 +65,7 @@ if ($help || $out_name eq "metaber"){
                              defaut $info_th
                              !!! use zero before period  !!!
         --nofilter         no filter at all
+
 #        --beta             if there is BETA instead of OR present
 
          --detout          also include a detailed out-file with all P, OR, SE
@@ -127,6 +127,20 @@ sub split_line {
     my @cols=  split /\s+/, $line;
 }
 
+##########################################
+# subroutine to split a plink-output-line with references
+##########################################
+
+sub split_line_ref {
+    my ($line)=${$_[0]};
+    chomp($line);
+    $line =~ s/^[\s]+//g;
+    my @cols=  split /\s+/, $line;
+    \@cols;
+}
+
+
+
 
 #####################################
 # print array to file
@@ -143,17 +157,42 @@ sub a2file {
 
 
 
-########################################
-# test plink and beagle
-###################################
+
+use File::Path;
+use File::Copy;
+use Cwd;
+
+my $min_OR = 0.0001;
+my $max_OR = 10000;
+my $min_BETA = -4;
+my $max_BETA = 4;
 
 
-#unless (-e "$ploc/plink" ){
- #   print "\n***** Error: couldn't find the following:\n";
-  #  print "$ploc/plink\n";
-   # exit;
-#}
 
+
+my $out_short = $out_name;
+$out_short =~ s!.*/!!;
+#print "$out_name\n";
+#print "$out_short\n";
+
+#exit;
+
+
+my $scratchdir = $sloc;
+my $workdir="$scratchdir/dameta_$out_short";
+
+
+
+while (-e $workdir) {
+    $workdir .= ".d";
+}
+print "workdir: $workdir\n";
+
+sleep(4);
+my @created_work = mkpath(   ## $created ?
+			"$workdir",
+			{verbose => 0, mode => 0750},
+    );
 
 
 #####################################
@@ -190,15 +229,21 @@ my $die = 0;
 
 foreach my $file (@ARGV) {
 
+
+    my $dfile_short = $file;
+    $dfile_short =~ s!.*/!!;
+    print  "check header of: $dfile_short\n";
+
+    $or_txt = "";
+    
     my $df = gzopen("$file", "rb")  or die "Cannot open $file: $gzerrno\n" ;
     $df->gzreadline(my $line);
-    my @cells = &split_line($line);
+    my @cells = @{&split_line_ref(\$line)};
+
 
     my $sollc = @cells;
     my $ld_sw = 0;
 
-# CHR         SNP          BP  A1  A2     FRQ    INFO      OR      SE       P
-# CHR         SNP          BP  A1  A2   FRQ_A_276   FRQ_U_521    INFO      OR      SE       P   ngt
 
     foreach (@cells) {
 	### check for OR column, but also for the first file
@@ -218,29 +263,31 @@ foreach my $file (@ARGV) {
 
     my $cc = 0;
     my $line = "ha";
-#    print "new gfil\n";
-    while ($df->gzreadline(my $line_loc)){
-	$cc++;
-	chomp($line_loc);
-#	print "rig: ->$line_loc<-\n";
-	unless ($line_loc eq "") {
-	    $line = $line_loc;
+    #    print "new gfil\n";
+
+
+    if (0) {    
+	while ($df->gzreadline(my $line_loc)){
+	    $cc++;
+	    chomp($line_loc);
+	    unless ($line_loc eq "") {
+		$line = $line_loc;
+	    }
+	}
+
+
+    my @cells = @{&split_line_ref(\$line)};
+
+
+	if ($sollc != @cells && $line ne "ha") {
+	my $cc_loc = @cells;
+	print "Warning: column count problem in $file, $sollc, $cc_loc,\n@cells\n" ;
+	$die = 1;
+	
 	}
     }
-#    print "file: $file: $cc\n";
-#    print "line: <$line>: $cc\n";
 
-    my @cells = &split_line($line);
-    if ($sollc != @cells && $line ne "ha") {
-#	print @cells." ncells\n";
-#	print "->".$line."<- line\n";
-#	exit;
-	my $cc_loc = @cells;
-	&mysystem ("rm $file");
-	print "column count problem in $file, $sollc, $cc_loc,\n@cells\n" ;
-	$die = 1;
 
-    }
     
     $df -> gzclose();
 
@@ -252,7 +299,7 @@ foreach my $file (@ARGV) {
 	$filtertxt = "";
     }
 
-my $process_templ ="
+    my $process_templ ="
 MARKER   SNP
 WEIGHT   N
 ALLELE   A1 A2
@@ -262,26 +309,37 @@ STDERR   SE
 PVAL     P
 $filtertxt
 
-PROCESS $file
+PROCESS $workdir/$dfile_short.clean.gz
 ";
-
-$metal_script .= $process_templ;
+    
+    $metal_script .= $process_templ;
+    
 }
 
-if ($die == 1){
-    die "column count problem\n" ;
-}
+#if ($die == 1){
+#    die "column count problem\n" ;
+#}
 
 
 #exit;
-$metal_script .= "OUTFILE $out_name.meta .tbl\n";
-$metal_script .= "ANALYZE HETEROGENEITY";
+
 #ANALYZE HETEROGENEITY
 
 #print "$metal_script\n";
 
-&a2file ($metal_script_name,$metal_script);
-&mysystem ("$meloc/metal < $metal_script_name");
+
+
+
+
+
+
+
+#####################################
+### read all single files for frequences, etc. 
+#####################################
+
+
+
 
 #&mysystem ("$ploc/plink --out $out_name.comb --meta-analysis @ARGV");
 #exit;
@@ -292,6 +350,7 @@ my %fca ;
 my %nca ;
 my %fco ;
 my %nco ;
+my %neff ;
 my %ngt ;
 my %nmet ;
 my %info ;
@@ -301,26 +360,33 @@ my %chr ;
 my %pos ;
 my %p_str ;
 my %det_str ;
+my %snpex ;
 
 
 
 # CHR         SNP          BP  A1  A2   FRQ_A_218   FRQ_U_323    INFO      OR      SE       P   ngt
 
-#####################################
-### read all single files 
-#####################################
-
 my $fcount = 0;
 my %col = ();
+
+
+
+my $neff_max = 0;
+
 foreach my $dfile (@ARGV) {
 
     my $df = gzopen("$dfile", "rb")  or die "Cannot open $dfile: $gzerrno\n" ;
     $df->gzreadline(my $line);
-    my @cells = &split_line($line);
+    my @cells = @{&split_line_ref(\$line)};
 
+    my $neff_max_per_cohort = 0;
+
+#    print "read $dfile\n";
 
     my $nca_loc;
     my $nco_loc;
+
+    my $ndet_switch = 0; ## switched on if Nca, Nco, Neff exists;
  #   my $nf_loc;
 
 
@@ -349,6 +415,11 @@ foreach my $dfile (@ARGV) {
 
 #FRQ_Cases FRQ_Controls
 
+#    if ($dfile =~ /MDD29.0515a_mds6b/) {
+#	print "@cells\n";
+#	sleep (10);
+#    }
+    
     my $cc =0;
     foreach (@cells) {
 
@@ -374,9 +445,21 @@ foreach my $dfile (@ARGV) {
 	    $col{"FRQU"} = $cc;
 	}
 
-	if ($_ = /MAF/) {
+	if ($_ =~ /MAF/) {
 	    $col{"FRQ"} = $cc;
 	}
+
+	if ($_ =~ /Neff/) {
+	    $col{"Neff"} = $cc;
+	    $ndet_switch = 1;
+	}
+	if ($_ =~ /Nca/) {
+	    $col{"Nca"} = $cc;
+	}
+	if ($_ =~ /Nco/) {
+	    $col{"Nco"} = $cc;
+	}
+	
 
 #	if ($_ eq "FRQ") {
 #	    $nf_loc = $_;
@@ -419,6 +502,24 @@ foreach my $dfile (@ARGV) {
 	die;
     }
 
+    if ($ndet_switch == 1) {
+	unless (exists $col{"Nca"}){
+	    print "no Nca (but Neff) column in $dfile\n";
+	    die;
+	}
+	unless (exists $col{"Nco"}){
+	    print "no Nco (but Neff) column in $dfile\n";
+	    die;
+	}
+	print "Nca, Nco, Neff found for $dfile\n";
+#	sleep (10);	
+    }
+    else {
+	print "no Nca, Nco, Neff in $dfile\n";
+    }
+    
+
+
     my $no_fca = 0;
     if ($nca_loc == 0){
 	$nca_loc = 100;
@@ -434,14 +535,41 @@ foreach my $dfile (@ARGV) {
     my $ngt_sw = 1;
     $ngt_sw = 0 unless (exists $col{"ngt"});
 
+    my $beta = 0;
+    if (exists $col{"BETA"}) {
+	$beta = 1;
+    }
+
+    my $nwarnings=0;
     while ($df->gzreadline(my $line)){
 	chomp($line);
-	my @cells = &split_line($line);
+
+
+	my @cells = @{&split_line_ref(\$line)};
+
 #	print $cells[1]."\n";
 	## read basic information
 #	if ($fc == 1) {
 	my $flip = 0;
+
+	#### debug one SNP
+#	if ($cells[$col{"SNP"}] eq "chr19_1524992_D" ){
+#	    print "yes, hit: $dfile\n";
+#	    print $cells[$col{"SNP"}];
+#	    print "\t".$cells[$col{"A1"}];
+#	    print "\t".$cells[$col{"A2"}];
+#	    print "\n";
+#	}
+
+
 	unless (exists $chr{$cells[$col{"SNP"}]}){
+
+
+#	    if ($cells[$col{"SNP"}] eq "chr19_1524992_D" ){
+#		print "not yet existing\n";
+#	    }
+
+	    
 	    $a1{$cells[$col{"SNP"}]} = $cells[$col{"A1"}];
 	    $a2{$cells[$col{"SNP"}]} = $cells[$col{"A2"}];
 	    $chr{$cells[$col{"SNP"}]} = $cells[$col{"CHR"}];
@@ -454,8 +582,40 @@ foreach my $dfile (@ARGV) {
 
 	}
 	else {
-	    unless ($cells[$col{"A1"}] eq $a1{$cells[$col{"SNP"}]}){
-		$flip = 1;
+#	    if ($cells[$col{"SNP"}] eq "chr19_1524992_D" ){
+#		print "already existing\n";
+#	    }
+
+
+
+	    
+	    if ($cells[$col{"A1"}] ne $a1{$cells[$col{"SNP"}]} || $cells[$col{"A2"}] ne $a2{$cells[$col{"SNP"}]}){
+
+		if ($cells[$col{"A1"}] eq $a2{$cells[$col{"SNP"}]} && $cells[$col{"A2"}] eq $a1{$cells[$col{"SNP"}]}) {
+		    $flip = 1;
+		}
+		else {
+
+		    
+
+#		    if ($cells[$col{"SNP"}] eq "chr19_1524992_D") {
+#			print "exclude: ".$cells[$col{"SNP"}]."\t";
+#			print $cells[$col{"A1"}]."\t";
+#			print $cells[$col{"A2"}]."\t";
+#			print $a1{$cells[$col{"SNP"}]}."\t";
+#			print $a2{$cells[$col{"SNP"}]}."\n";
+#		    }
+		    
+		    $snpex{$cells[$col{"SNP"}]} = 1;
+
+#		    $metal_script .= "ADDFILTER MARKER_ID IN (".$cells[$col{"SNP"}].")\n";
+#		    print "error: ".$cells[$col{"A1"}]."\n";
+#		    print "error: ".$cells[$col{"A2"}]."\n";
+#		    print "error: ".$a1{$cells[$col{"SNP"}]}."\n";
+		    #		    print "error: ".$a2{$cells[$col{"SNP"}]}."\n";
+		    
+#		    exit;
+		    }
 	    }
 	}
 #	}
@@ -491,11 +651,79 @@ foreach my $dfile (@ARGV) {
 #	    print "FLIP\n";
 	}
 
+
+	
+	my $neff_loc = 0;
+
+	if ($ndet_switch == 1) {
+	    $nca_loc = $cells[$col{"Nca"}];
+	    $nco_loc = $cells[$col{"Nco"}];
+	    $neff_loc = $cells[$col{"Neff"}];
+	}
+	else {
+	    if ($nca_loc + $nco_loc > 0) {
+		$neff_loc = (4*$nca_loc*$nco_loc/($nca_loc+$nco_loc))/2;
+	    }
+	}
+
+
+
+	if ($cells[$col{"P"}] == "NA"){
+		if ($nwarnings < 10) {
+		    print "Warning: invalid P, exclude this SNP from Nca, Nco, Neff: ".$cells[$col{"SNP"}]."\n";
+		}
+		if ($nwarnings == 10) {
+		    print "more than 10 warnings, not printing out more....\n";
+		}
+		$nwarnings++;
+		
+		next;
+	    }
+
+
+#	if ($cells[$col{"OR"}] eq "NA"){
+	#	if ($cells[$col{"OR"}]*1 !=  $cells[$col{"OR"}] || $cells[$col{"OR"}] <= 0){
+	if ($beta) {
+
+	    if ($cells[$col{"BETA"}] < $min_BETA || $cells[$col{"BETA"}] > $max_BETA){
+		if ($nwarnings < 10) {
+		    print "Warning: invalid BETA, exclude this SNP from Nca, Nco, Neff: ".$cells[$col{"SNP"}]."\n";
+		}
+		if ($nwarnings == 10) {
+		    print "more than 10 warnings, not printing out more....\n";
+		}
+		$nwarnings++;
+		
+		next;
+	    }
+	    
+	}
+	else {
+	    if ($cells[$col{"OR"}] < $min_OR || $cells[$col{"OR"}] > $max_OR){
+		if ($nwarnings < 10) {
+		    print "Warning: invalid OR, exclude this SNP from Nca, Nco, Neff: ".$cells[$col{"SNP"}]."\n";
+		}
+		if ($nwarnings == 10) {
+		    print "more than 10 warnings, not printing out more....\n";
+		}
+		$nwarnings++;
+		
+		next;
+	    }
+	}
+
+
+
+	if ($neff_loc > $neff_max_per_cohort) {
+	    $neff_max_per_cohort = $neff_loc;
+	}
+	
 	$nca{$cells[$col{"SNP"}]} += $nca_loc;
 	$nco{$cells[$col{"SNP"}]} += $nco_loc;
+	$neff{$cells[$col{"SNP"}]} += $neff_loc;
 	$fca{$cells[$col{"SNP"}]} += $fca_loc * $nca_loc;
 	$fco{$cells[$col{"SNP"}]} += $fco_loc * $nco_loc;
-	$info{$cells[$col{"SNP"}]} += $cells[$col{"INFO"}] * $nco_loc;
+	$info{$cells[$col{"SNP"}]} += $cells[$col{"INFO"}] * $nco_loc; ## weight by N
 	if ($ngt_sw ==1) {
 	    $ngt{$cells[$col{"SNP"}]} += $cells[$col{"ngt"}] ;
 	}
@@ -513,12 +741,128 @@ foreach my $dfile (@ARGV) {
 
     $df -> gzclose();
     $fcount++;
+    $neff_max += $neff_max_per_cohort;
 }
 
 print "$nca\n";
 print "$nco\n";
+print "$metal_script_name\n";
+
+print "neff_max: $neff_max\n";
+#sleep(3);
+
+
+
+###################
+    ## clean files
+    ####
+
+my $die = 0;
+
+foreach my $dfile (@ARGV) {
+
+
+    my $dfile_short = $dfile;
+    $dfile_short =~ s!.*/!!;
+#    print  "$dfile\n";
+#    print  "$dfile_short\n";
+#    exit;
+
+    my $df = gzopen("$dfile", "rb")  or die "Cannot open $dfile: $gzerrno\n" ;
+    my $dfo = gzopen("$workdir/$dfile_short.clean.gz", "wb")  or die "Cannot open $workdir/$dfile_short.clean.gz: $gzerrno\n" ;
+    $df->gzreadline(my $line);
+
+    my $beta = 0;
+    my @cells = @{&split_line_ref(\$line)};
+    if ($cells[8] eq "BETA"){#
+	$beta = 1;
+    }
+    
+    
+    $dfo->gzwrite($line);
+    
+    
+    while ($df->gzreadline(my $line)){
+	chomp($line);
+	my @cells = @{&split_line_ref(\$line)};
+
+
+	if (@cells < 11) {	
+	    print "Error: ".$cells[$col{"SNP"}]." does not have enough cells in $dfile\n" ;
+	    $die = 1;
+	}
+
+	## remove OR lower than 1.0e-04 or bigger than 1.0e04)
+	if ($beta){
+	    if ($cells[8] < $min_BETA || $cells[8] > $max_BETA) {
+		next;
+	    }
+	}
+	else {
+	    if ($cells[8] < $min_OR || $cells[8] > $max_OR) {
+		next;
+	    }
+	}
+	
+	if (exists $snpex{$cells[$col{"SNP"}]}) {
+	    next;
+	}
+	$dfo->gzwrite($line."\n");
+	
+    }
+    
+    $df -> gzclose();
+    $dfo -> gzclose();
+    
+    print "$dfile cleaned\n";
+#    print "$dfile.clean.gz\n";
+#    exit;
+}
+
+
+if ($die == 1){
+    die "column count problem\n" ;
+}
+
+
+
+### do the meta analysis.
+
+
+$metal_script .= "OUTFILE $out_name.meta .tbl\n";
+$metal_script .= "ANALYZE HETEROGENEITY";
+&a2file ($metal_script_name,$metal_script);
+&mysystem ("$meloc/metal < $metal_script_name > $out_name.log");
+
+
+
 #print "debug\n";
-#sleep(10);
+#print "debug\n";
+#exit;
+
+    ###################
+    ## remove cleaned file
+    ####
+
+#foreach my $dfile (@ARGV) {
+    
+#    print "remove $dfile.clean.gz\n" ;
+#    &mysystem ("rm $dfile.clean.gz") ;
+    
+#}
+
+
+## print out SNPex list
+
+die $! unless open FILE1, "> $out_name.meta.snpex";
+foreach (keys %snpex) {
+    print FILE1 "$_\t";
+    print FILE1 $a1{$_}."\t";
+    print FILE1 $a2{$_}."\n";
+
+}
+close FILE1;
+
 
 
 ################################################
@@ -640,7 +984,8 @@ write.table(xdf_result,"OUTNAME",col.names=F,row.names=F)
 die "$out_name.meta: $!" unless open META, "< $out_name.meta1.tbl"; 
 die "$out_name.metadaner.tmp: $!" unless open DANER, "> $out_name.metadaner.tmp"; 
 my $header = <META>;
-print DANER "CHR\tSNP\tBP\tA1\tA2\tFRQ_A_$nca\tFRQ_U_$nco\tINFO\tOR\tSE\tP\tngt\tDirection\tHetISqt\tHetChiSq\tHetDf\tHetPVa";
+#print DANER "CHR\tSNP\tBP\tA1\tA2\tFRQ_A_$nca\tFRQ_U_$nco\tINFO\tOR\tSE\tP\tngt\tDirection\tHetISqt\tHetChiSq\tHetDf\tHetPVa";
+print DANER "CHR\tSNP\tBP\tA1\tA2\tFRQ_A_$nca\tFRQ_U_$nco\tINFO\tOR\tSE\tP\tngt\tDirection\tHetISqt\tHetDf\tHetPVa\tNca\tNco\tNeff_half";
 
 if ($detout) {
     foreach my $dfile (@ARGV) {
@@ -651,9 +996,23 @@ print DANER "\n";
 
 #print DANER "CHR\tSNP\tBP\tA1\tA2\tFRQ_A_$nca\tFRQ_U_$nco\tINFO\tOR\tSE\tP\tngt\tDirection\tHetISqt\tHetChiSq\tHetDf\tHetPVa\txdfPVa\n";
 
+
+
+my $neff_max_half = $neff_max/2;
+#if ($nca>0 || $nco > 0){
+#    $neff_max_half = (4*$nca*$nco/($nca+$nco))/4;;
+#}
+print "neff_max_half: $neff_max_half\n";
+#sleep(3);
+
+
+my $neff_ex_n =0;
+
 while (<META>){
     chomp;
-    my @cells = &split_line($_);
+    my @cells = @{&split_line_ref(\$_)};
+
+
 #    my $snp_name = $cells[2];
     my $snp_name = $cells[0];
     my $a1_name = $cells[1];
@@ -744,9 +1103,35 @@ while (<META>){
     else {
 	$out_row .= "\t-";
     }
-    for my $i (6..10) {
-	$out_row .= "\t".$cells[$i];
+
+    $out_row .= "\t".$cells[6];
+    $out_row .= "\t".$cells[7];
+#    $out_row .= "\t".$cells[8];
+    $out_row .= "\t".$cells[9];
+    $out_row .= "\t".$cells[10];
+    $out_row .= "\t".$nca{$snp_name};
+    $out_row .= "\t".$nco{$snp_name};
+    my $neff_str = sprintf "%.2f", $neff{$snp_name};
+    $out_row .= "\t".$neff_str;
+
+    my $neff_ex = 0;
+    unless ($nofilter) {
+	if ($neff_str < $neff_max_half) {
+	    if ($neff_ex_n < 10){
+		print "Warning: exclude $snp_name because of low Neff";
+		print "\t$neff_str\n";
+#		sleep (3);
+	    }
+	    if ($neff_ex_n == 10){
+		print "more exclusions not printing\n";
+	    }	
+	    $neff_ex = 1;
+	    $neff_ex_n++;
+	}
     }
+#    for my $i (6..10) {
+#	$out_row .= "\t".$cells[$i];
+#    }
 #    $out_row .= sprintf  "\t%.3g",$pxdf{$snp_name};
 #    $out_row .= "\t".$nmet{$snp_name};
 
@@ -755,7 +1140,9 @@ while (<META>){
 	$out_row .= "\t".$det_str{$snp_name};
     }
     $out_row .= "\n";
-    print DANER "$out_row";
+    unless ($neff_ex) {
+	print DANER "$out_row";
+    }
 
 
 }
@@ -763,4 +1150,8 @@ close META;
 close DANER;
 &mysystem ("gzip -f $out_name.metadaner.tmp");
 &mysystem ("mv $out_name.metadaner.tmp.gz $out_name.metadaner.gz");
+&mysystem ("rm $out_name.meta1.tbl");
+
+print "cleaning up\n";
+&mysystem ("rm -rf $workdir");
 

@@ -1,0 +1,425 @@
+#!/usr/bin/env perl
+use strict;
+
+my $version = "1.3.0";
+my $progname = $0;
+$progname =~ s!^.*/!!;
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
+use lib $ENV{rp_perlpackages};
+use Compress::Zlib ;
+#use Time;
+
+
+#############################
+# read config file
+#############################
+
+my $t0 = time;
+
+my $legend_sw = 0;
+my $legend_file = "";
+
+###############################################
+
+
+#my $buff = 1000;
+
+##### help message
+my $usage = "
+Usage : $progname --vcf FILE --legend FILE
+
+version: $version
+
+  --vcf STRING     coming out of minimac3
+  --legend STRING  legend file for SNP names, if not present, then VCF content is used
+
+  --chr INT           chromosome
+  --help              print this message and exit
+
+  --refstart INT       Mb of start
+  --refend INT         Mb of end
+
+  --gp4                genotype probability in forth place (instead of 3rd), HRC format
+                         also changes the behavior about filerenaminng 
+                          (doesnot need dose.vcf.gz and introduces .out.)
+
+#  --buff INT           buffer, default  ## minimac takes the buffer out anyway
+
+  --keepvcf            keep the vcf version of minimac output
+
+  --outname            use different outname (especially for deployed imputations
+
+ created by Stephan Ripke 2017 at MGH, Boston, MA
+ in the frame of the PGC
+
+";
+
+
+use Getopt::Long;
+GetOptions( 
+
+    "help"=> \my $help,
+    "keepvcf"=> \my $keepvcf,
+    "vcf=s"=> \my $vcf_file,
+    "legend=s"=> \$legend_file,
+    "refstart=s"=> \my $refstart,
+    "refend=s"=> \my $refend,
+    "chr=s"=> \my $chr,
+    "gp4"=> \my $gp4,
+    "outname=s"=> \my $outname,
+    #    "buff=i"=> \ $buff,
+    
+    );
+
+die ($usage) if $help;
+die ("no_vcf, please consult --help\n") unless $vcf_file;
+die ("no_refstat, please consult --help\n") unless $refstart;
+die ("no_refend, please consult --help\n") unless $refend;
+die ("no_chr, please consult --help\n") unless $chr;
+#die ($usage) unless $legend_file;
+#die ($usage) unless $refstart;
+#die ($usage) unless $refend;
+#die ($usage) unless $chr;
+
+
+if ($legend_file ne "") {
+    $legend_sw = 1;
+}
+
+
+##########################################
+# subroutine to split a plink-output-line with references
+##########################################
+
+sub split_line_ref {
+    my ($line)=${$_[0]};
+    chomp($line);
+    $line =~ s/^[\s]+//g;
+    my @cols=  split /\s+/, $line;
+    \@cols;
+}
+
+
+##########################################
+# subroutine to split a plink-output-line with references, only tabs
+##########################################
+
+sub split_line_ref_tab {
+    my ($line)=${$_[0]};
+    chomp($line);
+    $line =~ s/^[\s]+//g;
+    my @cols=  split /\t/, $line;
+    \@cols;
+}
+
+
+###################################################
+###  system call with test if successfull
+###################################################
+
+my @cmd_collect;
+
+sub mysystem(){
+    my ($systemstr)="@_";
+    system($systemstr);
+    my $status = ($? >> 8);
+    die "$systemstr\n->system call failed: $status" if ($status != 0);
+    push @cmd_collect, $systemstr;
+
+}
+
+###################################################
+###  print time sinc beginning
+###################################################
+
+
+
+sub mytime(){
+    my $secs = time-$t0;
+    my $mins = $secs/60;
+    my $hours = $secs/3600;
+    print $secs." seconds gone since start of the script\n";
+#    print $mins." minutes gone since start of the script\n";
+#    print $hours." hours gone since start of the script\n";
+    
+}
+
+
+
+
+#print $t."\n";
+#exit;
+
+############################################
+######### BEGIN
+########################################
+
+my $start_loc = $refstart * 1.0e06 ; #- $buff * 1.0e03;
+my $end_loc =  $refend * 1.0e06 ; #+ $buff * 1.0e-03;
+
+
+my $outvcf = $vcf_file;
+my $outdos = $vcf_file;
+
+$outvcf =~ s/.dose.vcf.gz$/.vcf.gz/;
+$outdos =~ s/.dose.vcf.gz$/.GP.gz/;
+
+if ($gp4) {
+    $outvcf =~ s/.vcf.gz$/.out.vcf.gz/;
+    $outdos =~ s/.vcf.gz$/.out.GP.gz/;
+}
+
+if ($outname) {
+    $outvcf = "$outname.imp.vcf.gz"; ## only used if keepvcf is on 
+    $outdos = "$outname.imp.GP.gz"; 
+}
+
+my $outmap = $outdos.".map";
+my $outfam = $outdos.".fam";
+
+if ($vcf_file eq $outdos || $vcf_file eq $outvcf ) {
+    print "Error: inputfile equals outputfile\n";
+    print "vcf_file: $vcf_file\n";
+    print "outdos: $outdos\n";
+    print "outvcf: $outvcf\n";
+    
+    exit;
+}
+
+
+&mytime();
+
+####################################################
+## read legend file
+##############################################
+
+
+
+my %snp;
+
+if ($legend_sw == 1) {
+    print "reading into hash file: $legend_file\n";
+
+    my $igz = gzopen("$legend_file", "rb")  or die "Cannot open file $legend_file: $gzerrno\n" ;
+
+    while ($igz->gzreadline(my $line)){
+	chomp($line);
+	my @cells = @{&split_line_ref(\$line)};
+	if ($cells[1] >= $start_loc && $cells[1] < $end_loc){
+
+	    my $key = $cells[1];
+	    $key .= " ".$cells[2];
+	    $key .= " ".$cells[3];
+	    
+	    $snp{$key} = $cells[0];
+
+	}
+
+    }
+
+    $igz->gzclose();
+}
+
+&mytime();
+
+
+####################################################
+## translate vcf file
+##############################################
+
+my $igz = gzopen("$vcf_file", "rb")  or die "Cannot open file $vcf_file: $gzerrno\n" ;
+my $ovgz = gzopen("$outvcf", "wb")  or die "Cannot open file $outvcf: $gzerrno\n" ;
+my $odgz = gzopen("$outdos", "wb")  or die "Cannot open file $outdos: $gzerrno\n" ;
+
+
+## read out the prefix
+die $!."$outmap" unless open MAP, "> $outmap";
+
+
+
+print "translating $vcf_file into $outvcf and $outdos\n";
+
+my $nwarnings=0;
+while ($igz->gzreadline(my $line)){
+    chomp($line);
+    my @cells = @{&split_line_ref_tab(\$line)};
+    
+    
+
+	
+    if ($keepvcf) {	
+	my $outv_str = $cells[0];
+	foreach my $cc (1..$#cells) {
+	    $outv_str .= "\t".$cells[$cc];
+	}
+	$ovgz->gzwrite("$outv_str\n");
+    }
+
+
+    unless ($cells[0] =~ /^#/) {
+
+	my $skip = 0;
+	if (0){
+	    ### apply INFO 0.1 and AC==0 filter
+
+	    if ($gp4) {
+		my $info_cell = $cells[7];
+		my @icells = split ";",$info_cell;
+		#	    print "meta:$info_cell\n";#
+		#	    sleep(3);
+		foreach my $icell (@icells) {
+		    my @icells_eq = split "=",$icell;
+		    if ($icells_eq[0] eq "INFO"){
+			#		    print "INFO of $cells[2] is $icells_eq[1]\n";
+			#		    sleep(3);
+			if ($icells_eq[1]<0.1){
+			    $skip = 1;
+			}
+		    }
+		    if ($icells_eq[0] eq "AC"){
+			if ($icells_eq[1] == 0){
+			    $skip = 1;
+			}
+		    }		
+		}
+	    }
+	}
+	
+	## position is important when translating back from outsourced VCFs
+	if ($cells[1] < $start_loc || $cells[1] >= $end_loc){
+	    $skip = 1;
+	}
+
+	if ($skip == 1){
+	    next;
+	}
+	
+	### test legend file and translate by key
+	if ($legend_sw == 1) {
+
+	    my $key = $cells[1];
+	    $key .= " ".$cells[3];
+	    $key .= " ".$cells[4];
+	    
+	    if (exists $snp{$key}) {
+		$cells[2]= $snp{$key};
+		#		delete $snp{$key};
+	    }
+	    else {
+		if ($nwarnings<10) {
+		    print "Warning: <$key> not found in $legend_file\n";
+		    $nwarnings++;
+		}
+		$cells[2] = "$chr:$cells[1]"."_$cells[3]"."_$cells[4]"."_noref";
+#		exit; 17:781_A_T
+	    }
+	}
+	
+	
+	my $outd_str = "---";
+	$outd_str .= " ".$cells[2];
+	$outd_str .= " ".$cells[1];
+	$outd_str .= " ".$cells[3];
+	$outd_str .= " ".$cells[4];
+
+	
+	foreach my $cc (9..$#cells) {
+	    my @gcells = split ":",$cells[$cc];
+	    my $gp;
+	    if ($gp4) {
+		$gp = $gcells[3];
+	    }
+	    else {
+		$gp = $gcells[2];
+	    }
+#	    my ($gt,$ds,$gp) = split ":",$cells[$cc];
+	    my ($gp1,$gp2,$gp3) = split ",",$gp;
+
+	    if ($gp3 eq "") {
+		$gp3=$gp2;
+		$gp2="0";
+	    }	 
+#	    print "gp1: $gp1\n";
+#	    print "gp2: $gp2\n";
+#	    print "gp3: $gp3\n";
+#	    exit;
+
+	    $outd_str .= " ".$gp1;
+	    $outd_str .= " ".$gp2;
+	    $outd_str .= " ".$gp3;
+	    
+	}
+	$odgz->gzwrite("$outd_str\n");
+
+
+	## print out map file
+	my $outm_str = "$chr";
+	$outm_str .= " ".$cells[2];
+	$outm_str .= " 0";
+	$outm_str .= " ".$cells[1];
+	
+	print MAP "$outm_str\n";
+
+
+    }
+    elsif ($cells[0] =~ /^#CHROM/) {
+
+	die $!."$outfam" unless open FAM, "> $outfam";
+	foreach my $cc (9..$#cells) {
+	    print FAM "$cells[$cc]\n";
+	}
+	close FAM;
+	
+    }
+
+    
+}
+
+$igz->gzclose();
+$ovgz->gzclose();
+$odgz->gzclose();
+close MAP;
+
+
+&mytime();
+
+
+
+if (0) {
+    if (keys %snp > 0) {
+	my $kcc = keys %snp;
+	print "Error: there are $kcc snpnames left\n";
+	my $ccn = 0;
+	foreach my $key (%snp) {
+	    print "$key -> $snp{$key}\n";
+	    $ccn++;
+	    last if ($ccn == 10);
+	}
+    }
+}
+
+
+
+
+
+
+
+
+&mysystem ("touch $outdos.fini");
+
+unless ($keepvcf) {
+    &mysystem ("rm $outvcf");
+}
+
+#&mysystem ("rm $vcf_file");
+
+    
+print "done\n";

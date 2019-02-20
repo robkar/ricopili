@@ -1,0 +1,87 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+
+my $version = "1.0.0";
+my $progname = $0;
+$progname =~ s!^.*/!!;
+
+
+
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+
+
+
+
+my $bcloc = &trans("bcloc");
+my $bcrloc = &trans("bcrloc");
+
+
+
+
+$bcloc =~ s/###/ /g;
+
+
+
+my $vcffile = "";
+my $outprefix = "prepvcf_out";
+my $mac_th = 4;
+
+use Getopt::Long;
+GetOptions( 
+    "help"=> \my $help,
+
+    "vcf=s"=> \$vcffile,
+    "out=s"=> \$outprefix,
+    "mac_th=i"=> \$mac_th,
+    );
+
+
+if ($help || $vcffile eq ""){
+    print "usage: $progname
+
+version: $version
+
+      options:
+
+        --help              this help-text
+        --vcf STRING        name of vcf file
+        --out STRING        prefix, haps.gz, legend.gz will be appended
+
+
+
+ converts cvf into hp/lagend format for impute2
+
+ created by Stephan Ripke 2016 at MGH, Boston, MA
+ in the frame of the PGC
+\n";
+    exit 2;
+}
+
+
+
+
+my $sys = "$bcloc"."bcftools convert --vcf-ids -h  $outprefix $vcffile";
+print "$sys\n";
+#exit;
+
+my $sc =system ($sys);
+
+if ($sc != 0){
+    print "Error systemcode: $sc\n";
+    exit;
+}
+
+$sc =system ("touch $outprefix.fini");
+
+
+

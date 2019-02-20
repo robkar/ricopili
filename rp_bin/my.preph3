@@ -1,0 +1,469 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+use Compress::Zlib ;
+
+
+#############################
+# read config file
+#############################
+
+my $shloc = &trans("shloc");
+my $sh3loc = &trans("sh3loc");
+my $p2loc = &trans("p2loc");
+my $ealoc = "";
+
+my $buffer = 1000;
+
+
+###########################################
+##### help message
+my $usage = "
+Usage : my.preph --out BFILE --in BFILE --fam FAMFILE --gema GEMAFILE --multi INT
+
+ --out STRING      name of out-bfile
+ --in STRING       name of in-bfile (will create haps and legend)
+ --gema STRING     gema-file
+ --fam STRING      separate famfile with short ID names
+ --multi INT       multithreading
+ --chrX            for X chromosome
+ --spliha INT      for splitter
+ --eagle           use eagle instead of shapeit
+ --shapeit3        use shapeit3 (in combination with impute4)
+ --eaglvcf         use eagle with VCF output (suitable for Minimac3)
+ --noref           do not use reference when using eaglevcf (saving important SNPs)
+
+ --ref STRING      path to the reference vcf.gz file (required for --eagle_vcf; otherwise not used)
+ --nospli          do not perform second task (splitting into smaller chunks)
+
+ --refind          identifier for extracting chr_start_end (in Mb)
+ --empty STRING    name of empty-file
+ --buffer INT      buffer around refind, default $buffer
+ --mendel          clean for mendel errors
+ --sfile STRING    file containing SNPs to exptract
+ --chr23male       some special options for phasing and postimputation
+
+
+
+";
+
+my $outname = "";
+my $inname = "";
+my $gemafile = "";
+my $famfile = "";
+my $multi = 0;
+my $spliha = 0;
+my $emptyname = "";
+my $sfile = "";
+my $refind = "";
+
+use Getopt::Long;
+GetOptions( 
+
+    "out=s"=> \ $outname,
+    "in=s"=> \ $inname,
+    "gema=s"=> \ $gemafile,
+    "fam=s"=> \ $famfile,
+    "multi=i"=> \ $multi,
+    "spliha=i"=> \ $spliha,
+    "chrX"=> \my $chrx,
+    "eagle"=> \my $eagle_sw,
+    "eaglvcf"=> \my $eagle_vcf,
+    "shapeit3"=> \my $shapeit3,
+    "ref:s"=>\my $ref,
+    "nospli"=> \my $nospli,
+    "sfile=s"=> \ $sfile,
+    "refind=s"=> \ $refind,
+    "buffer=i"=> \ $buffer,
+    "mendel"=> \my $mendel_sw,
+    "noref"=> \my $noref,
+    "empty=s"=> \ $emptyname,
+    "chr23male"=> \my $chr23male,
+
+    
+    );
+
+if ($outname eq "" || $inname eq ""  || $emptyname eq "" || $gemafile eq "" || !($eagle_sw || $eagle_vcf) && ($famfile eq "" || $spliha == 0)){
+    print "Error_1: $usage\n";
+    die;
+}
+
+if ($sfile eq "" && $refind eq ""){
+    print "Error_2: $usage\n";
+    die;
+}
+
+if ($eagle_sw or $eagle_vcf) {
+    $ealoc = &trans("ealoc");
+}
+
+unless (-e "$inname.bim") {
+    print "error: no $inname.bim\n";
+    exit;
+}
+
+
+#my $shapeit_bin = "shapeit.v2.r644.linux.x86_64";
+my $shapeit_bin = "shapeit.v2.r837.linux.x86_64";
+my $shapeit3_bin = "shapeit3.r884.1";
+#my $eagle_bin = "eagle_v2.2a";
+my $eagle_bin = "eagle";
+
+
+
+my $mendel_clean = "";
+if ($mendel_sw) {
+    $mendel_clean = "--set-me-missing --me 1 1";
+}
+
+
+
+my $xtxt = "";
+if ($chrx) {
+    $xtxt = "--chrX";
+}
+
+my $multi_txt = "";
+if ($multi > 1 ) {
+    $multi_txt = "--thread $multi";
+    if ($eagle_sw || $eagle_vcf) {
+	$multi_txt = "--numThreads=$multi";
+    }
+}
+
+
+##########################################
+# subroutine to split a plink-output-line with references
+##########################################
+
+sub split_line_ref {
+    my ($line)=${$_[0]};
+    chomp($line);
+    $line =~ s/^[\s]+//g;
+    my @cols=  split /\s+/, $line;
+    \@cols;
+}
+
+
+
+
+
+if (-e "$outname.fini") {
+    system ("rm $outname.fini");
+}
+
+
+
+
+
+######################
+# extract chunk
+##############################
+
+
+
+
+my $sys = "";
+my $sc = 0;
+my $chrx_sw = 0;
+
+if ($refind) {
+    my @tcells = split /_/, $refind;
+
+    my $chromosome = $tcells[0];
+    if ($chromosome eq "chrX") {
+	$chrx_sw = 1 ;
+	$noref = 1;
+	print "on chrX I do not do it with reference files\n";
+    }
+    my $kb_start = ($tcells[1])*1000 - $buffer;
+    my $kb_end = ($tcells[2])*1000 + $buffer;
+    
+    my $chrind = $tcells[0];
+    $chrind =~ s/chr//;    
+
+    $sys = "$p2loc/plink --memory 2000 --bfile $inname --out $outname --make-bed --chr $chrind --from-kb $kb_start --to-kb $kb_end $mendel_clean";
+    $sc = system ($sys);
+
+    
+#    if ($chromosome eq "chrX") {
+#	die $!."($outname.bim)" unless open FILE, "< $outname.bim";
+#	die $!."($outname.bim.X)" unless open OF, "> $outname.bim.X";
+#	while (my $line = <FILE>){
+#	    my @cells = @{&split_line_ref(\$line)};
+#	    $cells[0] = "X";
+#	    print OF join ("\t",@cells)."\n";
+#	}
+#	close FILE;
+#	close OF;
+#	system ("mv $outname.bim.X $outname.bim");
+ #   }
+
+
+
+    
+}
+else {
+    $sys = "$p2loc/plink --memory 2000 --bfile $inname --out $outname --make-bed --extract $sfile $mendel_clean";
+    $sc = system ($sys);
+}
+
+
+if ($sc != 0 ) {
+    print "Error with running plink: $sys\n";
+#    exit;
+}
+
+
+#    print "debug\n";
+#    exit;
+
+
+my $last_line = `tail -n 3 $outname.log`;
+
+my $empty = 0;
+if ($last_line =~ /Error: No variants remaining after --extract/){
+    $empty = 1;
+}
+
+if ($last_line =~ /Error: All variants excluded./){
+    $empty = 1;
+}
+
+if (-e "$outname.bim") {
+    my $bimcount = `wc -l $outname.bim`;
+    my @bc = split /\s+/, $bimcount;
+    if ($bc[0] < 5){
+	$empty = 1;
+	print "excluding chunk with less than 5 genotyped SNPs in it\n";
+    }
+
+}
+
+
+
+if ($empty == 1) {
+    system ("touch $emptyname");
+    system ("touch $outname.fini");
+    print "empty dataset detected\n";
+    exit;
+}
+
+
+
+print "chunk successfully extracted\n";
+
+
+
+system ("touch $outname.multi.$multi");
+
+
+#print "debug\n";
+#exit;
+
+######################
+# BEGIN
+##############################
+
+die $!."$outname.phase.cmd" unless open BC, "> $outname.phase.cmd";
+
+
+my $sys_loc = "$shloc/$shapeit_bin --seed 123454 $xtxt --input-bed $outname.bed $outname.bim $famfile --output-max $outname.haps $outname.sample --output-log $outname.shape.log --input-map $gemafile $multi_txt > /dev/null";
+#my $sys_loc = "$shloc/$shapeit_bin --seed 123454 $xtxt --input-bed $inname.bed $inname.bim $famfile --output-max $outname.haps $outname.sample --output-log $outname.shape.log --input-map $gemafile $multi_txt > /dev/null";
+
+if ($eagle_sw or $eagle_vcf) {
+    $gemafile =~ s/.txt$/.chr.txt/;
+}
+if ($eagle_sw) {
+    print "---------------------------------------------------------------------\n";
+    print "Warning: eagle is not working with idnum famfile, possible dangerous\n";
+    print "---------------------------------------------------------------------\n";
+    sleep (3);
+    $sys_loc = "$ealoc/$eagle_bin --maxMissingPerIndiv=1.0 --maxMissingPerSnp=1.0  --bfile=$outname --geneticMapFile=$gemafile --outPrefix=$outname $multi_txt > $outname.log 2> $outname.loge";
+}
+
+
+if ($shapeit3) {
+    $sys_loc = "$sh3loc/$shapeit3_bin  --input-bed $outname.bed $outname.bim $famfile --input-map $gemafile --output-max $outname $multi_txt > $outname.log 2> $outname.loge";
+    
+}
+
+
+
+if ($eagle_vcf) {
+    # Convert plink bfile to a vcf file, then run Eagle to obtain a phased vcf file.
+    # The resulting phased vcf can then be used with Minimac3.
+    
+
+    my $opt_txt = "--vcf $outname.unphased0.vcf.gz";
+    unless ($noref) {
+	unless ($ref) {
+	    die "$0: Please specify the reference file (e.g. --ref=my/ref.vcf.gz)\n";
+	}
+	$opt_txt = "--vcfRef $ref --vcfTarget $outname.unphased0.vcf.gz  --allowRefAltSwap";
+    }
+    
+
+    
+    # NOTE: the temporary name is 'unphased0' because Eagle itself writes a file
+    # out.unphased.vcf.gz
+    my $sys_loc_plink = "$p2loc/plink --memory 2000 --bed $outname.bed --bim $outname.bim --fam $famfile --recode vcf-iid bgz --out $outname.unphased0";
+    print BC "$sys_loc_plink\n";
+    print "starting: $sys_loc_plink\n";
+    $sc += system ($sys_loc_plink) ;
+
+    
+    my $tabix = trans("tabixloc") . "/tabix";    
+    my $sys_loc_tabix = "$tabix -f $outname.unphased0.vcf.gz";
+    print BC "$sys_loc_tabix\n";
+    print "starting: $sys_loc_tabix\n";
+    $sc += system ($sys_loc_tabix) ;
+
+
+    if ($chrx_sw == 1) {
+	print "on chrX I use a differenct genetic map file\n";
+	$gemafile .= ".23";
+    }
+
+
+    unless ($chr23male) {
+	my $sys_loc_eagle = "$ealoc/$eagle_bin $opt_txt --geneticMapFile=$gemafile --outPrefix=$outname $multi_txt > $outname.eag.log 2> $outname.eag.loge";
+	print BC "$sys_loc_eagle\n";
+	print "starting: $sys_loc_eagle\n";
+	$sc += system ($sys_loc_eagle) ;
+    }
+
+    
+    if ($chrx_sw == 1) {
+	unless  ($chr23male) {
+	    $sc += system ("mv $outname.vcf.gz $outname.vcf.23.gz") ;
+	}
+	else {
+	    $sc += system ("mv $outname.unphased0.vcf.gz $outname.vcf.23.gz") ;
+	}
+	my $igz = gzopen("$outname.vcf.23.gz", "rb")  or die "Cannot open file $outname.vcf.23.gz: $gzerrno\n" ;
+	my $ogz = gzopen("$outname.vcf.gz", "wb")  or die "Cannot open file $outname.vcf.gz: $gzerrno\n" ;
+
+	while ($igz->gzreadline(my $line)){
+	    chomp($line);
+	    my @cells = @{&split_line_ref(\$line)};
+	    if ($cells[0] eq "23") {
+		$cells[0] = "X";
+		$ogz->gzwrite(join("\t",@cells)."\n");
+	    }
+	    else {
+		$ogz->gzwrite("$line\n");
+	    }
+
+	}
+	$igz->gzclose();
+	$ogz->gzclose();
+	$sc += system ("rm $outname.vcf.23.gz") ;
+    }
+    
+#    $sys_loc = qq{
+#      { $p2loc/plink --memory 2000 --bed $outname.bed --bim $outname.bim --fam $famfile --recode vcf-iid bgz --out "$outname.unphased0" &&
+#        $tabix -f "$outname.unphased0.vcf.gz" &&
+#        $ealoc/$eagle_bin $opt_txt --geneticMapFile=$gemafile --outPrefix=$outname $multi_txt 
+#      } > $outname.log 2> $outname.loge
+#    };
+    
+    #}
+    #    else {
+    #	my $sys_loc = "$ealoc/$eagle_bin $ref_txt --bed $outname.bed --bim $outname.bim --fam $famfile --geneticMapFile=$gemafile --outPrefix=$outname $multi_txt";
+    #   }
+
+
+
+}
+else {
+    print "$sys_loc\n";
+    $sc = system ($sys_loc) ;
+}
+
+
+
+
+
+
+close BC;
+### right now I don't check why it fails
+if (0) {
+    if ($sc != 0) {
+	print "something went seriously wrong\n";
+	my $sys_loc = "$p2loc/plink --memory 2000  --bfile $inname --out $inname.miss --missing";
+	$sc = system ($sys_loc) ;
+
+
+	die $!."($inname.miss.imiss)" unless open FILE, "< $inname.miss.imiss";
+	my $line = <FILE>;
+	while (my $line = <FILE>){
+	    my @cells = @{&split_line_ref(\$line)};
+	    if ($cells[5] > .8) {
+		print "-------------------------------------------------------------\n";
+		print "Error: found ID with high missing rate (th = 0.8): $cells[5] @cells\n";
+		system ("touch $outname.first.error");
+	    }
+	}
+	close FILE;
+
+
+	exit;
+    }
+}
+
+
+if ($sc == 0 ) {
+
+
+
+    unless ($nospli or $eagle_vcf) {
+	if ($eagle_sw) {
+	    $sys_loc = "gunzip -c $outname.haps.gz > $outname.haps";
+	    $sc = system ($sys_loc) ;
+	}
+	system ("touch $outname.first.fini");
+	my $sys_loc2 = "splithap_1 --nhaps $spliha $outname.haps";
+	
+	
+	
+	die $!."$outname.split.cmd" unless open BC, "> $outname.split.cmd";
+	print BC "$sys_loc2\n";
+	close BC;
+    
+
+    
+	print "$sys_loc2\n";
+	#    exit;
+	my $sc2 = system ($sys_loc2);
+	if ($sc2 == 0 ) { 
+	    system ("touch $outname.fini");
+	}
+    }
+    else {
+	system ("touch $outname.fini");
+	system ("rm $outname.bed");
+	system ("rm $outname.bim");
+	system ("rm $outname.fam");
+	
+    }
+    
+}
+else {
+    print "job finished with error\n";
+}
+
+
+
+
+
+

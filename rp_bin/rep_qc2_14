@@ -1,5 +1,13 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
+
+#############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
 
 my $version = "8.0.0";
 my $progname = $0;
@@ -44,7 +52,21 @@ my $progname = $0;
 $progname =~ s!^.*/!!;
 my $command_line = "$progname @ARGV";
 
-my $past_file = $ENV{HOME}."/repqc2_info";
+
+
+
+#############################
+# read config file
+#############################
+
+#my $p1loc = &trans("ploc");
+my $ploc = &trans("p2loc");
+my $rloc = &trans("rloc");
+my $qloc = &trans("queue");
+my $loloc = &trans("loloc");
+
+
+my $past_file = "$loloc/repqc2_info";
 my $pwd_loc = $ENV{PWD};
 
 die $! unless open FILE, ">> $past_file";
@@ -53,41 +75,17 @@ close FILE;
 
 
 
-#############################
-# read config file
-#############################
+my $r_sys = "$rloc";
+$r_sys =~ s/_SPACE_/ /g;
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
-
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
+system("$r_sys RHOME");
+my $status = ($? >> 8);
+if ($status != 0) {
+    print "I could not start R, maybe you are using an old ricopili configuration?\ne.g. rloc does not need a path but a full starting command.\n";
+    exit;
 }
 
-#my $p1loc = &trans("ploc");
-my $ploc = &trans("p2loc");
-my $rloc = &trans("rloc");
-my $qloc = &trans("queue");
 
-
-my $r_sys = "$rloc/R";
-if ($rloc eq "broadinstitute") {
-    $r_sys = "source /broad/software/scripts/useuse; use R-2.14; R";
-}
-if ($qloc eq "msub") {
-    $r_sys = "module load R; R";
-}
 
 
 
@@ -99,6 +97,8 @@ my $maf_th=0.00; # per SNP
 my $midi_th=0.02; # per SNP
 
 my $pre_geno=0.05; # per SNP
+
+
 
 my $mend_th=4; # per SNP
 my $imend_th=10000; # per ID
@@ -112,6 +112,7 @@ my $me_th2=0.1;
 my $withpna=0;
 my $sexcheck_min = 10;
 
+my $qcc=1; # QC cycle
 
 #############################################################################
 
@@ -177,7 +178,7 @@ options:
 
 
 
- reports on the QC2 - Step for GWAS - Data, while using plink, R, latex
+ reports on the QC - Step for GWAS - Data, while using plink, R, latex
  created by Stephan Ripke 2008 at MGH, Boston, MA
  in the frame of the PGC
  since vs. 3.0.0 it is a perl-script
@@ -260,8 +261,10 @@ GetOptions(
     "lmend=i"=> \$mend_th,  # mendel per SNP threshhold
     "Fhet_th=f"=> \$Fhet_th,  # Fhet threshold
     "pre_geno=f"=> \$pre_geno,  # pre_geno threshold
+
     "withpna=i"=> \$withpna, # mono threshold
 
+    "qcc=i"=> \$qcc,  # qc-cycle
 
     "minsize=i"=> \$minsize,  # minsize for lambda in lahunt
     "faf=f"=> \$faf_th,  # FAF per SNP threshhold
@@ -425,9 +428,9 @@ my $progress_log="log-file.txt";
 
 
 my $outprefix="$prefix";
-$outprefix="$outprefix"."-qc";
+$outprefix="$outprefix"."-qc".$qcc;
 
-my $reportprefix="$prefix.qc";
+my $reportprefix="$prefix.qc".$qcc;
 #my $reportprefix="report_qc2_$prefix";
 my $proprefix="prop_$prefix";
 my $mendiprefix="mendi_$prefix";  # mendi-error-check
@@ -831,7 +834,7 @@ sub a2file {
     close FILE;
 }
 
-print  "Progress of the QC2-Report of $prefix\n";
+print  "Progress of the QC-Report of $prefix\n";
 
 
 ##############################################
@@ -926,8 +929,9 @@ if ($calc){
 	&mysystem ("$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt --missing --freq");  
 
 
-	&asso2tdt_frq("$nofiprefix.tmp") if ($tdt == 1);
+
 	unless ($noassoc) {
+	    &asso2tdt_frq("$nofiprefix.tmp") if ($tdt == 1);        # jigold -- moved this line into noassoc block in case case-only trio study 10/1/15
 	    &mysystem ("mv $nofiprefix.tmp.assoc $nofiprefix.assoc");
 	}
 
@@ -2332,7 +2336,7 @@ my %aff_off;
 
 
 
-## crete QC2 set
+## crete QC set
 if ($calc) {
     unless (-e "$pofiprefix.fam") {
 
@@ -2352,7 +2356,14 @@ if ($calc) {
 #$fifiprefix.snpex.nassoc.detex.txt    exclude for NA in assoc
 
 	if ($tdt) {
-	    &mysystem ("cat $fifiprefix.snpex.hwe.con.detex.txt $fifiprefix.snpex.hwe.cas.detex.txt $fifiprefix.snpex.temiss.detex.txt $fifiprefix.snpex.frq.detex.txt $fifiprefix.snpex.lmendel.detex.txt $fifiprefix.snpex.nassoc.detex.txt > $fifiprefix.snpex.detex.txt.comb  ");
+
+	    unless ($noassoc) { # jigold add for scenario with trio data with only cases 10/1/15
+		&mysystem ("cat $fifiprefix.snpex.hwe.con.detex.txt $fifiprefix.snpex.hwe.cas.detex.txt $fifiprefix.snpex.temiss.detex.txt $fifiprefix.snpex.frq.detex.txt $fifiprefix.snpex.lmendel.detex.txt $fifiprefix.snpex.nassoc.detex.txt > $fifiprefix.snpex.detex.txt.comb  ");            
+	    } 
+	    else {
+		&mysystem ("cat $fifiprefix.snpex.hwe.con.detex.txt $fifiprefix.snpex.frq.detex.txt  $fifiprefix.snpex.lmendel.detex.txt > $fifiprefix.snpex.detex.txt.comb  ");            # jigold add for scenario with trio data with only cases 10/1/15
+	    }
+	    
 	}
 	else {
 	    unless ($noassoc) {
@@ -2740,20 +2751,20 @@ unless ($noassoc) {
 if ($gwa_plot) {
 
     my $systemGWA="gwa_plot_3 $prekno_txt --cols 2,9,1,3 --title GWA-Plot_nofi --sig-gwa $nofiprefix.assoc";
-#    print "$systemGWA\n";
+    print "$systemGWA\n";
 #    exit;
     &mysystem ($systemGWA) unless (-e "GWA-Plot_nofi_gwa.pdf");
 
 
 #    exit;
     my $systemGWA="gwa_plot_3 $prekno_txt --cols 2,9,1,3 --title GWA-Plot_fifi --sig-gwa $fifiprefix.assoc";
-#    print "$systemGWA\n";
+    print "$systemGWA\n";
     &mysystem ($systemGWA) unless (-e "GWA-Plot_fifi_gwa.pdf");
 
 
 #    my $systemGWA="gwa_plot_3 $prekno_txt --cols 1,4,17,18 --title GWA-Plot --sig-gwa combined_set_alt.txt_tmp";
     my $systemGWA="gwa_plot_3 $prekno_txt --cols 1,8,2,3 --title GWA-Plot --sig-gwa combined_set_alt.txt";
-#    print "$systemGWA\n";
+    print "$systemGWA\n";
     &mysystem ($systemGWA) unless (-e "GWA-Plot_gwa.pdf");
 
 
@@ -2762,10 +2773,10 @@ if ($gwa_plot) {
     $la_comb = $la_comb * 1;
     die if ($la_comb eq "");
     die if ($la_comb <= 0);
-    die if ($la_comb > 20);
+#    die if ($la_comb > 20);
 
     my $systemGWA="gwa_plot_3 $prekno_txt --gc $la_comb --cols 1,8,2,3 --title GWA-Plot_gc --sig-gwa combined_set_alt.txt";
-#    print "$systemGWA\n";
+    print "$systemGWA\n";
     &mysystem ($systemGWA) unless (-e "GWA-Plot_gc_gwa.pdf");
 
 
@@ -3745,6 +3756,19 @@ mtext(paste("p_ (Kol-Smi) to TOP1000 = ", ptou ," and to TOP100 = ", phu, sep=""
     my $system = "grep -v NA combined_set_alt.txt | sort -k8,8g  >  $outprefix.sorted_combined.txt";
     &mysystem($system);
 
+    my $valid_snps_notna;
+    unless (-e "$outprefix.sorted_combined.txt.n") {
+	$valid_snps_notna = &count_lines("$outprefix.sorted_combined.txt") - 1;
+	die $!."($outprefix.sorted_combined.txt.n)" unless open DXN, "> $outprefix.sorted_combined.txt.n";
+	print DXN "$valid_snps_notna\n";
+	close DXN;
+    }
+    die $!."($outprefix.sorted_combined.txt.n)" unless open DXN, "< $outprefix.sorted_combined.txt.n";
+    $valid_snps_notna = <DXN>;
+    chomp($valid_snps_notna);
+    close DXN;
+
+
     my $R_in='read.table("INNAME", header=T)-> all'."\n";
     $R_in =~ s/INNAME/$outprefix.sorted_combined.txt/g;
 
@@ -3755,7 +3779,7 @@ mtext(paste("p_ (Kol-Smi) to TOP1000 = ", ptou ," and to TOP100 = ", phu, sep=""
 
     foreach my $t (0,1){
 	my $real = $hundr[$t];
-	$real = $valid_snps if ($hundr[$t] > $valid_snps);
+	$real = $valid_snps_notna if ($hundr[$t] > $valid_snps_notna);
 	$R_in.= "top$hundr[$t] <- all[1:$real,]\n";
 
 
@@ -3875,7 +3899,7 @@ if ($tex_sum){
 %\usepackage{ngerman}
 \date{\today}
 \author{Psychiatric GWAS Consortium}
-\title{QC2-Report of PREFIXFORTEX}
+\title{QC-Report of PREFIXFORTEX}
 \begin{document}
 \maketitle
 \begin{abstract}

@@ -1,36 +1,26 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 #use warnings;
 
 srand(0);
 
 #############################
+# load utility functions
+#############################
+
+use FindBin;
+use lib "$FindBin::Bin";
+use Ricopili::Utils qw(trans);
+use Ricopili::Version;
+
+#############################
 # read config file
 #############################
 
-my $conf_file = $ENV{HOME}."/ricopili.conf";
-my %conf = ();
 
-die $!."($conf_file)" unless open FILE, "< $conf_file";
-while (my $line = <FILE>){
-    my @cells = split /\s+/, $line;
-    next unless (@cells >= 2);
-    $conf{$cells[0]} = $cells[1];
-}
-close FILE;
-
-sub trans {
-    my ($expr)=@_;
-    unless (exists $conf{$expr}) {
-	die "config file without entry: $expr\n";
-    }
-    $conf{$expr};
-}
-
-my $ploc = &trans("ploc");
 my $p2loc = &trans("p2loc");
 my $qloc = &trans("queue");
-my $hmloc = &trans("hmloc");
+#my $hmloc = &trans("hmloc");
 my $email = &trans("email");
 my $loloc = &trans("loloc");
 
@@ -42,6 +32,10 @@ my $loloc = &trans("loloc");
 
 
 
+
+
+$rp_header =~ s/MODULE/clump_nav3   /;
+print "$rp_header\n";
 
 
 
@@ -71,7 +65,7 @@ my $command_line = "$progname @ARGV";
 
 my $rootdir = "";
 my $info_txt = "";
-my $homedir = $ENV{"HOME"};
+
 
 
 
@@ -80,6 +74,9 @@ my $outname ="";
 my $pfile ="";
 my $walltime = 4;
 my $job_bn_th = 1000;
+my $popname = "CEU";
+my $sepa = 1;
+
 
 
 use Getopt::Long;
@@ -92,6 +89,7 @@ GetOptions( "outname=s"=> \$outname,
 	    "hq_i=f"=> \$hq_info,
 	    "qrat=f"=> \$qrat_th,
 	    "pfile=s"=> \$pfile,
+	    "popname=s"=> \$popname,
 
 	    
 	    "clu_window=i"=> \$cwindow,
@@ -105,7 +103,11 @@ GetOptions( "outname=s"=> \$outname,
 
 	    "force1"=> \my $force1,
 	    "serial"=> \my $serial,
+	    "sepa=i"=> \$sepa,
+
+	    "noclean"=> \my $noclean,
 	    "bn_job=i"=> \$job_bn_th,
+	    
 	    
     );
 
@@ -143,14 +145,19 @@ version: $version
 
         --grange INT    for clumping in kb
 
+        --noclean       do not remove temp subdir
 
   --force1           do not exit if same fail, but do this only once
 
 
   --serial          no sending jobs to queue all in one run
                            -> usually only used for testing 
+  --sepa INT        use INT number of parallel jobs during serial
+
 
   --bn_job INT        submit INT jobs at a time
+
+  --popname STRING    population for clumping, right now: eur, eas, sas, amr, afr
 
 
 
@@ -173,7 +180,7 @@ rs1801274   1     159.54  159.91  2.16e-20  anderson
 }
 
 
-
+$popname = uc $popname;
 
 
 my $oub_txt = '
@@ -289,6 +296,11 @@ sub a2filenew {
 ############################################################
 ## testing binaries
 ##############################################################
+
+
+
+
+
 my @test_scripts;
 
 
@@ -340,36 +352,6 @@ die if $err_scr == 1;
 
 
 #####################################
-# subroutine to re-invoke this script
-#####################################
-
-#sub reinvo_b {
-#    my ($message, $wt_file)=@_;
-#    my $now = localtime time;
-#    my $old_cmd = `tail -2 $homedir/clumper_info | head -1`;
-
-#    my $message_part = $info_txt."\t$message";
-#    $message = $info_txt."\t$message\t$now";
-
-#    &a2filenew_app("$homedir/clumper_info",$message);
-#    die "2 times already" if ($old_cmd =~ /$message_part/);
-#    die "done" if ($message eq "everything-is-fine");
-#    chdir "$rootdir" or die "something strange";
-#    if ($qloc eq "bsub") {#
-#	$wt_file =~ s/.*blueprint_joblist_file-//;;
-#    }
-#    &mysystem ("blueprint -b \"$command_line\" --wa 1 --di -j --fwt $wt_file --na _clumper_$outname");
-#    exit;
-
-#}
-
-
-
-
-
-
-
-#####################################
 # send jobs to cluster and also send navi again
 #####################################
 
@@ -381,7 +363,7 @@ my @sjaarray;
 my $sjamem = 0;
 my $sjatime = -1;
 my $sjamaxjobs = 30000;
-#my $sjainfofile = "$homedir/impute_dir_info";
+
 my $sjainfofile = "$loloc/clumper_info";
 unless (-e $sjainfofile) {
     print "log-file ($sjainfofile) is not existing\n";
@@ -513,15 +495,48 @@ sub send_jobarray {
     ## starting the job array
     ##################################
     if ($serial) {
+
+
 	print "starting step $sjaname with ".@sjaarray." jobs\n";
-	print "please be patient.\n";
+	print "running up to $sepa parallel jobs.\n";
+
+
 	my $jc = 1;
+#	my $job_str = "";
+	my @job_sepa_arr;
+
 	foreach (@sjaarray) {
 	    print "running job $jc...\n";
-	    &mysystem($_);
+	    push @job_sepa_arr, "$_ &";
+#	    $job_str .= "$_ & \n";
+
+	    if ($jc % $sepa == 0) {
+		push @job_sepa_arr, "wait";
+		#		$job_str .= "wait\n";
+		my $sepa_file = "$sjaname.sepa.$jc";
+		&a2filenew ($sepa_file,@job_sepa_arr);
+		print "sepa_file: ".$sepa_file."\n";
+		&mysystem("chmod u+x $sepa_file");
+		&mysystem("./$sepa_file");
+		@job_sepa_arr = ();
+	    }
 	    $jc++;
 	    
 	}
+
+	if (@job_sepa_arr > 0) {
+	    $jc--;
+	    push @job_sepa_arr, "wait";
+	    
+	    my $sepa_file = "$sjaname.sepa.$jc";
+	    &a2filenew ($sepa_file,@job_sepa_arr);
+	    print "sepa_file: ".$sepa_file."\n";
+	    &mysystem("chmod u+x $sepa_file");
+	    &mysystem("./$sepa_file");
+	}
+
+
+
     }
     else { 
 	my $sys_loc = "$blueprint_script $sja_week_str --noerr --njob $nsja_loc --array $jobfile --wa $sjatime --mem $sjamem --j --na $sjaname.$outname $multi_txt";
@@ -536,26 +551,10 @@ sub send_jobarray {
 
 
 
+    my $wt_file = "$sjadir/j.$sjaname.$outname.id";
 
-    my $wt_file = "$sjadir/blueprint_joblist_file-$sjaname.$outname";
+#    my $wt_file = "$sjadir/j.$jobfile.id";
     chdir "$rootdir" or die "something strange";
-    if ($qloc eq "bsub") {
-	$wt_file =~ s/.*blueprint_joblist_file-//;
-    }
-
-    if ($qloc eq "slurm") {
-	$wt_file = "$sjadir/$jobfile.script.id";
-    }
-
-    if ($qloc eq "qsub") {
-	$wt_file = "$sjadir/j.$sjaname.$outname.id";
-    }
-    if ($qloc eq "qsub_c") {
-	$wt_file = "$sjadir/j.$sjaname.$outname.id";
-    }    
-    if ($qloc eq "qsub_b") {
-	$wt_file = "$sjadir/j.$sjaname.$outname.id";
-    }
     
     if ($serial) {
 	my $sys_re = "$command_line";
@@ -604,6 +603,9 @@ use Compress::Zlib ;
 
 
 
+
+
+
 $rootdir = &Cwd::cwd();
 $info_txt = "command:\t\"$command_line\"\tdir:\t$rootdir";
 
@@ -619,6 +621,11 @@ my @created = mkpath(   ## $created ?
 # split pfile
 #####################################
 
+
+if (-e "$outname.clumped.xmhc.gz") {
+    print "output files is already existing\n";
+#    exit;
+}
 
 my %ccount ;
 
@@ -719,8 +726,8 @@ if (@filehandles > 1) {
 	if ($noindel) {
 	    next if (length($a1) != 1);
 	    next if (length($a2) != 1);
-	    next unless ($a1 =~ /[ACGT]/);
-	    next unless ($a2 =~ /[ACGT]/);
+	    next unless ($a1 =~ /[ACGTacgt]/);
+	    next unless ($a2 =~ /[ACGTacgt]/);
 	}
 
 
@@ -838,19 +845,36 @@ my @clump_files;
 	my $chr_loc = "chr$chr.";
 	
 	my $in_loc = "$chr_subdir/$outname.chr$chr.txt";
+
+
 	
+	my $bfile_sc = "";
+
 	
 
-	my $bfile_sc = `ls $refdir/*chr$chr.*bed`;
-	if ($bfile_sc eq "") {
-	    my $chr_part = "$chr"."_";
-	    $bfile_sc = `ls $refdir/*chr$chr_part*bed`;
+	if (-e "$refdir/reference_templ") {
+	    my $out_template = `grep bfile_template $refdir/reference_templ`;
+	    $out_template =~ s/bfile_template[ ]+//;
+	    chomp($out_template);
+	    #		print "out: $out_template\n";
+	    $bfile_sc = "$refdir/$out_template";
+	    $bfile_sc =~ s/XXX/$chr/;
+#	    $bfile_sc .= ".impute.plink.$popname.bed";
+	    #		print "bf: $bfile_sc\n";
+	    
 	}
-	if ($bfile_sc eq "") {
-	    print "Error: no plink binary for this chromosome";
-	    exit;
+	else {
+	    $bfile_sc = `ls $refdir/*chr$chr.*bed`;
+	    if ($bfile_sc eq "") {
+		my $chr_part = "$chr"."_";
+		$bfile_sc = `ls $refdir/*chr$chr_part*bed`;
+	    }
+	    if ($bfile_sc eq "") {
+		print "Error: no plink binary for this chromosome";
+		exit;
+	    }
 	}
-	
+
 	chomp($bfile_sc);
 	$bfile_sc =~ s/.bed$//;
 	    
@@ -859,10 +883,10 @@ my @clump_files;
 	    
 	my $cmd;
 	    
-	$cmd = "$p2loc/plink --bfile $bfile_sc --clump $in_loc --clump-p1 $cp1 --clump-p2 $cp2 --clump-r2 $cr2 --clump-kb $cwindow --out $outname_loc";
+	$cmd = "$p2loc/plink --memory 2000 --bfile $bfile_sc --clump $in_loc --clump-p1 $cp1 --clump-p2 $cp2 --clump-r2 $cr2 --clump-kb $cwindow --out $outname_loc";
 	    
 	if ($detformat == 2) {
-	    $cmd = "$p2loc/plink --bfile $bfile_sc --clump-range $gene_list_0610_plink --clump-verbose --clump-range-border $gene_range --clump $in_loc --clump-p1 $cp1 --clump-p2 $cp2 --clump-r2 $cr2 --clump-kb $cwindow --out $outname_loc";
+	    $cmd = "$p2loc/plink --memory 2000 --bfile $bfile_sc --clump-range $gene_list_0610_plink --clump-verbose --clump-range-border $gene_range --clump $in_loc --clump-p1 $cp1 --clump-p2 $cp2 --clump-r2 $cr2 --clump-kb $cwindow --out $outname_loc";
 	}
 	
 	my $out_loc = "$outname_loc.clumped";
@@ -879,10 +903,14 @@ my @clump_files;
 #		$rerun = 1;
 #	    }
 	}
+	unless (-e $out_loc) {
+	    $rerun = 1;
+	}
 	#    print "$cmd\n";
 	    #    print "$chr\t$cr2\t$out_loc\n";
 	push @job_arr, $cmd if ($rerun == 1);
-	push @clump_files, $out_loc;
+	push @clump_files, $out_loc if ($rerun == 0);
+#	print "$log_loc, $rerun\n"
     }
     #    print "$cmd\n";
     
@@ -1238,7 +1266,7 @@ if ($prekno_file){
 #####################################
 
 
-unless (-e "$outname.xmhc.xls"){
+unless (-e "$outname.clumped.xmhc.p2.xls"){
 
 
     die $! unless open LDI, "< $outname.clumped.xmhc";
@@ -1258,7 +1286,7 @@ unless (-e "$outname.xmhc.xls"){
 
 
        
-    my $cmd = "txt2xls --txt $outname.clumped.xmhc.p2 --xls $outname.mhc.p2.xls --pcol 10,16 --cogr 5,8,12,17,18";
+    my $cmd = "txt2xls --txt $outname.clumped.xmhc.p2 --xls $outname.clumped.xmhc.p2.xls --pcol 10,16 --cogr 5,8,12,17,18";
     &mysystem ($cmd);
 
 }
@@ -1282,6 +1310,21 @@ if ($reinvo_file) {
 
 
 
+unless ($noclean) {
+    print "remove tmp filies, if not wished use --noclean\n";
+    &mysystem ("rm -fr $chr_subdir");
+    &mysystem ("rm -f $outname.sum.clumped");
+    &mysystem ("rm -f $outname.clumped.xmhc.start.prekno");
+
+}
+
+&mysystem ("rm -f $outname.clumped.xmhc.p2");
+&mysystem ("rm -f $outname.clumped.xmhc");
+&mysystem ("rm -f $outname.clumped");
+&mysystem ("rm -f $outname.cfiles");
+
+
+
 #############################################################
 ## SUCCESSSS
 #############################################################
@@ -1294,6 +1337,8 @@ $sjamem = 1000;
 
     
 &send_jobarray;
+
+
 
 
 
